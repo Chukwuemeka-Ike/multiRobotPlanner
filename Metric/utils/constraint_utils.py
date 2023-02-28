@@ -71,7 +71,7 @@ def check_enough_agents(numRobots: int, numVisitors: int):
     '''Check whether we have enough robots to complete a task.'''
     # TODO: Station has to have at least as many neighbors as robots (for now).
     if numRobots < numVisitors:
-        raise ValueError(f"There are not enough robots ({numRobots}) ",
+        raise ValueError(f"There are not enough robots ({numRobots}) "
                     f"to complete the task specified for {numVisitors}"
                     f" agents.")
 
@@ -79,8 +79,8 @@ def check_enough_neighbors(station: list, station_neighbors: list,
     numVisitors: int):
     '''Station has to have at least as many neighbors as robots (for now).'''
     if len(station_neighbors) < numVisitors:
-        raise ValueError(f"Station at {station} has fewer neighbors ",
-                    f"{len(station_neighbors)} than the number",
+        raise ValueError(f"Station at {station} has fewer neighbors "
+                    f"{len(station_neighbors)} than the number"
                     f" of visiting robots {numVisitors}.")
 
 def create_robot_occupied_variables(numRobots: int, planHorizon: int):

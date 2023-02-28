@@ -69,7 +69,7 @@ def draw_stations(stations, grid, spaceStep, ax):
 def draw_env(grid, stations, obs, bounds, spaceStep, ax, fontSize):
     '''Draws the grid specified by bounds and spaceStep.'''
 
-    plt.axis([bounds[0]-spaceStep, bounds[1], bounds[2], bounds[3]+spaceStep])
+    plt.axis([bounds[0]-spaceStep, bounds[1], bounds[2], bounds[3]+(2*spaceStep)])
     
     plt.xticks(np.arange(bounds[0], bounds[1]+1, spaceStep), fontsize=fontSize)
     plt.yticks(np.arange(bounds[2], bounds[3]+1, spaceStep), fontsize=fontSize)

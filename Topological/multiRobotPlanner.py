@@ -35,7 +35,7 @@ X, Oc = create_robot_occupied_variables(numRobots, planHorizon)
 # finalPositions = [Base]*numRobots
 # terminal_position_constraints(solver, X, initialPositions, finalPositions)
 # stay_in_workspace_constraints(solver, X, workspace, planHorizon)
-# print(f"Position constraint setup runtime: {time.time() - startTime} seconds.")
+# print(f"Position constraint setup runtime: {time.time() - startTime: .3f} seconds.")
 
 # # Task-specific constraints.
 # startTime = time.time()
@@ -45,7 +45,7 @@ X, Oc = create_robot_occupied_variables(numRobots, planHorizon)
 # numVisitors = 2
 # n_robots_visit_station_for_duration(solver, X, Oc, 45, planHorizon,
 #                                     numVisitors, RF_Welder, 10)
-# print(f"Single visit setup runtime:{time.time() - singleTime} seconds.")
+# print(f"Single visit setup runtime:{time.time() - singleTime: .3f} seconds.")
 
 # # Visit Machine 2 for 10 timesteps.
 # numVisitors = 1
@@ -62,7 +62,7 @@ singleTime = time.time()
 numVisitors = 2
 n_robots_sequence_two_visits(solver, X, Oc, 0, planHorizon,
                 numVisitors, Mega_Stitch, Long_Arm, 10, 5)
-print(f"Two visit setup runtime:{time.time() - singleTime} seconds.")
+print(f"Two visit setup runtime:{time.time() - singleTime: .3f} seconds.")
 
 
 filename = "Constraints/z3save3.smt"
@@ -72,16 +72,16 @@ constraintsText = solver.sexpr()
 with open(filename, mode='w', encoding='ascii') as f:
     f.write(constraintsText)
     f.close()
-print(f"Save constraint runtime: {time.time() - startTime} seconds")
+print(f"Save constraint runtime: {time.time() - startTime: .3f} seconds")
 
 # # Visit Mega_Stitch for 10, Machine 3 for 10, and Grommet for 5.
 # singleTime = time.time()
 # numVisitors = 3
 # n_robots_sequence_three_visits(solver, X, Oc, 20, planHorizon,
 #             numVisitors, Mega_Stitch, Sewing_Machine_3, Grommet, 10, 10, 5)
-# print(f"Three visit setup runtime:{time.time() - singleTime} seconds.")
+# print(f"Three visit setup runtime:{time.time() - singleTime: .3f} seconds.")
 
-# print(f"Task constraint setup runtime: {time.time() - startTime} seconds.")
+# print(f"Task constraint setup runtime: {time.time() - startTime: .3f} seconds.")
 
 # # pp(solver)
 
@@ -92,7 +92,7 @@ if model_sat == unsat:
     print(f"The model was unsatisfiable. Exiting.\n")
     exit()
 m = solver.model()
-print(f"Solution runtime: {time.time() - startTime} seconds.")
+print(f"Solution runtime: {time.time() - startTime: .3f} seconds.")
 
 
 # Extract the path and occupied flags.

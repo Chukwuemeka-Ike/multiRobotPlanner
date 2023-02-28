@@ -14,7 +14,7 @@ def create_grid(bounds, spaceStep):
     '''Sets up the grid based on the space discretization and bounds given.'''
     # Check if the workspace divides nicely by the chosen space discretization.
     if (bounds[1] % spaceStep + bounds[3] % spaceStep) != 0:
-        raise ArithmeticError(f"The chosen bounds {bounds[1], bounds[3]}",
+        raise ArithmeticError(f"The chosen bounds {bounds[1], bounds[3]}"
             f"are not both divisible by the spaceStep {spaceStep}.\n")
 
     xLength = int(bounds[1]/spaceStep)

@@ -51,9 +51,9 @@ def check_enough_agents(numRobots: int, numVisitors: int):
     '''Check whether we have enough robots to complete a task.'''
     # TODO: Station has to have at least as many neighbors as robots (for now).
     if numRobots < numVisitors:
-        raise ValueError(f"There are not enough robots ({numRobots}) ",
-                    f"to complete the task specified for {numVisitors}"
-                    f" agents.")
+        raise ValueError(f"There are not enough robots ({numRobots}) "
+                    f"to complete the task specified for {numVisitors} "
+                    f"agents.")
 
 def n_robots_visit_station_for_duration(
     solver: Solver, robotPos: ArithRef, occupied: BoolRef,
@@ -103,6 +103,11 @@ def n_robots_transport(
     visitStart: int, visitDeadline: int, numVisitors: int,
     station1: int, station2: int
 ):
+    '''Builds a transport task.
+ 
+    Sets that the robots should visit the source station then destination
+    for 1 step each.
+    '''
     n_robots_sequence_two_visits(
         solver, robotPos, occupied, visitStart, visitDeadline,
         numVisitors, station1, station2, 1, 1
@@ -152,7 +157,7 @@ def n_robots_sequence_two_visits(
                                 )
                                 for j in range(numVisitors)
                             ]),
-                            And([ # Stay at S2
+                            And([ # Stay at S2.
                                 And([
                                     And(
                                         robotPos[k+l+p][combo[j]] == int(station2),
@@ -197,7 +202,6 @@ def n_robots_sequence_three_visits(
 
         combos = combinations(robotIdx, numVisitors)
         for combo in combos:
-            # print(combo)
             robotCombos.append(
                 And(
                     And([ # Visit S1.
@@ -239,7 +243,7 @@ def n_robots_sequence_three_visits(
                                 for m in range(1, l)
                                 for j in range(numVisitors)
                             ]),
-                            Or([
+                            Or([ # After S2.
                                 And(
                                     And([ # Visit S3.
                                         And(
@@ -258,7 +262,7 @@ def n_robots_sequence_three_visits(
                                         ])
                                         for p in range(1, visit3Duration)
                                     ]),
-                                    And([ # Keep occupied from S2 to S1.
+                                    And([ # Keep occupied from S2 to S3.
                                         occupied[k+l+m][combo[j]]
                                         for m in range(1, o)
                                         for j in range(numVisitors)

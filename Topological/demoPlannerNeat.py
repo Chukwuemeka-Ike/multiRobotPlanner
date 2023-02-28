@@ -40,7 +40,7 @@ initialPositions = [Base]*numRobots
 finalPositions = [Base]*numRobots
 terminal_position_constraints(solver, X, initialPositions, finalPositions)
 stay_in_workspace_constraints(solver, X, workspace, planHorizon)
-print(f"Position constraint setup runtime: {time.time() - startTime} seconds.")
+print(f"Position constraint setup runtime: {time.time() - startTime: .3f} seconds.")
 
 # Task-specific constraints.
 startTime = time.time()
@@ -62,12 +62,12 @@ n_robots_sequence_two_visits(solver, X, Oc, 35, 50, numVisitors, Long_Arm, Gromm
 # Grommet -> Mega Stitch for 10.
 n_robots_sequence_two_visits(solver, X, Oc, 45, 60, numVisitors, Grommet, Mega_Stitch, 1, 10)
 
-print(f"Job 1 setup runtime: {time.time() - singleTime} seconds.")
+print(f"Job 1 setup runtime: {time.time() - singleTime: .3f} seconds.")
 
 
 # Job 2.
 singleTime = time.time()
-numVisitors = 2
+numVisitors = 4
 
 # Cutter -> RF Welder for 15.
 n_robots_sequence_two_visits(solver, X, Oc, 5, 25, numVisitors, Cutter, RF_Welder, 1, 15)
@@ -81,7 +81,7 @@ n_robots_sequence_two_visits(solver, X, Oc, 40, 50, numVisitors, Mega_Stitch, Gr
 # Grommet -> Machine 2 for 15.
 n_robots_sequence_two_visits(solver, X, Oc, 47, 60, numVisitors, Grommet, Mega_Stitch, 1, 10)
 
-print(f"Job 2 setup runtime: {time.time() - singleTime} seconds.")
+print(f"Job 2 setup runtime: {time.time() - singleTime: .3f} seconds.")
 
 
 # Currently makes the model unsat. Will add later.
@@ -98,7 +98,7 @@ print(f"Job 2 setup runtime: {time.time() - singleTime} seconds.")
 # # Long Arm -> Machine 4 for 4.
 # n_robots_sequence_two_visits(solver, X, Oc, 50, 60, numVisitors, Mega_Stitch, Grommet, 1, 4)
 
-# print(f"Job 3 setup runtime: {time.time() - singleTime} seconds.")
+# print(f"Job 3 setup runtime: {time.time() - singleTime: .3f} seconds.")
 
 # Check for sat and print the model if it exists.
 startTime = time.time()
@@ -107,8 +107,8 @@ if model_sat == unsat:
     print(f"The model was unsatisfiable. Exiting.\n")
     exit()
 m = solver.model()
-print(f"Solution runtime: {time.time() - startTime} seconds.")
-print(f"Overall runtime: {time.time() - overallTime} seconds.")
+print(f"Solution runtime: {time.time() - startTime: .3f} seconds.")
+print(f"Overall runtime: {time.time() - overallTime: .3f} seconds.")
 
 
 # Extract the path and occupied flags.
@@ -125,4 +125,4 @@ df[[f"Occupied {i+1}" for i in range(numRobots)]] = occupied.T
 
 df.to_csv(f"Plans/neatDemo{numRobots}Bots.csv")
 
-animate_path(numRobots, planHorizon, path, grid, stations, obs, bounds, spaceStep, "Videos/neatDemo.mp4")
+animate_path(numRobots, planHorizon, path, grid, stations, obs, bounds, spaceStep, f"Videos/neatDemo{numRobots}Bots.mp4")
