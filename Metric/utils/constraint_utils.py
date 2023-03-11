@@ -4,7 +4,7 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
-    Utilities for adding constraints for the Z3 solver.
+    Utilities for building and adding constraints for the Z3 solver.
 '''
 from itertools import combinations
 import numpy as np
@@ -13,14 +13,33 @@ from z3 import *
 from utils.grid_utils import get_neighbors
 
 
-def terminal_position_constraints(solver, robotPos, initialPositions, finalPositions):
+def create_robot_occupied_variables(numRobots: int, planHorizon: int):
+    '''Create the position and occupied flag variables for the solver.'''
+    xString = [
+        [f'x{i}{k}' for i in range(1, numRobots+1)] 
+        for k in range(planHorizon)
+    ]
+    X = [Ints(' '.join(xString[i])) for i in range(len(xString))]
+
+    ocString = [
+        [f'oc{i}{k}' for i in range(1, numRobots+1)] 
+        for k in range(planHorizon)
+    ]
+    Oc = [Bools(' '.join(ocString[i])) for i in range(len(ocString))]
+
+    return X, Oc
+
+def terminal_position_constraints(
+    solver: Solver, robotPos: ArithRef, 
+    initialPositions: list, finalPositions: list
+):
     '''Specifies the initial and final positions of the robots.'''
     numBots = len(robotPos[0])
 
     solver.add([robotPos[0][i] == initialPositions[i] for i in range(numBots)])
     solver.add([robotPos[-1][i] == finalPositions[i] for i in range(numBots)])
 
-def avoid_one_another(solver, robotPos, planHorizon):
+def avoid_one_another(solver: Solver, robotPos: ArithRef, planHorizon: int):
     '''Two robots cannot be in the same place at the same time.'''
     numBots = len(robotPos[0])
 
@@ -34,7 +53,9 @@ def avoid_one_another(solver, robotPos, planHorizon):
         for k in range(planHorizon-1)
     ])
 
-def stay_in_workspace_constraints(solver, robotPos, grid, planHorizon):
+def stay_in_workspace_constraints(
+    solver: Solver, robotPos: ArithRef, grid: np.ndarray, planHorizon: int
+):
     '''Keep the robots in the workspace.'''
     numBots = len(robotPos[0])
     numStates = grid.size
@@ -48,7 +69,10 @@ def stay_in_workspace_constraints(solver, robotPos, grid, planHorizon):
         for i in range(numBots)
     ])
 
-def reachable_set_constraints(solver, robotPos, grid, planHorizon, reach):
+def reachable_set_constraints(
+    solver: Solver, robotPos: ArithRef, grid: np.ndarray,
+    planHorizon: int, reach: np.ndarray
+):
     '''Constraints defining the reachable set from every location.'''
     numBots = len(robotPos[0])
     numStates = grid.size
@@ -83,24 +107,6 @@ def check_enough_neighbors(station: list, station_neighbors: list,
                     f"{len(station_neighbors)} than the number"
                     f" of visiting robots {numVisitors}.")
 
-def create_robot_occupied_variables(numRobots: int, planHorizon: int):
-    '''Create the position and occupied flag variables for the solver.'''
-    xString = [
-        [f'x{i}{k}' for i in range(1, numRobots+1)] 
-        for k in range(planHorizon)
-    ]
-    X = [Ints(' '.join(xString[i])) for i in range(len(xString))]
-
-    ocString = [
-        [f'oc{i}{k}' for i in range(1, numRobots+1)] 
-        for k in range(planHorizon)
-    ]
-    Oc = [Bools(' '.join(ocString[i])) for i in range(len(ocString))]
-
-    return X, Oc
-
-
-# N robots visit a station and stay for K timesteps.
 def n_robots_visit_station_for_duration(
     solver: Solver, robotPos: ArithRef, occupied: BoolRef,
     grid: np.ndarray, obstacles: list, stations: list,

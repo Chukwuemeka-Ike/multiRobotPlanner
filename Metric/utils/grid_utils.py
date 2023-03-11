@@ -65,18 +65,12 @@ def extract_occupied(model: z3.ModelRef, occupied: z3.BoolRef, planHorizon: int,
         model[occupied[k][i]] for k in range(planHorizon)
         ] for i in range(numBots)])
 
-# TODO: Optimize this.
 def get_indices(x: int, grid: np.ndarray):
     '''Gets the indices of x in grid.'''
     idx = np.where(grid == x)
     try:
         return [idx[0][0], idx[1][0]]
     except:
-    # m, n = grid.shape
-    # for i in range(m):
-    #     for j in range(n):
-    #         if grid[i, j] == x:
-    #             return [i, j]
         raise ValueError(f"The value {x} is not in the provided grid.")
 
 def get_distance(x: int, y: int, grid: np.ndarray, ds: int):
