@@ -50,9 +50,6 @@ X = [Reals('x1%s x2%s y1%s y2%s' % (i,i,i,i)) for i in range(x_horizon)]
 # Set up the optimizer object
 o = Solver()
 
-# print([U, X, Z])
-# print(U[1][1])
-
 # For any given k, we want:
 # x2k + z1k*M < obstacle(0)
 # x2k + z2k*M > obstacle(1)
@@ -65,12 +62,9 @@ o.add(X[0][0] == initPose[0])
 o.add(X[0][1] == initPose[1])
 o.add(X[0][2] == initPose[2])
 o.add(X[0][3] == initPose[3])
-# print(o)
 
 # Equality constraints for the state transitions.
 for k in range(u_horizon):
-    # Minimize the sum of all ux & uy.
-    # o.minimize(U[k][0]**2 + U[k][1]**2)
 
     # # Slack variables.
     # z1, z2, z3, z4 = Z[k]
@@ -129,12 +123,9 @@ o.add( X[-1][2] == 0)
 o.add( X[-1][3] > goal[2])
 o.add( X[-1][3] < goal[3])
 
-# # o.minimize()
-# for k in range(u_horizon):
-#     o.minimize(U[k][0]**2 + U[k][1]**2)
 
 startTime = time.time()
-# Solve the optimization problem.
+# Solve the constraints.
 print(o.check())
 m = o.model()
 print(f"Runtime: {time.time() - startTime} seconds")
@@ -156,8 +147,6 @@ for k in range(x_horizon):
 
     path[k, :] = [x1, x2, y1, y2, u1, u2, cost]
 
-# path = np.array(path, dtype=float)
-# print(path)
 print(path.shape)
 scipy.io.savemat('./goToGoalSMT.mat', mdict={'path': path})
 print('Path generated and saved.')

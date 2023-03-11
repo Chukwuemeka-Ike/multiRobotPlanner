@@ -3,3 +3,11 @@
 *.pyc
 *cache
 
+constraint_utils_recycling.py
+
+Plans/
+Constraints/
+Videos/*
+Metric/Images/
+Metric/Videos/
+Metric/README.md

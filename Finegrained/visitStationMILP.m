@@ -3,6 +3,7 @@
 % Author - Chukwuemeka Osaretin Ike
 %
 % Description:
+% Adds visiting a station before reaching the goal.
 % We formulate and solve the following MILP model:
 % minimize
 %             sum of input energy,
@@ -79,6 +80,7 @@ for i = 1:u_horizon
     A_eq(nx*i-1, nu*u_horizon+3+nx*i) = 1;
     A_eq(nx*i, nu*u_horizon+4+nx*i) = 1;
 
+    % RHS of the constraint.
     b_eq(nx*i-3:nx*i, 1) = [0 0 0 0]';
 end
 

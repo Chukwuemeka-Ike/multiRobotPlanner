@@ -1,7 +1,8 @@
-% Chukwuemeka Osaretin Ike
-% ECSE 6440 - Optimal Control
-% SMT-Based Optimal Controller Synthesis for a Mobile Robot
-
+% Rensselaer Polytechnic Institute - Julius Lab
+% ARM Project
+% Author - Chukwuemeka Osaretin Ike
+%
+% Description:
 % This script plots the trajectory created by the goToGoalSMT.py
 % script.
 
@@ -35,9 +36,9 @@ y1 = path(:,4);
 
 % Plot the simulation environment with the start point, goal and obstacle.
 % Record the video.
-writeObj = VideoWriter('goToGoalSMT', 'MPEG-4');
-writeObj.FrameRate = 5;
-open(writeObj);
+% writeObj = VideoWriter('goToGoalSMT', 'MPEG-4');
+% writeObj.FrameRate = 5;
+% open(writeObj);
 figure(1);
 for i=1:size(x1,1)
     plot(x1, y1,'k-.'); hold on;
@@ -50,8 +51,8 @@ for i=1:size(x1,1)
     rectangle('Position', [-goal(2), -goal(4),stationSize], 'EdgeColor', 'green', 'FaceColor', 'none');    % Goal
     
     legend('Path', 'Robot', 'Location', 'northwest'); axis(wkSpace);
-    frame = getframe(gcf);
-    writeVideo(writeObj,frame);
+%     frame = getframe(gcf);
+%     writeVideo(writeObj,frame);
     drawnow;
     hold off;
 end

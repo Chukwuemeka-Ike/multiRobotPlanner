@@ -81,6 +81,7 @@ for i = 1:u_horizon
     A_eq(nx*i-1, nu*u_horizon+3+nx*i) = 1;
     A_eq(nx*i, nu*u_horizon+4+nx*i) = 1;
 
+    % RHS of the constraint.
     b_eq(nx*i-3:nx*i, 1) = [0 0 0 0]';
 end
 
@@ -126,6 +127,7 @@ A_fin(1:2, 2*u_horizon+nx*u_horizon-3:2*u_horizon+nx*u_horizon-2) = [dt 1; -dt -
 A_fin(3:4, 2*u_horizon) = [bi -bi]';
 A_fin(3:4, 2*u_horizon+nx*u_horizon-1:2*u_horizon+nx*u_horizon) = [dt 1; -dt -1];
 
+% RHS of the constraint.
 b_fin(1:4, 1) = goal;
 
 
@@ -206,8 +208,8 @@ for i = nu*u_horizon + (2:nx:nx*x_horizon)
 end
 minJ = result.objval;
 
-% Plot the simulation environment with the start point, goal and obstacle
-% Record the video
+% Plot the simulation environment with the start point, goal and obstacle.
+% Record the video.
 % writeObj = VideoWriter('goToGoalMILP');
 % writeObj.FrameRate = 5;
 % open(writeObj);
