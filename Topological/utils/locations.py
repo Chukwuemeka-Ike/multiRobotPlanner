@@ -6,7 +6,7 @@ Author - Chukwuemeka Osaretin Ike
 Description:
     Contains the node numbers of stations in the graph.
 '''
-from grid_utils import *
+from utils.grid_utils import create_grid
 
 # Station and base nodes in the graph. Each node is an integer.
 Base = 1

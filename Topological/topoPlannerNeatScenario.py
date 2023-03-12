@@ -4,20 +4,28 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
-    Demo plan where all jobs fit within the 60 timestep horizon.
+    Uses Z3 to schedule tasks and assign robots with the topological
+    representation.
+    This script decouples multiple visits into two-visit atoms.
+        i.e., if we want to go from RF->MS->Machine_3, we use 2-station
+        visits like (RF for k1, MS for k2), then (MS for k1, Machine_3 for k2).
+        The k1 and k2 can be chosen to make sense for transportation vs enough
+        time for an actual operation.
+    In this scenario, all jobs fit within the 60 timestep horizon.
 '''
-from z3 import *
+import pandas as pd
 import time
+from z3 import *
 
-from locations import *
-from constraint_utils import *
-from draw_utils import *
-from grid_utils import *
-from location_utils import *
+from utils.constraint_utils import *
+from utils.draw_utils import *
+from utils.grid_utils import extract_path, extract_occupied
+from utils.locations import *
+from utils.location_utils import extract_location_names
 
 # Horizon in steps. Step length is defined separately.
 planHorizon = 60
-numRobots = 8
+numRobots = 10
 
 # Print current setup.
 print(f"Plan horizon: {planHorizon}.")
@@ -27,7 +35,6 @@ print(f"Number of robots: {numRobots}.")
 
 # Set up the Z3 solver.
 solver = Solver()
-# set_option("parallel.enable", True)
 
 overallTime = time.time()
 
@@ -116,13 +123,11 @@ path = extract_path(m, X, planHorizon, numRobots)
 occupied = extract_occupied(m, Oc, planHorizon, numRobots)
 locations = extract_location_names(path, loc_names)
 
-import pandas as pd
-
+# Save the plan and animated path.
 df = pd.DataFrame()
 df[[f"Location {i+1}" for i in range(numRobots)]] = locations.T
 df[[f"Occupied {i+1}" for i in range(numRobots)]] = occupied.T
-# print(df)
-
 df.to_csv(f"Plans/neatDemo{numRobots}Bots.csv")
+print(df)
 
 animate_path(numRobots, planHorizon, path, grid, stations, obs, bounds, spaceStep, f"Videos/neatDemo{numRobots}Bots.mp4")

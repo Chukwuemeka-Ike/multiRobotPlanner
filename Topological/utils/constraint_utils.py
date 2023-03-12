@@ -6,6 +6,8 @@ Author - Chukwuemeka Osaretin Ike
 Description:
     Utilities for adding constraints for the Z3 solver.
 '''
+import numpy as np
+
 from itertools import combinations
 from z3 import *
 
@@ -26,14 +28,19 @@ def create_robot_occupied_variables(numRobots: int, planHorizon: int):
 
     return X, Oc
 
-def terminal_position_constraints(solver, robotPos, initialPositions, finalPositions):
-    '''Specify the initial and final positions of each robot.'''
+def terminal_position_constraints(
+    solver: Solver, robotPos: ArithRef, 
+    initialPositions: list, finalPositions: list
+):
+    '''Specifies the initial and final positions of the robots.'''
     numBots = len(robotPos[0])
 
     solver.add([robotPos[0][i] == initialPositions[i] for i in range(numBots)])
     solver.add([robotPos[-1][i] == finalPositions[i] for i in range(numBots)])
 
-def stay_in_workspace_constraints(solver, robotPos, workspace, planHorizon):
+def stay_in_workspace_constraints(
+    solver: Solver, robotPos: ArithRef, workspace: np.ndarray, planHorizon: int
+):
     '''Keep the robots in the workspace.'''
     numBots = len(robotPos[0])
     numStates = len(workspace)

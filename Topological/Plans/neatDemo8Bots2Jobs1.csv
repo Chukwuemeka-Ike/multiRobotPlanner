@@ -1,12 +1,12 @@
 ,Location 1,Location 2,Location 3,Location 4,Location 5,Location 6,Location 7,Location 8,Occupied 1,Occupied 2,Occupied 3,Occupied 4,Occupied 5,Occupied 6,Occupied 7,Occupied 8
 0,Base,Base,Base,Base,Base,Base,Base,Base,,,,,,,,
 1,Base,Base,Base,Base,Base,Base,Base,Base,,,,,,,,
-2,Base,Base,Cutter,Base,Cutter,Base,Base,Cutter,,,False,,False,,,False
+2,Base,Base,Loading Area,Base,Loading Area,Base,Base,Loading Area,,,False,,False,,,False
 3,Base,Base,Base,Base,Base,Base,RF_Welder,Base,,,True,,True,,,True
 4,Base,RF_Welder,Mega_Stitch,Base,Mega_Stitch,Base,RF_Welder,Mega_Stitch,,,True,,True,,,True
 5,Grommet,RF_Welder,Mega_Stitch,Sewing_Machine_,Mega_Stitch,Sewing_Machine_,Sewing_Machine_,Mega_Stitch,,,True,,True,,,True
 6,Base,Base,Mega_Stitch,RF_Welder,Mega_Stitch,Base,Base,Mega_Stitch,,,True,,True,,,True
-7,Base,Cutter,Mega_Stitch,Cutter,Mega_Stitch,Cutter,Cutter,Mega_Stitch,,False,True,False,True,False,False,True
+7,Base,Loading Area,Mega_Stitch,Loading Area,Mega_Stitch,Loading Area,Loading Area,Mega_Stitch,,False,True,False,True,False,False,True
 8,Base,Base,Mega_Stitch,Base,Mega_Stitch,Base,Base,Mega_Stitch,,True,True,True,True,True,True,True
 9,Long_Arm,RF_Welder,Mega_Stitch,RF_Welder,Mega_Stitch,RF_Welder,RF_Welder,Mega_Stitch,,True,True,True,True,True,True,True
 10,Base,RF_Welder,Mega_Stitch,RF_Welder,Mega_Stitch,RF_Welder,RF_Welder,Mega_Stitch,,True,True,True,True,True,True,True
@@ -40,14 +40,14 @@
 38,Grommet,Grommet,Grommet,Grommet,Sewing_Machine_,Sewing_Machine_,Sewing_Machine_,Grommet,True,False,True,False,,False,False,True
 39,Grommet,Long_Arm,Grommet,Long_Arm,Long_Arm,Long_Arm,Long_Arm,Grommet,True,,True,,,,,True
 40,Grommet,Mega_Stitch,Grommet,Mega_Stitch,Sewing_Machine_,Mega_Stitch,Mega_Stitch,Grommet,True,False,True,False,,False,False,True
-41,Grommet,Sewing_Machine_,Grommet,Base,Base,Sewing_Machine_,Cutter,Grommet,True,True,True,True,,True,True,True
+41,Grommet,Sewing_Machine_,Grommet,Base,Base,Sewing_Machine_,Loading Area,Grommet,True,True,True,True,,True,True,True
 42,Grommet,Long_Arm,Grommet,Sewing_Machine_,Sewing_Machine_,Sewing_Machine_,Grommet,Grommet,True,True,True,True,,True,True,True
 43,Grommet,Grommet,Grommet,Grommet,Long_Arm,Grommet,Grommet,Grommet,True,True,True,True,,True,True,True
 44,Grommet,Grommet,Grommet,Grommet,RF_Welder,Grommet,Grommet,Grommet,True,True,True,True,,True,True,True
 45,Grommet,Grommet,Grommet,Grommet,Base,Grommet,Grommet,Grommet,True,True,True,True,,True,True,True
 46,Grommet,Grommet,Grommet,Grommet,Base,Grommet,Grommet,Grommet,True,True,True,True,,True,True,True
 47,Grommet,Grommet,Grommet,Grommet,Grommet,Grommet,Grommet,Grommet,False,True,False,True,False,True,True,False
-48,Sewing_Machine_,Sewing_Machine_,Cutter,Mega_Stitch,Base,Sewing_Machine_,Sewing_Machine_,Sewing_Machine_,True,False,True,False,True,False,False,True
+48,Sewing_Machine_,Sewing_Machine_,Loading Area,Mega_Stitch,Base,Sewing_Machine_,Sewing_Machine_,Sewing_Machine_,True,False,True,False,True,False,False,True
 49,Mega_Stitch,Sewing_Machine_,Mega_Stitch,RF_Welder,Mega_Stitch,RF_Welder,RF_Welder,Mega_Stitch,True,,True,,True,,,True
 50,Mega_Stitch,Sewing_Machine_,Mega_Stitch,RF_Welder,Mega_Stitch,RF_Welder,RF_Welder,Mega_Stitch,True,,True,,True,,,True
 51,Mega_Stitch,RF_Welder,Mega_Stitch,RF_Welder,Mega_Stitch,RF_Welder,RF_Welder,Mega_Stitch,True,,True,,True,,,True
