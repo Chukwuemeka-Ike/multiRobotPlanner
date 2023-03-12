@@ -9,5 +9,9 @@ Plans/
 Constraints/
 Videos/*
 Metric/Images/
-Metric/Videos/
+# Metric/
+Videos/
 Metric/README.md
+
+scratch*
+tester*
