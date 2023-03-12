@@ -7,7 +7,7 @@ Description:
     Utilities for getting distance, locations, neighbors in the grid.
 '''
 import numpy as np
-import z3
+from z3 import ModelRef, ArithRef, BoolRef
 
 
 def create_grid(bounds, spaceStep):
@@ -53,14 +53,14 @@ def create_adjacent_reach_set(grid, obstacles, stations):
         reach.append(neighbors)
     return reach
 
-def extract_path(model: z3.ModelRef, robotPos: z3.ArithRef, planHorizon: int, numBots: int):
-    '''D.'''
+def extract_path(model: ModelRef, robotPos: ArithRef, planHorizon: int, numBots: int):
+    '''Extracts the paths from the solved model.'''
     return np.array([[
         model[robotPos[k][i]].as_long() for k in range(planHorizon)
         ] for i in range(numBots)])
 
-def extract_occupied(model: z3.ModelRef, occupied: z3.BoolRef, planHorizon: int, numBots: int):
-    '''D.'''
+def extract_occupied(model: ModelRef, occupied: BoolRef, planHorizon: int, numBots: int):
+    '''Extracts the occupied flags from the solved model.'''
     return np.array([[
         model[occupied[k][i]] for k in range(planHorizon)
         ] for i in range(numBots)])

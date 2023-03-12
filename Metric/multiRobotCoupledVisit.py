@@ -92,7 +92,7 @@ n_robots_visit_station_for_duration(solver, X, Oc, grid, obs, stations,
 taskTime = time.time()
 numVisitors = 3
 n_robots_sequence_two_visits(solver, X, Oc, grid, obs, stations,
-                20, planHorizon, numVisitors, Mega_Stitch, Long_Arm, 10, 5)
+                0, planHorizon, numVisitors, Mega_Stitch, Long_Arm, 10, 5)
 print(f"Two visit setup runtime:{time.time() - taskTime} seconds.")
 
 # Visit Mega_Stitch for 10, Machine 3 for 10, and Grommet for 5.
