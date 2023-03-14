@@ -5,7 +5,9 @@ Author - Chukwuemeka Osaretin Ike
 
 Description:
     Implementation of the flexible job shop problem using
-    Google OR-Tools Linear Solver.
+    Google OR-Tools Linear Solver. 
+
+    This script handles only linear jobs.
 
     This version assumes we have multiple machines for some operation types:
         Loading Area - 0
@@ -20,58 +22,19 @@ Description:
 import pandas as pd
 import time
 
+from constants import *
 from ortools.linear_solver import pywraplp
 from utils.draw_utils import draw_schedule
 
 
 def intersection(lst1, lst2):
+    '''Returns the common items between two lists.'''
     return list(set(lst1) & set(lst2))
 
 
 overallTime = time.time()
-station_names = [
-    "Loading Area",
-    "Mega Stitch",
-    "RF",
-    "Perimeter",
-    "Inspection"
-]
-M = [0, 1, 2, 3, 4]
-num_stations = [1, 2, 1, 3, 1]
-
-# Automatically create increasing station numbers based on how many
-# there are of each type.
-num = 0
-Mj = []
-print("Station numbers:")
-print("[")
-for i in range(len(M)):
-    stations = []
-    for j in range(1, num_stations[i]+1):
-        stations.append(num)
-        num += 1
-    print(f"{station_names[i]:>15}:    {stations}")
-    Mj.append(stations)
-print("]")
-all_machines = [i for stations in Mj for i in stations]
-print(all_machines)
-
-
 # Job data. Every job starts at the loading area.
-# jobs_data = [  # task = (machine_id, processing_time).
-#     [(0, 3), (2, 2), (2, 2)],  # Job0.
-#     [(0, 2), (2, 1), (2, 4)],  # Job1.
-#     [(1, 4), (2, 3)]           # Job2.
-# ]
-jobs_data = [
-	[(0,5), (2,20), (3,40), (4,40)],
-	[(0,5), (1,40), (3,50), (4,40)],
-	[(0,5), (1,40), (3,50), (4,40)],
-	[(0,5), (1,30), (2,30), (3,60), (4,50)],
-	[(0,5), (2,30), (1,20), (3,35), (4,40)],
-    [(0,5), (2,30), (1,20), (3,35), (4,40)],
-	[(0,5), (1,30), (2,20), (1,30), (3,45), (4,60)]
-]
+jobs_data = linear_jobs
 num_jobs = len(jobs_data)
 print()
 print("Jobs:")
@@ -209,6 +172,31 @@ for job_id, job in enumerate(jobs_data):
 # Minimize the sum of completion times.
 solver.Minimize(solver.Sum(objective_terms))
 
+# # Minimize the idle time between loading and the next operation.
+# solver.Add(solver.Sum(objective_terms) <= 1615*1.1)
+# idle_times = []
+# for job_id, job in enumerate(jobs_data):
+#     idle_times.append(
+#         sum(S[job_id, 1, machine] for machine in Mj[job[1][0]])
+#             - sum(C[job_id, 0, machine] for machine in Mj[job[0][0]])
+#     )
+# solver.Minimize(solver.Sum(idle_times))
+
+# # Minimize all idle times between operations in a job.
+# solver.Add(solver.Sum(objective_terms) <= 1615*1.1)
+# idle_times = []
+# for job_id, job in enumerate(jobs_data):
+#     idle_times.append(
+#         sum(
+#             sum(S[job_id, task_id, machine] for machine in Mj[job[task_id][0]])
+#             - sum(C[job_id, task_id, machine] for machine in Mj[job[task_id][0]])
+#             for task_id in range(1, len(job))
+#         )
+#     )
+# solver.Minimize(solver.Sum(idle_times))
+    
+
+
 print(f"Number of variables: {solver.NumVariables()}")
 print(f"Number of constraints: {solver.NumConstraints()}")
 
@@ -219,7 +207,7 @@ status = solver.Solve()
 print("\n\n")
 if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
     print(f"Max Schedule Length: {horizon: .1f}")
-    # print(f"Optimal Schedule Length: {solver.Objective().Value()}")
+    print(f"Objective value: {solver.Objective().Value()}")
     print(
         "Optimal Schedule Length:",
         f"{max(obj_term.solution_value() for obj_term in objective_terms)}."
@@ -272,5 +260,5 @@ print(f"Overall runtime: {time.time() - overallTime: .3f} seconds.")
 print()
 
 print(schedule)
-schedule.to_csv(f"Plans/fjssp.csv")
-draw_schedule(schedule)
+# schedule.to_csv(f"Plans/fjssp.csv")
+# draw_schedule(schedule)
