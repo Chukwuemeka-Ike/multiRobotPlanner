@@ -1,3 +1,11 @@
+'''
+Rensselaer Polytechnic Institute - Julius Lab
+ARM Project
+Author - Chukwuemeka Osaretin Ike
+
+Description:
+    Constants useful across scripts.
+'''
 station_names = [
     "Loading Area",
     "Mega Stitch",
@@ -5,32 +13,34 @@ station_names = [
     "Perimeter",
     "Inspection"
 ]
-M = [0, 1, 2, 3, 4]
+
+# Station type numbers are used for specifying tasks in a job. 
+# Num stations is how many of each type there are.
+station_type_numbers = list(range(len(station_names)))
 num_stations = [1, 2, 1, 3, 1]
 
-# Automatically create increasing station numbers based on how many
+# Create increasing station numbers based on how many
 # there are of each type.
 num = 0
 Mj = []
-# print("Station numbers:")
-# print("[")
-for i in range(len(M)):
+for i in range(len(station_type_numbers)):
     stations = []
     for j in range(1, num_stations[i]+1):
         stations.append(num)
         num += 1
-    # print(f"{station_names[i]:>15}:    {stations}")
     Mj.append(stations)
-# print("]")
+
 all_machines = [i for stations in Mj for i in stations]
 # print(f"All machines: {all_machines}")
 
+# Sample set of linear jobs.
 linear_jobs_0 = [  # task = (machine_id, processing_time).
     [(0, 3), (2, 2), (2, 2)],
     [(0, 2), (2, 1), (2, 4)],
     [(1, 4), (2, 3)]
 ]
 
+# Set of 7 linear jobs.
 linear_jobs = [
 	[(0,5), (2,20), (3,40), (4,40)],
 	[(0,5), (1,40), (3,50), (4,40)],
@@ -41,6 +51,7 @@ linear_jobs = [
 	[(0,5), (1,30), (2,20), (1,30), (3,45), (4,60)]
 ]
 
+# Set of 7 jobs - some linear, some tree.
 tree_jobs =  [
     [ # Tree Job.
         {"ticket_id": 0, "station_type": 0, "duration": 5, "parents": []},
