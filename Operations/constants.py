@@ -5,8 +5,15 @@ Author - Chukwuemeka Osaretin Ike
 
 Description:
     Constants useful across scripts.
+
+    Currently assumes we have multiple machines for some operation types:
+        Loading Area - 0
+        Mega Stitch - [1, 2]
+        RF - 3
+        Perimeter - [4, 5, 6]
+        Inspection - 7
 '''
-station_names = [
+station_type_names = [
     "Loading Area",
     "Mega Stitch",
     "RF",
@@ -16,18 +23,18 @@ station_names = [
 
 # Station type numbers are used for specifying tasks in a job. 
 # Num stations is how many of each type there are.
-station_type_numbers = list(range(len(station_names)))
+station_type_numbers = list(range(len(station_type_names)))
 num_stations = [1, 2, 1, 3, 1]
 
 # Create increasing station numbers based on how many
-# there are of each type.
-num = 0
+# there are of each type. Output looks similar to description.
+station_num = 0
 Mj = []
 for i in range(len(station_type_numbers)):
     stations = []
     for j in range(1, num_stations[i]+1):
-        stations.append(num)
-        num += 1
+        stations.append(station_num)
+        station_num += 1
     Mj.append(stations)
 
 all_machines = [i for stations in Mj for i in stations]
@@ -51,6 +58,8 @@ linear_jobs = [
 	[(0,5), (1,30), (2,20), (1,30), (3,45), (4,60)]
 ]
 
+# Every job starts at the loading area.
+# task_template = {"ticket_id": , "station_type": , "duration": , "parents": []}
 # Set of 7 jobs - some linear, some tree.
 tree_jobs =  [
     [ # Tree Job.
@@ -109,5 +118,25 @@ tree_jobs =  [
         {"ticket_id": 40, "station_type": 1, "duration": 10, "parents": [38,39]},
         {"ticket_id": 41, "station_type": 3, "duration": 45, "parents": [40]},
         {"ticket_id": 42, "station_type": 4, "duration": 60, "parents": [41]},
+    ],
+]
+
+physical_demo_jobs = [
+    [ # Tree Job.
+        {"ticket_id": 0, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 1, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 2, "station_type": 1, "duration": 40, "parents": [0]},
+        {"ticket_id": 3, "station_type": 2, "duration": 20, "parents": [1]},
+        {"ticket_id": 4, "station_type": 1, "duration": 40, "parents": [2,3]},
+        {"ticket_id": 5, "station_type": 3, "duration": 60, "parents": [4]},
+        {"ticket_id": 6, "station_type": 4, "duration": 60, "parents": [5]},
+    ],
+    [ # Tree Job.
+        {"ticket_id": 7, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 8, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 9, "station_type": 2, "duration": 25, "parents": [7]},
+        {"ticket_id": 10, "station_type": 2, "duration": 25, "parents": [8]},
+        {"ticket_id": 11, "station_type": 3, "duration": 45, "parents": [9,10]},
+        {"ticket_id": 12, "station_type": 4, "duration": 60, "parents": [11]},
     ],
 ]

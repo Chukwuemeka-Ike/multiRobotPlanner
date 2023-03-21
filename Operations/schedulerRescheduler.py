@@ -47,7 +47,7 @@ print(f"Number of Jobs: {num_jobs}.")
 
 # Print out the job information.
 display_all_tickets(jobs_data)
-display_station_numbers(station_names, Mj)
+display_station_numbers(station_type_names, Mj)
 
 # Get the positions of the task parents in the job list. This is done now to
 # ease lookup later.
@@ -393,7 +393,7 @@ else:
     exit()
 
 # Extract the schedule.
-schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_names)
+schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_type_names)
 print(f"Overall runtime: {time.time() - overallTime: .3f} seconds.")
 print()
 print(schedule)

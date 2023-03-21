@@ -19,7 +19,7 @@ Description:
 import collections
 from ortools.sat.python import cp_model
 
-station_names = [
+station_type_names = [
     "Loading Area",
     "Mega Stitch",
     "RF",
@@ -40,7 +40,7 @@ for i in range(len(M)):
     for j in range(1, num_stations[i]+1):
         stations.append(num)
         num += 1
-    print(f"{station_names[i]:>15}:    {stations}")
+    print(f"{station_type_names[i]:>15}:    {stations}")
     Mj.append(stations)
 print("]")
 

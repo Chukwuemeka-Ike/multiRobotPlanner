@@ -5,9 +5,9 @@ Author - Chukwuemeka Osaretin Ike
 
 Description:
     Implementation of the flexible job shop problem using
-    Google OR-Tools Linear Solver. 
+    Google OR-Tools Linear Solver.
 
-    This script handles only linear jobs.
+    This script handles tree jobs.
 
     This version assumes we have multiple machines for some operation types:
         Loading Area - 0
@@ -19,32 +19,54 @@ Description:
         Mathematical models for job-shop scheduling problems with routing
         and process plan flexibility - Ozguven et al (2010).
 '''
-import pandas as pd
 import time
 
 from constants import *
+from itertools import combinations
 from ortools.linear_solver import pywraplp
-from utils.draw_utils import draw_schedule
+from utils.draw_utils import draw_tree_schedule
+from utils.display_utils import *
+from utils.sched_utils import extract_schedule
+from utils.solver_utils import *
 
 
 def intersection(lst1, lst2):
     '''Returns the common items between two lists.'''
     return list(set(lst1) & set(lst2))
 
-
+# Start timing the overall runtime.
 overallTime = time.time()
+
 # Job data. Every job starts at the loading area.
-jobs_data = linear_jobs
+# task_template = {"ticket_id": , "station_type": , "duration": , "parents": []}
+jobs_data = tree_jobs
 num_jobs = len(jobs_data)
-print()
-print("Jobs:")
-print("[")
+print(f"Number of Jobs: {num_jobs}.")
+
+# Print out the job information.
+display_job_data(jobs_data)
+display_station_numbers(station_type_names, Mj)
+
+# Get the positions of the task parents in the job list. This is done now to
+# ease lookup later.
+# TODO: Streamline.
+parent_ids = []
 for job in jobs_data:
-    print(f"    {job}")
-print("]")
+    for task_id in range(len(job)):
+        parents = []
+        for parent in job[task_id]["parents"]:
+            for task_id in range(len(job)):
+                if job[task_id]["ticket_id"] == parent:
+                    parents.append(task_id)
+        parent_ids.append(parents)
+
+# for i in range(len(parent_ids)):
+#     print(parent_ids[i])
+
 
 # Maximum horizon if all jobs were sequential.
-horizon = sum(task[1] for job in jobs_data for task in job)
+horizon = sum(task["duration"] for job in jobs_data for task in job)
+# print(horizon)
 
 
 
@@ -54,14 +76,17 @@ solver = pywraplp.Solver.CreateSolver('SCIP')
 if not solver:
     exit()
 
+
 # Variable creation.
+L = 1000
+
 X = {}
 Y = {}
+Z = {}
 S = {}
 C = {}
 C_job = {}
 t = {}
-L = 1000
 
 for job in range(len(jobs_data)):
     for task in range(len(jobs_data[job])):
@@ -70,19 +95,17 @@ for job in range(len(jobs_data)):
             
             S[job, task, machine] = solver.IntVar(0, horizon, f'S{job}{task}{machine}')
             C[job, task, machine] = solver.IntVar(0, horizon, f'C{job}{task}{machine}')
-            # t[job, task, machine] = solver.IntVar(0, horizon, f't{job}{task}{machine}')
 
 for i in range(num_jobs):
     C_job[i] = solver.IntVar(0, horizon, 'Ci')
-
 
 for job_b in range(1, len(jobs_data)):
     for job_a in range(job_b):
         for task_b in range(len(jobs_data[job_b])):
             for task_a in range(len(jobs_data[job_a])):
                 M_intersection = intersection(
-                    Mj[jobs_data[job_b][task_b][0]],
-                    Mj[jobs_data[job_a][task_a][0]]
+                    Mj[jobs_data[job_b][task_b]["station_type"]],
+                    Mj[jobs_data[job_a][task_a]["station_type"]]
                 )
                 # print(M_intersection)
                 for machine in M_intersection:
@@ -90,28 +113,65 @@ for job_b in range(1, len(jobs_data)):
                         0, 1, f'Y{job_a}{task_a}{job_b}{task_b}{machine}'
                     )
 
+for job_id, job in enumerate(jobs_data):
+    combos = combinations(range(len(job)), 2)
+    for combo in combos:
+        M_intersection = intersection(
+            Mj[job[combo[0]]["station_type"]],
+            Mj[job[combo[1]]["station_type"]]
+        )
+        for machine in M_intersection:
+            Z[job_id, combo[0], combo[1], machine] = solver.IntVar(
+                0, 1, f'Z{job_id}{combo[0]}{combo[1]}{machine}'
+            )
 
 # Constraint construction.
 # Job-specific constraints.
+j = 0
 for job_id, job in enumerate(jobs_data):
     for task_id, task in enumerate(job):
         # Each operation can only be assigned to one machine.
         solver.Add( 
-            sum(X[job_id, task_id, machine] for machine in Mj[task[0]]) == 1
+            sum(X[job_id, task_id, machine] for machine in Mj[task["station_type"]]) == 1
         )
 
-        # Within a job, each task must start after the previous task ends.
+        # Within a job, each task must start after the previous parent task ends.
         if task_id > 0:
-            solver.Add( 
-                sum(S[job_id, task_id, machine] for machine in Mj[task[0]]) >=
-                sum(C[job_id, task_id-1, machine] for machine in Mj[job[task_id-1][0]])
+            for parent in parent_ids[j]:
+                solver.Add(
+                    sum(S[job_id, task_id, machine] for machine in Mj[task["station_type"]]) >=
+                    sum(C[job_id, parent, machine] for machine in Mj[job[parent]["station_type"]])
+                )
+                # print(parent, Mj[job[parent]["station_type"]])
+        j += 1
+
+for job_id, job in enumerate(jobs_data):
+    combos = combinations(range(len(job)), 2)
+    for combo in combos:
+        M_intersection = intersection(
+            Mj[job[combo[0]]["station_type"]],
+            Mj[job[combo[1]]["station_type"]]
+        )
+        for machine in M_intersection:
+            solver.Add(
+                S[job_id, combo[0], machine] >=
+                C[job_id, combo[1], machine] -
+                    Z[job_id, combo[0], combo[1], machine]*L
             )
+            solver.Add(
+                S[job_id, combo[1], machine] >=
+                C[job_id, combo[0], machine] -
+                    (1-Z[job_id, combo[0], combo[1], machine])*L
+            )
+        # if len(M_intersection):
+        #     print(M_intersection)
+# print(Z)
 
 # Task completion constraints.
 for job_id, job in enumerate(jobs_data):
     for task_id, task in enumerate(job):
         # Set constraints for all machines that match the task requirement.
-        for machine in Mj[task[0]]:
+        for machine in Mj[task["station_type"]]:
             # The start and end time must equal zero if the task is not
             # assigned to that machine.
             solver.Add(
@@ -122,7 +182,7 @@ for job_id, job in enumerate(jobs_data):
             # Task completion must happen after task duration + start time.
             solver.Add(
                 C[job_id, task_id, machine] >=
-                S[job_id, task_id, machine] + task[1] - 
+                S[job_id, task_id, machine] + task["duration"] - 
                 (1 - X[job_id, task_id, machine])*L
             )
 
@@ -135,9 +195,10 @@ for job_b in range(1, len(jobs_data)):
             for task_a in range(len(jobs_data[job_a])):
                 # Check if the task-task pair have overlapping machines.
                 M_intersection = intersection(
-                    Mj[jobs_data[job_b][task_b][0]],
-                    Mj[jobs_data[job_a][task_a][0]]
-                )
+                    Mj[jobs_data[job_b][task_b]["station_type"]],
+                    Mj[jobs_data[job_a][task_a]["station_type"]]
+                )   
+                # print(M_intersection)
                 for machine in M_intersection:
                     solver.Add(
                         S[job_a, task_a, machine] >=
@@ -161,7 +222,7 @@ for job_id, job in enumerate(jobs_data):
     # Job's completion must be after the last task's completion time.
     solver.Add(
         C_job[job_id] >= 
-            sum(C[job_id, len(job)-1, machine] for machine in Mj[job[-1][0]])
+            sum(C[job_id, len(job)-1, machine] for machine in Mj[job[-1]["station_type"]])
     )
     # # The overall makespan must be after the last job's completion. Not
     # # sure the usefulness.
@@ -171,31 +232,8 @@ for job_id, job in enumerate(jobs_data):
 
 # Minimize the sum of completion times.
 solver.Minimize(solver.Sum(objective_terms))
-
-# # Minimize the idle time between loading and the next operation.
-# solver.Add(solver.Sum(objective_terms) <= 1615*1.1)
-# idle_times = []
-# for job_id, job in enumerate(jobs_data):
-#     idle_times.append(
-#         sum(S[job_id, 1, machine] for machine in Mj[job[1][0]])
-#             - sum(C[job_id, 0, machine] for machine in Mj[job[0][0]])
-#     )
-# solver.Minimize(solver.Sum(idle_times))
-
-# # Minimize all idle times between operations in a job.
-# solver.Add(solver.Sum(objective_terms) <= 1615*1.1)
-# idle_times = []
-# for job_id, job in enumerate(jobs_data):
-#     idle_times.append(
-#         sum(
-#             sum(S[job_id, task_id, machine] for machine in Mj[job[task_id][0]])
-#             - sum(C[job_id, task_id, machine] for machine in Mj[job[task_id][0]])
-#             for task_id in range(1, len(job))
-#         )
-#     )
-# solver.Minimize(solver.Sum(idle_times))
-    
-
+# solver.Add(solver.Sum(objective_terms) <= 2090)
+# solver.Minimize(0)
 
 print(f"Number of variables: {solver.NumVariables()}")
 print(f"Number of constraints: {solver.NumConstraints()}")
@@ -203,7 +241,10 @@ print(f"Number of constraints: {solver.NumConstraints()}")
 
 # Invoke the solver.
 solutionStart = time.time()
+# solver.SetTimeLimit(4000)
 status = solver.Solve()
+
+# Display the solution.
 print("\n\n")
 if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
     print(f"Max Schedule Length: {horizon: .1f}")
@@ -217,48 +258,12 @@ else:
     print("Infeasible program. Exiting.\n")
     exit()
 
-# # Display the solution found.
-# for job_id, job in enumerate(jobs_data):
-#     print(f"Job {job_id} completion time: {C_job[job_id].solution_value()}")
-#     for task_id, task in enumerate(job):
-#         for machine in all_machines:
-#             if X[job_id, task_id, machine].solution_value() > 0.5:
-#                 print(f"Job {job_id} Task {task_id} assigned to machine {machine}.",
-#                     f"Start time: {S[job_id, task_id, machine].solution_value()}.",
-#                     f"Completion time: {C[job_id, task_id, machine].solution_value()}.")
-#     print()
-
-
-jobs, tasks = [], []
-locations, station_nums, station_type_nums = [], [], []
-starts, ends, durations = [], [], []
-
-for job_id, job in enumerate(jobs_data):
-    for task_id, task in enumerate(job):
-        for machine in all_machines:
-            if X[job_id, task_id, machine].solution_value() > 0.5:
-                jobs.append(job_id)
-                tasks.append(task_id)
-                locations.append(station_names[task[0]])
-                station_nums.append(machine)
-                station_type_nums.append(task[0])
-                starts.append(S[job_id, task_id, machine].solution_value())
-                ends.append(C[job_id, task_id, machine].solution_value())
-                durations.append(task[1])
-
-schedule = pd.DataFrame()
-schedule["Job #"] = jobs
-schedule["Task #"] = tasks
-schedule["Location"] = locations
-schedule["Station #"] = station_nums
-schedule["Station Type #"] = station_type_nums
-schedule["Start"] = starts
-schedule["End"] = ends
-schedule["Duration"] = durations
-
+# Extract the schedule.
+schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_type_names)
 print(f"Overall runtime: {time.time() - overallTime: .3f} seconds.")
 print()
-
 print(schedule)
-# schedule.to_csv(f"Plans/fjssp.csv")
-# draw_schedule(schedule)
+
+# Save the schedule and draw it.
+schedule.to_csv(f"Plans/fjsspTree.csv")
+draw_tree_schedule(schedule)

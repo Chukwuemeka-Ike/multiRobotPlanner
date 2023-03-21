@@ -28,14 +28,14 @@ def draw_rectangle(job_num: int, station_type_num: int, start: int, duration: in
 def draw_env(bounds: list, fontSize: int):
     '''Draw the base environment for the schedule to be graphed.'''
     plt.axis([bounds[0], bounds[1], bounds[2], bounds[3]])
-    plt.xticks(np.arange(bounds[0], bounds[1], int(bounds[1]/10)), fontsize=fontSize)
+    plt.xticks(np.arange(bounds[0], bounds[1], int(bounds[1]/20)), fontsize=fontSize)
     plt.yticks(np.arange(bounds[3], bounds[2], 1), fontsize=fontSize)
     plt.xlabel('Time Index (k)', fontsize=fontSize)
     plt.ylabel('Sub Job #', fontsize=fontSize)
     plt.grid()
 
-def draw_schedule(schedule: pd.DataFrame):
-    '''Draw the schedule.'''
+def draw_linear_schedule(schedule: pd.DataFrame):
+    '''Draws a schedule of only linear jobs.'''
     # Bounds are jobs on y-axis, time index on x-axis. y-axis is flipped.
     bounds = [0, schedule["End"].max()+1, schedule["Job #"].max()+1, 0]
     fontSize = 20
@@ -55,7 +55,7 @@ def draw_schedule(schedule: pd.DataFrame):
     plt.show()
 
 def draw_tree_schedule(schedule: pd.DataFrame):
-    '''Draw schedule with tree jobs.'''
+    '''Draws a schedule including tree jobs.'''
     # Bounds are jobs on y-axis, time index on x-axis. y-axis is flipped.
     # Each job on the y-axis may have more than one row.
     num_jobs = schedule["Job #"].max()+1
@@ -94,5 +94,5 @@ def draw_tree_schedule(schedule: pd.DataFrame):
     for job_num in range(num_jobs):
         runTotal += sizes[job_num]
         plt.axhline(y = runTotal, color = 'k', linestyle = '-', lw=5)
-
+    plt.savefig("Images/treeSched.png")
     plt.show()

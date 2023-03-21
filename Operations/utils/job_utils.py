@@ -1,6 +1,20 @@
 import pandas as pd
 
 
+def get_task_parent_indices(jobs_data: list):
+    '''Get the indices of each task's parents within the job list.'''
+    parent_indices = []
+
+    for job in jobs_data:
+        for task_idx in range(len(job)):
+            task_parent_indices = []
+            for parent_ticket_id in job[task_idx]["parents"]:
+                for task_idx in range(len(job)):
+                    if job[task_idx]["ticket_id"] == parent_ticket_id:
+                        task_parent_indices.append(task_idx)
+            parent_indices.append(task_parent_indices)
+    return parent_indices
+
 # TODO: This can almost certainly be done better.
 def get_immediate_child(id: int, tree_job: pd.DataFrame, linear_job: list):
     '''Recursively get the next child in tree job and add it to linear job.'''
