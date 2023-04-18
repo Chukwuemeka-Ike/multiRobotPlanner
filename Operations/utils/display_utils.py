@@ -2,7 +2,7 @@ from ortools.linear_solver import pywraplp
 
 def display_job_data(job_list: list):
     '''Displays all tickets in a job list.'''
-    num_jobs = len(jobs_data)
+    num_jobs = len(job_list)
     print(f"Number of Jobs: {num_jobs}.")
     print()
     print("All tickets:")
@@ -31,9 +31,9 @@ def display_solver_information(solver):
 def display_solution_stats(solver, status, horizon, solutionTime):
     ''''''
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
-        print(f"Max Schedule Length: {horizon: .1f}")
-        print(f"Objective value: {solver.Objective().Value()}")
-        print(f"Solution Runtime: {solutionTime: .3f} seconds.")
+        print(f"Max Schedule Length: {horizon: .2f}")
+        print(f"Objective Value: {solver.Objective().Value(): .2f}")
+        print(f"Solution Runtime: {solutionTime: .2f} seconds.")
     else:
         print("Infeasible program. Exiting.\n")
         exit()

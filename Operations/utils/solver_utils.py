@@ -1,4 +1,5 @@
 from itertools import combinations
+from utils.job_utils import get_start_points
 
 
 
@@ -26,11 +27,12 @@ def create_opt_variables(solver, jobs_data, horizon, all_machines, Mj):
     Z = {}
     S = {}
     C = {}
+    S_job = {}
     C_job = {}
 
     num_jobs = len(jobs_data)
 
-    for job in range(len(jobs_data)):
+    for job in range(num_jobs):
         for task in range(len(jobs_data[job])):
             for machine in all_machines:
                 # Binary variable that is 1 if (job, task) is assigned to machine.
@@ -43,10 +45,11 @@ def create_opt_variables(solver, jobs_data, horizon, all_machines, Mj):
                 C[job, task, machine] = solver.Var(0, horizon, False, f'C{job}{task}{machine}')
 
     for i in range(num_jobs):
-        # Completion time of each job.
-        C_job[i] = solver.Var(0, horizon, False, 'Ci')
+        # Start and completion time of each job.
+        S_job[i] = solver.Var(0, horizon, False, f'S{i}')
+        C_job[i] = solver.Var(0, horizon, False, f'C{i}')
 
-    for job_b in range(1, len(jobs_data)):
+    for job_b in range(1, num_jobs):
         for job_a in range(job_b):
             for task_b in range(len(jobs_data[job_b])):
                 for task_a in range(len(jobs_data[job_a])):
@@ -78,15 +81,14 @@ def create_opt_variables(solver, jobs_data, horizon, all_machines, Mj):
     # Overall makespan.
     C_max = solver.IntVar(0, horizon, 'makespan')
 
-    return X, Y, Z, S, C, C_job, C_max
+    return X, Y, Z, S, C, S_job, C_job, C_max
 
-def define_constraints(solver, X, Y, Z, S, C, C_job, C_max, jobs_data, parent_ids, Mj):
+def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, jobs_data, parent_ids, Mj):
     '''Defines all the optimization constraints.'''
     # Large number for slack variables.
     L = 1000
 
     # Job-specific constraints.
-    j = 0
     for job_id, job in enumerate(jobs_data):
         for task_id, task in enumerate(job):
             # Each operation can only be assigned to one machine.
@@ -96,13 +98,11 @@ def define_constraints(solver, X, Y, Z, S, C, C_job, C_max, jobs_data, parent_id
 
             # Within a job, each task must start after the previous parent task ends.
             if task_id > 0:
-                for parent in parent_ids[j]:
+                for parent in parent_ids[job_id][task_id]:
                     solver.Add(
                         sum(S[job_id, task_id, machine] for machine in Mj[task["station_type"]]) >=
                         sum(C[job_id, parent, machine] for machine in Mj[job[parent]["station_type"]])
                     )
-                    # print(parent, Mj[job[parent]["station_type"]])
-            j += 1
     
     for job_id, job in enumerate(jobs_data):
         combos = combinations(range(len(job)), 2)
@@ -111,6 +111,7 @@ def define_constraints(solver, X, Y, Z, S, C, C_job, C_max, jobs_data, parent_id
                 Mj[job[combo[0]]["station_type"]],
                 Mj[job[combo[1]]["station_type"]]
             )
+            # No two tasks within the same job can overlap on the same machine.
             for machine in M_intersection:
                 solver.Add(
                     S[job_id, combo[0], machine] >=
@@ -141,6 +142,10 @@ def define_constraints(solver, X, Y, Z, S, C, C_job, C_max, jobs_data, parent_id
                     S[job_id, task_id, machine] + task["duration"] - 
                     (1 - X[job_id, task_id, machine])*L
                 )
+                solver.Add(
+                    S[job_id, task_id, machine] + task["duration"] 
+                        >= C[job_id, task_id, machine]
+                )
 
     # Precedence constraints. Iterate between every job-task-job-task pair to
     # make sure that no two tasks are assigned to the same machine at the
@@ -168,7 +173,23 @@ def define_constraints(solver, X, Y, Z, S, C, C_job, C_max, jobs_data, parent_id
                         )
 
     # Overall job completion constraints.
-    for job_id, job in enumerate(jobs_data):    
+    start_ids = get_start_points(jobs_data)
+    for job_id, job in enumerate(jobs_data):
+        # Job's start must be before the first task's start time.
+        # TODO: Make this scalable.
+        for start_id in start_ids[job_id]:
+            solver.Add(
+                S_job[job_id] <= 
+                    sum(S[job_id, start_id, machine] for machine in Mj[job[start_id]["station_type"]])
+            )
+        # solver.Add(
+        #     S_job[job_id] <= 
+        #         min(
+        #     sum(S[job_id, start_id, machine] for machine in Mj[job[start_id]["station_type"]])
+        #     for start_id in start_ids[job_id]
+        #         )
+        # )
+
         # Job's completion must be after the last task's completion time.
         solver.Add(
             C_job[job_id] >= 
@@ -179,3 +200,30 @@ def define_constraints(solver, X, Y, Z, S, C, C_job, C_max, jobs_data, parent_id
         solver.Add(
             C_max >= C_job[job_id]
         )
+
+def add_no_c_inflation(solver, S, C, jobs_data: list, Mj: list):
+    '''Add constraint to avoid inflating C .'''
+    for job_id, job in enumerate(jobs_data):
+        for task_id, task in enumerate(job):
+            for machine in Mj[task["station_type"]]:
+                solver.Add(
+                    C[job_id, task_id, machine] <=
+                    S[job_id, task_id, machine] + task["duration"]
+                )
+
+def create_idle_time_objective(solver, S, C, C_max, jobs_data, parent_ids, Mj, optimum):
+    '''Sets the schedule's total idle time as the objective.'''
+    # Add constraint for makespan based on previously found optimum.
+    solver.Add(C_max <= optimum)
+
+    # Define the objective function to minimize the idle time.
+    idle_times = []
+    for job_id, job in enumerate(jobs_data):
+        for task_id, task in enumerate(job):
+            # Idle time between each task's start and its parents' completion.
+            for parent in parent_ids[job_id][task_id]:
+                idle_times.append(
+                    sum(S[job_id, task_id, machine] for machine in Mj[job[task_id]["station_type"]])
+                    - sum(C[job_id, parent, machine] for machine in Mj[job[parent]["station_type"]])
+                )
+    solver.Minimize(solver.Sum(idle_times))

@@ -1,18 +1,32 @@
 import pandas as pd
 
 
+def get_start_points(jobs_data: list):
+    '''Gets the indices of tickets within each job that are at loading.'''
+    start_ids = []
+    for job in range(len(jobs_data)):
+        job_start_ids = []
+        for task in range(len(jobs_data[job])):
+            if jobs_data[job][task]["station_type"] == 0:
+                job_start_ids.append(task)
+        start_ids.append(job_start_ids)
+    return start_ids
+
+
 def get_task_parent_indices(jobs_data: list):
     '''Get the indices of each task's parents within the job list.'''
     parent_indices = []
 
     for job in jobs_data:
+        job_parent_indices = []
         for task_idx in range(len(job)):
             task_parent_indices = []
             for parent_ticket_id in job[task_idx]["parents"]:
                 for task_idx in range(len(job)):
                     if job[task_idx]["ticket_id"] == parent_ticket_id:
                         task_parent_indices.append(task_idx)
-            parent_indices.append(task_parent_indices)
+            job_parent_indices.append(task_parent_indices)
+        parent_indices.append(job_parent_indices)
     return parent_indices
 
 # TODO: This can almost certainly be done better.

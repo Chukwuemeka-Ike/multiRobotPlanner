@@ -7,7 +7,7 @@ Description:
     Implementation of the flexible job shop problem using
     Google OR-Tools Linear Solver.
 
-    This script handles tree jobs.
+    This script runs a second optimization to minimize idle time.
 
     Paper:
         Mathematical models for job-shop scheduling problems with routing
@@ -29,7 +29,8 @@ overallTime = time.time()
 
 # Job data.
 # jobs_data = tree_jobs
-jobs_data = physical_demo_jobs
+jobs_data = fifo_jobs
+# jobs_data = physical_demo_jobs
 
 # # Print out the job and station information.
 # display_job_data(jobs_data)
@@ -45,6 +46,7 @@ parent_ids = get_task_parent_indices(jobs_data)
 horizon = sum(task["duration"] for job in jobs_data for task in job)
 
 
+
 # Create the mip solver with the SCIP backend.
 solver = pywraplp.Solver.CreateSolver('SCIP')
 if not solver:
@@ -58,37 +60,77 @@ define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, jobs_data, parent
 # display some solver information.
 solver.Minimize(C_max)
 display_solver_information(solver)
+print()
 
 
 # Invoke the solver.
 solutionStart = time.time()
-solver.SetTimeLimit(4000)
-
+solver.SetTimeLimit(20000)
 status = solver.Solve()
 solutionEnd = time.time()
 
-# Display the solution.
+# Display the initial solution.
 display_solution_stats(solver, status, horizon, solutionEnd-solutionStart)
 
 # Extract the schedule.
 schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_type_names)
-print(f"Overall runtime: {time.time() - overallTime: .3f} seconds.")
-print()
+# print()
 # print(schedule)
 
-for i in range(len(jobs_data)):
-    print(S_job[i].solution_value())
+# Save the schedule and draw it.
+schedule.to_csv(f"Plans/idleTimeMinInitialTree.csv")
+draw_tree_schedule(schedule, "Images/idleTimeMinInitialTree.png")
+
+# Initial total idle time.
+initialIdleTimes = get_total_idle_time(schedule, jobs_data, parent_ids)
+print(f"Initial total idle time: {initialIdleTimes: .2f} minutes.")
+print()
+
+
+
+
+
+
+# Idle time minimization.
+
+# Create the solver.
+idleSolver = pywraplp.Solver.CreateSolver('SCIP')
+if not idleSolver:
+    exit()
+
+# Create optimization variables, and define the constraints.
+X, Y, Z, S, C, S_job, C_job, C_max = create_opt_variables(idleSolver, jobs_data, horizon, all_machines, Mj)
+define_constraints(idleSolver, X, Y, Z, S, C, S_job, C_job, C_max, jobs_data, parent_ids, Mj)
+# add_no_c_inflation(idleSolver, S, C, jobs_data, Mj)
+
+# Define objective to minimize the idle times.
+optimum = solver.Objective().Value()
+create_idle_time_objective(idleSolver, S, C, C_max, jobs_data, parent_ids, Mj, optimum)
+
+display_solver_information(idleSolver)
+print()
+
+# Invoke the solver.
+solutionStart = time.time()
+idleSolver.SetTimeLimit(20000)
+status = idleSolver.Solve()
+solutionEnd = time.time()
+
+# Display the initial solution.
+print(f"New makespan: {C_max.solution_value()}")
+display_solution_stats(idleSolver, status, horizon, solutionEnd-solutionStart)
+
+# Extract the schedule.
+schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_type_names)
+print(f"Overall runtime: {time.time() - overallTime: .2f} seconds.")
+
+# Final total idle time.
+finalIdleTimes = get_total_idle_time(schedule, jobs_data, parent_ids)
+print(f"Final total idle time: {finalIdleTimes: .2f} minutes.")
+
+# print()
+# print(schedule)
 
 # Save the schedule and draw it.
-# schedule.to_csv(f"Plans/fjsspTree.csv")
-# schedule.to_csv(f"Plans/fjsspTree1.csv")
-# schedule.to_csv(f"Plans/fjsspTreePhysicalDemo1.csv")
-draw_tree_schedule(schedule)
-
-# # # Create robot timelines and save.
-# robot_timelines = create_robot_timelines(schedule)
-# robot_timelines.insert(0, 't', robot_timelines.index)
-# robot_timelines['t'] = robot_timelines['t'].apply(lambda x: x*60)
-# for m in range(11, 15):
-#     robot_timelines[f"robot_{m}"] = ["WS_0_0" for _ in range(len(robot_timelines))]
-# robot_timelines.to_csv("Plans/robotTimelinesPhysicalDemo1.csv")
+schedule.to_csv(f"Plans/idleTimeMinFinalTree.csv")
+draw_tree_schedule(schedule, "Images/idleTimeMinFinalTree.png")

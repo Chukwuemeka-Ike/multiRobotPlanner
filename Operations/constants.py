@@ -29,17 +29,41 @@ num_stations = [1, 2, 1, 3, 1]
 # Create increasing station numbers based on how many
 # there are of each type. Output looks similar to description.
 station_num = 0
-Mj = []
+Mj, all_machines = [], []
 for i in range(len(station_type_numbers)):
     stations = []
     for j in range(1, num_stations[i]+1):
         stations.append(station_num)
+        all_machines.append(station_num)
         station_num += 1
     Mj.append(stations)
-
-all_machines = [i for stations in Mj for i in stations]
 # print(f"All machines: {all_machines}")
 
+# *******************************************************************
+# Variables for high level visualization.
+station_type_ws_nums = {
+    "Loading Area": "WS_0_",
+    "Mega Stitch": "WS_1_",
+    "RF": "WS_2_",
+    "Perimeter": "WS_3_",
+    "Inspection": "WS_4_",
+}
+
+# Idx of station number of its type. For WS_0_# where # is the number of
+# that particular station, not the unique ID.
+Mjs = []
+for i in range(len(Mj)):
+    for j in range(len(Mj[i])):
+        Mjs.append(j)
+# *******************************************************************
+
+
+
+
+
+
+# *******************************************************************
+#  Job sets for different cases.
 # Sample set of linear jobs.
 linear_jobs_0 = [  # task = (machine_id, processing_time).
     [(0, 3), (2, 2), (2, 2)],
@@ -123,20 +147,67 @@ tree_jobs =  [
 
 physical_demo_jobs = [
     [ # Tree Job.
-        {"ticket_id": 0, "station_type": 0, "duration": 5, "parents": []},
-        {"ticket_id": 1, "station_type": 0, "duration": 5, "parents": []},
-        {"ticket_id": 2, "station_type": 1, "duration": 40, "parents": [0]},
-        {"ticket_id": 3, "station_type": 2, "duration": 20, "parents": [1]},
-        {"ticket_id": 4, "station_type": 1, "duration": 40, "parents": [2,3]},
-        {"ticket_id": 5, "station_type": 3, "duration": 60, "parents": [4]},
-        {"ticket_id": 6, "station_type": 4, "duration": 60, "parents": [5]},
+        {"ticket_id": 0, "station_type": 0, "duration": 5, "parents": [], "num_robots": 2},
+        {"ticket_id": 1, "station_type": 0, "duration": 5, "parents": [], "num_robots": 2},
+        {"ticket_id": 2, "station_type": 1, "duration": 40, "parents": [0], "num_robots": 2},
+        {"ticket_id": 3, "station_type": 2, "duration": 20, "parents": [1], "num_robots": 2},
+        {"ticket_id": 4, "station_type": 1, "duration": 40, "parents": [2,3], "num_robots": 4},
+        {"ticket_id": 5, "station_type": 3, "duration": 60, "parents": [4], "num_robots": 4},
+        {"ticket_id": 6, "station_type": 4, "duration": 60, "parents": [5], "num_robots": 4},
+    ],
+    [ # Linear Job.
+        {"ticket_id": 31, "station_type": 0, "duration": 5, "parents": [], "num_robots": 3},
+        {"ticket_id": 32, "station_type": 2, "duration": 30, "parents": [31], "num_robots": 3},
+        {"ticket_id": 33, "station_type": 1, "duration": 20, "parents": [32], "num_robots": 3},
+        {"ticket_id": 34, "station_type": 3, "duration": 35, "parents": [33], "num_robots": 3},
+        {"ticket_id": 35, "station_type": 4, "duration": 30, "parents": [34], "num_robots": 3},
     ],
     [ # Tree Job.
-        {"ticket_id": 7, "station_type": 0, "duration": 5, "parents": []},
-        {"ticket_id": 8, "station_type": 0, "duration": 5, "parents": []},
-        {"ticket_id": 9, "station_type": 2, "duration": 25, "parents": [7]},
-        {"ticket_id": 10, "station_type": 2, "duration": 25, "parents": [8]},
-        {"ticket_id": 11, "station_type": 3, "duration": 45, "parents": [9,10]},
-        {"ticket_id": 12, "station_type": 4, "duration": 60, "parents": [11]},
+        {"ticket_id": 14, "station_type": 0, "duration": 5, "parents": [], "num_robots": 2},
+        {"ticket_id": 15, "station_type": 0, "duration": 5, "parents": [], "num_robots": 1},
+        {"ticket_id": 16, "station_type": 0, "duration": 5, "parents": [], "num_robots": 2},
+        {"ticket_id": 17, "station_type": 2, "duration": 40, "parents": [14], "num_robots": 2},
+        {"ticket_id": 18, "station_type": 1, "duration": 10, "parents": [15], "num_robots": 1},
+        {"ticket_id": 19, "station_type": 1, "duration": 30, "parents": [17,16], "num_robots": 4},
+        {"ticket_id": 20, "station_type": 2, "duration": 40, "parents": [18,19], "num_robots": 5},
+        {"ticket_id": 21, "station_type": 3, "duration": 45, "parents": [20], "num_robots": 5},
+        {"ticket_id": 22, "station_type": 4, "duration": 60, "parents": [21], "num_robots": 5},
+    ],
+    [ # Tree Job.
+        {"ticket_id": 7, "station_type": 0, "duration": 5, "parents": [], "num_robots": 1},
+        {"ticket_id": 8, "station_type": 0, "duration": 5, "parents": [], "num_robots": 2},
+        {"ticket_id": 9, "station_type": 2, "duration": 25, "parents": [7], "num_robots": 1},
+        {"ticket_id": 10, "station_type": 2, "duration": 25, "parents": [8], "num_robots": 2},
+        {"ticket_id": 11, "station_type": 1, "duration": 45, "parents": [9,10], "num_robots": 3},
+        {"ticket_id": 12, "station_type": 3, "duration": 45, "parents": [11], "num_robots": 3},
+        {"ticket_id": 13, "station_type": 4, "duration": 60, "parents": [12], "num_robots": 3},
     ],
 ]
+
+fifo_jobs = [
+    [ # Tree Job.
+        {"ticket_id": 1, "station_type": 0, "duration": 10, "parents": []},
+        {"ticket_id": 2, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 3, "station_type": 2, "duration": 40, "parents": [1,2]},
+        {"ticket_id": 4, "station_type": 3, "duration": 45, "parents": [3]},
+        {"ticket_id": 5, "station_type": 4, "duration": 30, "parents": [4]},
+    ],
+    [ # Linear Job.
+        {"ticket_id": 6, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 7, "station_type": 2, "duration": 40, "parents": [6]},
+        {"ticket_id": 8, "station_type": 3, "duration": 50, "parents": [7]},
+        {"ticket_id": 9, "station_type": 4, "duration": 40, "parents": [8]},
+    ],
+    [ # Tree Job.
+        {"ticket_id": 10, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 11, "station_type": 0, "duration": 5, "parents": []},
+        {"ticket_id": 12, "station_type": 2, "duration": 20, "parents": [10]},
+        {"ticket_id": 13, "station_type": 2, "duration": 30, "parents": [11]},
+        {"ticket_id": 14, "station_type": 3, "duration": 50, "parents": [12,13]},
+        {"ticket_id": 15, "station_type": 4, "duration": 40, "parents": [14]},
+    ],
+]
+
+for job in fifo_jobs:
+    for ticket in job:
+        ticket["duration"] *= 2

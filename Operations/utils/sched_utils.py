@@ -1,5 +1,6 @@
 import pandas as pd
 from utils.job_utils import *
+from constants import station_type_ws_nums, Mjs
 
 def extract_schedule(X, S, C, jobs_data: list, all_machines: list, station_type_names: list):
     '''Extracts and formats the schedule from the solved MILP and job data.
@@ -40,6 +41,50 @@ def extract_schedule(X, S, C, jobs_data: list, all_machines: list, station_type_
 
     return schedule
 
+def extract_labor_schedule(R, S, C, jobs_data, all_robots):
+    ''''''
+    jobs, tasks = [], []
+    robot_nums, station_type_nums = [], []
+    ticket_ids, parentses = [], []
+    starts, ends, durations = [], [], []
+
+    for job_id, job in enumerate(jobs_data):
+        for task_id, task in enumerate(job):
+            for robot in all_robots:
+                if R[job_id, task_id, robot].solution_value() > 0.5:
+                    jobs.append(job_id)
+                    tasks.append(task_id)
+                    ticket_ids.append(task["ticket_id"])
+                    robot_nums.append(robot)
+                    station_type_nums.append(task["station_type"])
+                    starts.append(int(S[job_id, task_id, robot].solution_value()))
+                    ends.append(int(C[job_id, task_id, robot].solution_value()))
+                    durations.append(task["duration"])
+
+    schedule = pd.DataFrame()
+    schedule["Job #"] = jobs
+    schedule["Ticket ID"] = ticket_ids
+    schedule["Robot #"] = robot_nums
+    schedule["Station Type #"] = station_type_nums
+    schedule["Start"] = starts
+    schedule["End"] = ends
+    schedule["Duration"] = durations
+
+    return schedule
+
+
+def get_total_idle_time(schedule, jobs_data, parent_ids):
+    '''Gets the total idle time between connected tasks in the schedule.'''
+    sum = 0
+    for i in range(len(jobs_data)):
+        job = schedule.loc[schedule["Job #"] == i]
+
+        for j in range(len(job)):
+            task = job.iloc[j]
+            for parent in parent_ids[i][j]:
+                sum += (task["Start"] - job.iloc[parent, 8])
+    return sum
+
 
 def generate_subjob_timeline(job: pd.DataFrame, subjob: list, timeline_length: int):
     '''Generates a minute-to-minute timeline given a linear subjob from a job.
@@ -51,13 +96,21 @@ def generate_subjob_timeline(job: pd.DataFrame, subjob: list, timeline_length: i
     Returns:
         timeline - List of locations based on the subjob's schedule.
     '''
+    # TODO: Appending makes an implicit assumption that the schedule will
+    # always be solid. This fails if an end is after the subsequent task's
+    # start. Example:
+    # Start - 5, End - 10
+    # Start - 9, End - 29
+    # This case will give more entries than needed
+
     subjob_length = len(subjob)
+    # print(job.iloc[subjob])
     timeline = []
     
     # Padding at the beginning.
     j = 0
     for j in range(job.iloc[subjob[0]]["Start"]):
-        timeline.append("")
+        timeline.append("WS_0_0")
 
     # Start 
     for i in range(subjob_length):
@@ -65,17 +118,23 @@ def generate_subjob_timeline(job: pd.DataFrame, subjob: list, timeline_length: i
         j = row["Start"]
 
         for _ in range(row["Duration"]):
-            timeline.append(row["Location"])
+            location = station_type_ws_nums[row["Location"]] + str(Mjs[row["Station #"]])
+
+            timeline.append(
+                location
+                # row["Location"]
+            )
             j+=1
 
         if i < subjob_length - 1:
             while j < (job.iloc[subjob[i+1]]["Start"]):
-                timeline.append("")
+                timeline.append(location)
                 j+=1
 
-    for j in range(int(job["End"].max()), timeline_length):
-        timeline.append("")
-
+    for j in range(job["End"].max(), timeline_length):
+        timeline.append(station_type_ws_nums["Loading Area"] + str(Mjs[0]))
+    print(len(timeline))
+    # print(timeline_length)
     return timeline
 
 def create_robot_timelines(schedule):
@@ -87,14 +146,15 @@ def create_robot_timelines(schedule):
     timeline_length = schedule["End"].max()+1
 
     numRobots = [
-        [2, 3],
-        [4, 2],
-        [2,2,2],
-        [3,2],
+        [2, 2],
+        [3],
+        [2,1,2],
+        [1,2],
         [2],
         [2],
         [2,2],
     ]
+    robNum = 0
 
     for job_num in range(num_jobs):
         job = schedule.loc[schedule["Job #"] == job_num]
@@ -102,6 +162,8 @@ def create_robot_timelines(schedule):
 
         for linear_job_id, linear_job in enumerate(linear_jobs):
             for m in range(numRobots[job_num][linear_job_id]):
-                robot_timelines[f"Job {job_num} Sub-job {linear_job_id} Robot {m}"] = generate_subjob_timeline(job, linear_job, timeline_length)
+                # robot_timelines[f"Job {job_num} Sub-job {linear_job_id} Robot {m}"] = generate_subjob_timeline(job, linear_job, timeline_length)
+                robot_timelines[f"robot_{robNum}"] = generate_subjob_timeline(job, linear_job, timeline_length)
+                robNum += 1
 
     return robot_timelines

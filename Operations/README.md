@@ -10,3 +10,9 @@ We formulate the scheduling-assignment problem in two layers. First, we tackle t
 
 
  for sticky jobs - machines are tied to jobs instead of their more granular subtasks.
+
+ ## 
+ # Install Google OR-Tools
+ ```bash
+pip3 install ortools
+ ```
