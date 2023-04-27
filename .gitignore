@@ -4,14 +4,20 @@
 *cache
 
 constraint_utils_recycling.py
+build/
+devel/
+saves/
 
 Plans/
+Images/
 Constraints/
 Videos/*
+
 Metric/Images/
 # Metric/
 Videos/
 Metric/README.md
-
+Scratch/
+Operations/catkin_ws/src/CMakeLists.txt
 scratch*
 tester*

@@ -76,9 +76,9 @@ display_solution_stats(solver, status, horizon, solutionEnd-solutionStart)
 
 # Extract the schedule.
 schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_type_names)
-schedule.to_csv(f"Plans/highLevelVizScheduleInitial.csv")
+schedule.to_csv(f"Plans/highLevelVizScheduleInitial15.csv")
 # timelines.to_csv("Plans/highLevelVizRobotTimelines.csv")
-draw_tree_schedule(schedule, "Images/highLevelVizScheduleInitial.png")
+draw_tree_schedule(schedule, "Images/highLevelVizScheduleInitial15.png")
 
 # Initial total idle time.
 initialIdleTimes = get_total_idle_time(schedule, jobs_data, parent_ids)
@@ -120,14 +120,14 @@ print(f"Final total idle time: {finalIdleTimes: .2f} minutes.")
 
 
 
-# # Create the timelines for the robots.
-# timelines = create_robot_timelines(schedule)
+# Create the timelines for the robots.
+timelines = create_robot_timelines(schedule)
 
-# # Add time column for Burak's parser and convert to seconds.
-# timelines.insert(0, 't', timelines.index)
-# timelines['t'] = timelines['t'].apply(lambda x: x*60)
+# Add time column for Burak's parser and convert to seconds.
+timelines.insert(0, 't', timelines.index)
+timelines['t'] = timelines['t'].apply(lambda x: x*60)
 
 # Save the generated timelines and the schedule, and draw the schedule.
-schedule.to_csv(f"Plans/highLevelVizSchedule.csv")
-# timelines.to_csv("Plans/highLevelVizRobotTimelines.csv")
-draw_tree_schedule(schedule, "Images/highLevelVizSchedule.png")
+schedule.to_csv(f"Plans/highLevelVizSchedule15.csv")
+timelines.to_csv("Plans/highLevelVizRobotTimelines15.csv")
+draw_tree_schedule(schedule, "Images/highLevelVizSchedule15.png")

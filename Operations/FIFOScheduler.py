@@ -76,7 +76,7 @@ class FIFOScheduler:
                     ticket_id, ticket["duration"], ticket["station_type"]
                 )
                 deletion_idx.append(ticket_id)
-        
+
         self.add_queue_states_to_schedule()
 
         # Remove the ticket_ids from waiting_tix.
