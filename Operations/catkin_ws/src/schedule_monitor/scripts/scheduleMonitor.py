@@ -7,7 +7,6 @@ Author - Chukwuemeka Osaretin Ike
 Description:
 '''
 
-import os
 import pandas as pd
 import rospy
 import time
@@ -16,12 +15,14 @@ from ortools.linear_solver import pywraplp
 from schedule_monitor_msgs.msg import Ticket, Tickets
 
 from constants import all_machines, station_type_names, Mj
-from utils.funcs import get_immediate_child, get_immediate_parent
 from utils.display_utils import display_solution_stats, display_solver_information
 from utils.draw_utils import draw_tree_schedule
-from utils.job_utils import get_task_parent_indices
+from utils.job_utils import get_task_parent_indices,\
+    get_immediate_child_from_task_list, get_immediate_parent_from_task_list,\
+    convert_task_list_to_job_list
 from utils.sched_utils import extract_schedule
-from utils.solver_utils import create_opt_variables, define_constraints
+from utils.solver_utils import create_opt_variables, define_constraints,\
+    respect_ongoing_constraints
 
 
 class ScheduleMonitor():
@@ -67,47 +68,20 @@ class ScheduleMonitor():
             "ticket_started", Ticket, queue_size=100
         )
         self.schedule_num = 1
+        self.saved_schedule = pd.DataFrame(
+            columns=[
+                "job_id", "task_id", "ticket_id","parents", "station_num",
+                "station_type", "location", "start", "end", "duration",
+                "time_left"
+        ])
 
     def save_schedule_times(self):
         '''.'''
-        with open('schedule_times.txt', 'w') as f:
+        with open('sched_times.txt', 'w') as f:
+            # f.write('\n'.join(self.schedule_times))
             for time in self.schedule_times:
-                f.writelines(f"{time}")
-
-
-
-
-    def convert_task_list_to_job_list(self):
-        '''Convert task_list to job_list.'''
-        self.job_list, visited = [], []
-        job_id = 0
-        print(self.task_list.keys())
-
-        for ticket_id, ticket in self.task_list.items():
-            if ticket_id not in visited:
-                linear_job = [ticket_id, ]
-                get_immediate_child(ticket_id, self.task_list, linear_job)
-
-                # The last id in the linear job is the root of the job tree.
-                # Start there to traverse the whole tree.
-                last_job_task = linear_job[-1]
-                all_job_tasks = [last_job_task, ]
-                get_immediate_parent(last_job_task, self.task_list, all_job_tasks)
-
-                # Add the list of all the job's tasks to the job_list.
-                # Add all the indices to visited to avoid duplicates.
-                # job_tasks = [self.task_list[id] for id in all_job_tasks]
-                job_tasks = []
-                for task in all_job_tasks:
-                    self.task_list[task]["ticket_id"] = task
-                    self.task_list[task]["job_id"] = job_id
-                    job_tasks.append(self.task_list[task])
-                    visited.append(task)
-                self.job_list.append(job_tasks)
-                job_id += 1
-
-
-
+                f.write(f"{time}\n")
+        self.saved_schedule.to_csv(f"savedSched.csv")
 
     def generate_schedule(self):
         '''Generates.'''
@@ -117,7 +91,7 @@ class ScheduleMonitor():
             exit()
 
         # Convert the current task_list to job_list.
-        self.convert_task_list_to_job_list()
+        self.job_list = convert_task_list_to_job_list(self.task_list)
 
         # Get the indices of each task's parents in the job list.
         # This is done now to ease lookup later.
@@ -131,15 +105,19 @@ class ScheduleMonitor():
         X, Y, Z, S, C, S_job, C_job, C_max = create_opt_variables(
             solver, self.job_list, horizon, self.all_machines, self.Mj
         )
-        define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max,
-                           self.job_list, parent_ids, self.Mj
+        define_constraints(
+            solver, X, Y, Z, S, C, S_job, C_job, C_max,
+            self.job_list, parent_ids, self.Mj
+        )
+        respect_ongoing_constraints(
+            solver, X, S, self.job_list, self.ongoing
         )
 
         # Define the objective function to minimize the makespan, then
         # display some solver information.
         solver.Minimize(C_max)
-        display_solver_information(solver)
-        print()
+        # display_solver_information(solver)
+        # print()
 
         # Invoke the solver.
         solutionStart = time.time()
@@ -158,7 +136,35 @@ class ScheduleMonitor():
         # draw_tree_schedule(self.schedule, f"schedule{self.schedule_num}.png")
         self.schedule.to_csv(f"schedule{self.schedule_num}.csv")
         self.schedule_times.append(rospy.Time.now().to_sec())
+        self.schedule_num += 1
 
+    # TODO: Name this better.
+    def on_schedule_update(self):
+        '''.'''
+        self.parse_schedule()
+        self.update_ready()
+        self.update_ongoing_time_left()
+        self.set_ongoing_timer()
+        self.set_ready_timer()
+
+    def parse_schedule(self):
+        '''Goes through each set and updates their station and times.'''
+        for ticket_id, ticket in self.waiting.items():
+            self.update_ticket_from_schedule(ticket_id, ticket)
+
+        for ticket_id, ticket in self.ready.items():
+            self.update_ticket_from_schedule(ticket_id, ticket)
+
+        for ticket_id, ticket in self.ongoing.items():
+            self.update_ticket_from_schedule(ticket_id, ticket)
+
+    def update_ticket_from_schedule(self, ticket_id, ticket):
+        '''.'''
+        row = self.schedule.loc[self.schedule["ticket_id"] == ticket_id]
+        ticket["start"] = row["start"].item()
+        ticket["end"] = row["end"].item()
+        ticket["time_left"] = row["time_left"].item()
+        ticket["station_num"] = row["station_num"].item()
 
 
 
@@ -170,7 +176,7 @@ class ScheduleMonitor():
         for ticket in ticket_list:
             # Create the ticket dictionary.
             tix = {}
-            tix["parents"] = ticket.related #["parents"]
+            tix["parents"] = list(ticket.related) #["parents"]
             tix["station_type"] = ticket.machine_type #["station_type"]
             tix["duration"] = ticket.duration #["duration"]
 
@@ -192,11 +198,6 @@ class ScheduleMonitor():
 
         self.generate_schedule()
         self.on_schedule_update()
-        self.schedule_num += 1
-
-
-
-
 
     def set_ticket_ready(self, ticket_id):
         '''Moves ticket from waiting to ready.'''
@@ -208,6 +209,7 @@ class ScheduleMonitor():
         self.ongoing[ticket_id] = self.ready[ticket_id]
         self.ongoing_start_times[ticket_id] = rospy.Time.now().to_sec()
         self.announce_ticket_start(ticket_id)
+        self.add_started_ticket_to_schedule(ticket_id, self.ready[ticket_id])
         del(self.ready[ticket_id])
 
     def announce_ticket_start(self, ticket_id):
@@ -317,22 +319,26 @@ class ScheduleMonitor():
     def on_ongoing_timer_trigger(self, event):
         '''Updates the ongoing set when ongoing_timer is triggered.'''
         # Add time to triggering ticket.
-        rospy.loginfo(f"Adding time to ticket {self.ongoing_timer_id}.")
-        rospy.loginfo(f"Old time left: {self.ongoing[self.ongoing_timer_id]['time_left']}.")
+        rospy.loginfo(f"Monitor: Adding time to ticket {self.ongoing_timer_id}.")
+        rospy.loginfo(f"Monitor: Old time left: {self.ongoing[self.ongoing_timer_id]['time_left']}.")
         self.add_time_to_ticket(self.ongoing_timer_id)
-        rospy.loginfo(f"New time left: {self.ongoing[self.ongoing_timer_id]['time_left']}.")
+        rospy.loginfo(f"New Monitor: time left: {self.ongoing[self.ongoing_timer_id]['time_left']}.")
 
         # Generate a new schedule.
+        rospy.loginfo(f"Monitor: Genrating new schedule.")
+        self.generate_schedule()
+        self.on_schedule_update()
 
-        # Update ongoing time left and set a new ongoing timer.
-        self.update_ongoing_time_left()
-        self.set_ongoing_timer()
+        # # Update ongoing time left and set a new ongoing timer.
+        # self.update_ongoing_time_left()
+        # self.set_ongoing_timer()
 
     def on_done_callback(self, msg):
         '''Callback when a done signal is received.'''
         try:
             # End the ticket, update ready and set timers.
             self.end_ticket(msg.id)
+            self.add_done_ticket_to_schedule(msg.id)
             self.update_ready()
             self.set_ready_timer()
             ongoing_time_left = self.update_ongoing_time_left()
@@ -351,12 +357,46 @@ class ScheduleMonitor():
                 # Generate a new schedule.
                 self.generate_schedule()
                 self.on_schedule_update()
-                self.schedule_num += 1
         except KeyError as e:
             rospy.logerr(
                 "Error ending ticket with ID {}.".format(msg.id)
             )
             rospy.logerr(e)
+
+    def add_started_ticket_to_schedule(self, ticket_id, ticket):
+        '''Adds the ticket information to the schedule.'''
+        ticket_row = {}
+        ticket_row["job_id"] = [ticket["job_id"]]
+        ticket_row["task_id"] = [len(
+            self.saved_schedule.loc[self.saved_schedule["job_id"] == ticket["job_id"]]
+        )]
+        ticket_row["ticket_id"] = [ticket_id]
+        ticket_row["parents"] = [(ticket["parents"])]
+        ticket_row["station_num"] = [ticket["station_num"]]
+        ticket_row["station_type"] = [ticket["station_type"]]
+        ticket_row["location"] = [self.station_type_names[ticket["station_type"]]]
+        ticket_row["start"] = rospy.Time.now().to_sec()
+        ticket_row["end"] = None
+        
+        # self.schedule = self.schedule.append(ticket_row, ignore_index=True)
+        # print(self.schedule)
+        # print(ticket_row)
+        self.saved_schedule = pd.concat(
+            [self.saved_schedule,
+             pd.DataFrame(ticket_row, index=[0])
+            ],
+            ignore_index=True
+        )
+
+    def add_done_ticket_to_schedule(self, ticket_id):
+        '''.'''
+        # ticket_row = self.saved_schedule.loc[
+        #     self.saved_schedule["ticket_id"] == ticket_id
+        # ]
+        # ticket_row["end"] = rospy.Time.now().to_sec()
+        self.saved_schedule.loc[
+            self.saved_schedule["ticket_id"] == ticket_id, "end"
+        ] = rospy.Time.now().to_sec()
 
     def update_ongoing_time_left(self):
         '''Updates the time left on all ongoing tickets.'''
@@ -373,40 +413,7 @@ class ScheduleMonitor():
 
         return ongoing_time_left
 
-    # TODO: Name this better.
-    def on_schedule_update(self):
-        '''.'''
-        self.parse_schedule()
-        self.update_ready()
-        self.update_ongoing_time_left()
-        self.set_ongoing_timer()
-        self.set_ready_timer()
-
-
-    def parse_schedule(self):
-        '''Goes through each set and updates their station and times.'''
-        for ticket_id, ticket in self.waiting.items():
-            self.update_ticket_from_schedule(ticket_id, ticket)
-
-        for ticket_id, ticket in self.ready.items():
-            self.update_ticket_from_schedule(ticket_id, ticket)
-
-        for ticket_id, ticket in self.ongoing.items():
-            self.update_ticket_from_schedule(ticket_id, ticket)
-
-    def update_ticket_from_schedule(self, ticket_id, ticket):
-        '''.'''
-        row = self.schedule.loc[self.schedule["Ticket ID"] == ticket_id]
-        ticket["start"] = row["Start"].item()
-        ticket["end"] = row["End"].item()
-        ticket["time_left"] = row["Duration"].item()
-        ticket["station_num"] = row["Station #"].item()
-
-    def update_next_end():
-        '''Updates the next end time.'''
 
 if __name__ == '__main__':
-    # from constants import fifo_jobs
-    # job_list = fifo_jobs
     schedMon = ScheduleMonitor()
     rospy.spin()

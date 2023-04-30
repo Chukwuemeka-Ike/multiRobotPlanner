@@ -11,10 +11,9 @@ Description:
 '''
 
 import rospy
+
 from schedule_monitor_msgs.msg import Ticket, Tickets
-from testing.tickets import *
-
-
+from tickets import *
 
 
 class ScheduleMonitorTester:
@@ -105,4 +104,3 @@ if __name__ == '__main__':
         oneshot=True
     )
     rospy.spin()
-

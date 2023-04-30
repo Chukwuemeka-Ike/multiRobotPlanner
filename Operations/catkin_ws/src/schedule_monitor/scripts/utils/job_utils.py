@@ -1,23 +1,52 @@
+'''
+Rensselaer Polytechnic Institute - Julius Lab
+ARM Project
+Author - Chukwuemeka Osaretin Ike
+
+Description:
+    Utilities for handling data about an individual jobs.
+'''
 import pandas as pd
 
 
-def get_start_points(jobs_data: list):
-    '''Gets the indices of tickets within each job that are at loading.'''
-    start_ids = []
-    for job in range(len(jobs_data)):
-        job_start_ids = []
-        for task in range(len(jobs_data[job])):
-            if jobs_data[job][task]["station_type"] == 0:
-                job_start_ids.append(task)
-        start_ids.append(job_start_ids)
-    return start_ids
+def convert_task_list_to_job_list(task_list: dict):
+    '''Converts a dictionary of tickets to a job list.'''
+    job_list, visited = [], []
+    job_id = 0
 
+    for ticket_id, _ in task_list.items():
+        if ticket_id not in visited:
+            linear_job = [ticket_id, ]
+            get_immediate_child_from_task_list(
+                ticket_id, task_list, linear_job
+            )
 
-def get_task_parent_indices(jobs_data: list):
+            # The last id in the linear job is the root of the job tree.
+            # Start there to traverse the whole tree.
+            last_job_task = linear_job[-1]
+            all_job_tasks = [last_job_task, ]
+            get_immediate_parent_from_task_list(
+                last_job_task, task_list, all_job_tasks
+            )
+
+            # Add the list of all the job's tasks to the job_list.
+            # Add all the indices to visited to avoid duplicates.
+            # job_tasks = [task_list[id] for id in all_job_tasks]
+            job_tasks = []
+            for task in all_job_tasks:
+                task_list[task]["ticket_id"] = task
+                task_list[task]["job_id"] = job_id
+                job_tasks.append(task_list[task])
+                visited.append(task)
+            job_list.append(job_tasks)
+            job_id += 1
+    return job_list
+
+def get_task_parent_indices(job_list: list):
     '''Get the indices of each task's parents within the job list.'''
     parent_indices = []
 
-    for job in jobs_data:
+    for job in job_list:
         job_parent_indices = []
         for task_idx in range(len(job)):
             task_parent_indices = []
@@ -29,36 +58,98 @@ def get_task_parent_indices(jobs_data: list):
         parent_indices.append(job_parent_indices)
     return parent_indices
 
-# TODO: This can almost certainly be done better.
-def get_immediate_child(id: int, tree_job: pd.DataFrame, linear_job: list):
-    '''Recursively get the next child in tree job and add it to linear job.'''
-    for next_tix in range(len(tree_job)):
-        # TODO: Referring to tix that don't exist? Can maybe reduce the
-        # effective time by only starting from row.
-        if id in tree_job.iloc[next_tix, 3]:
-            linear_job.append(next_tix)
-            get_immediate_child(
-                tree_job.iloc[next_tix, 2],
-                tree_job, 
+def get_immediate_child_from_task_list(id: int, task_list: dict, linear_job: list):
+    '''Recursively get the next child in a list of tasks and add it to a list.
+    '''
+    for ticket_id, ticket in task_list.items():
+        if id in ticket["parents"]:
+            linear_job.append(ticket_id)
+            get_immediate_child_from_task_list(
+                ticket_id, 
+                task_list, 
                 linear_job
             )
 
-def create_linear_jobs(tree_job: pd.DataFrame):
-    '''Creates linear jobs from the tree job.'''
-    start_rows = tree_job.loc[tree_job["Station Type #"] == 0]
-    linear_jobs = []
-    for row in range(len(start_rows)):
-        id = start_rows.iloc[row, 2]
-        linear_job = [row, ]
-        get_immediate_child(id, tree_job, linear_job)
-        linear_jobs.append(linear_job)
+def get_immediate_parent_from_task_list(id: int, task_list: dict, linear_job: list):
+    '''Recursively get the parents of a node using DFS.'''
+    for parent in task_list[id]["parents"]:
+        if parent in task_list.keys():
+            linear_job.append(parent)
+            get_immediate_parent_from_task_list(
+                parent,
+                task_list,
+                linear_job
+            )
 
+def get_tree_job_start_ids(tree_job: pd.DataFrame, task_list: dict):
+    '''Gets the start nodes of a tree job.
+
+    Returns ID's of the tickets in the job, not the task ID's.
+    Need to use those ticket ID's with a different function.
+    '''
+    # Use any ticket in the job tree to traverse all the way to the end.
+    any_ticket = tree_job.iloc[0]
+    linear_job = [any_ticket.ticket_id]
+    get_immediate_child_from_task_list(
+        linear_job[0], task_list, linear_job
+    )
+
+    job_leaf_locations = []
+    get_leaf_locations(linear_job[-1], job_leaf_locations, task_list)
+    return job_leaf_locations
+
+def get_leaf_locations(ticket_id, leaf_locations, task_list: dict):
+    '''Traverses the tree with DFS and stores the id's of leaves.'''
+    parents = task_list[ticket_id]["parents"]
+    parents_in_job = get_parents_in_job(parents, task_list)
+    if len(parents_in_job) == 0:
+        leaf_locations.append(ticket_id)
+    for parent in parents_in_job:
+        get_leaf_locations(
+            parent, leaf_locations, task_list
+        )
+
+def get_parents_in_job(parents, task_list):
+    '''Searches the job for the parents.
+
+    Checks that the parents are not done and are still in the task_list.
+    '''
+    parents_in_job = []
+    for parent in parents:
+        if parent in task_list:
+            parents_in_job.append(parent)
+    return parents_in_job
+
+def get_task_id_in_job(ticket_id: int, job_list: list):
+    '''Gets the ticket's job_id and task_id in the job list.'''
+    for job_id, job in enumerate(job_list):
+        for task_id, task in enumerate(job):
+            if ticket_id == task["ticket_id"]:
+                return job_id, task_id
+    raise LookupError(f"The ticket_id {ticket_id} is not in the job list.")
+
+def create_linear_jobs(tree_job: pd.DataFrame, task_list: dict):
+    '''Creates linear jobs from the tree job.
+    Returns:
+        linear_jobs - List of lists of ticket id's that form a linear path
+                        through the tree from start to final node.
+    '''
+    # Last id is the root of the job tree. Use that to get the leaf nodes.
+    start_ids = get_tree_job_start_ids(tree_job, task_list)
+
+    linear_jobs = []
+    for ticket in start_ids:
+        linear_job = [ticket]
+        get_immediate_child_from_task_list(ticket, task_list, linear_job)
+        linear_jobs.append(linear_job)
     return linear_jobs
 
-def get_job_subsizes(schedule: pd.DataFrame, num_jobs: int):
+def get_job_subsizes(schedule: pd.DataFrame, task_list: dict):
     '''Get the number of starting points within each tree job.'''
+    num_jobs = schedule["job_id"].max()+1
     sizes = []
     for job_num in range(num_jobs):
-        job = schedule.loc[schedule["Job #"] == job_num]
-        sizes.append(len(job.loc[job["Station Type #"] == 0]))
+        job = schedule.loc[schedule["job_id"] == job_num]
+        start_ids = get_tree_job_start_ids(job, task_list)
+        sizes.append(len(start_ids))
     return sizes

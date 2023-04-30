@@ -1,3 +1,11 @@
+'''
+Rensselaer Polytechnic Institute - Julius Lab
+ARM Project
+Author - Chukwuemeka Osaretin Ike
+
+Description:
+    Utilities for displaying information about the scheduling process.
+'''
 from ortools.linear_solver import pywraplp
 
 def display_job_data(job_list: list):
@@ -37,3 +45,8 @@ def display_solution_stats(solver, status, horizon, solutionTime):
     else:
         print("Infeasible program. Exiting.\n")
         exit()
+
+def display_task_list(task_list: dict):
+    '''Displays the task list.'''
+    for ticket_id, ticket in task_list.items():
+        print(f"Ticket {ticket_id}: \t {ticket}")

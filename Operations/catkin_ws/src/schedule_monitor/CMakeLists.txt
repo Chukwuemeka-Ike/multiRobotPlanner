@@ -9,6 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package()
 
 catkin_install_python(
-    PROGRAMS scripts/scheduleMonitor.py scripts/tester.py scripts/ticketPublisherTester.py
+    PROGRAMS scripts/scheduleMonitor.py scripts/tester.py scripts/scheduleMonitorTester.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
