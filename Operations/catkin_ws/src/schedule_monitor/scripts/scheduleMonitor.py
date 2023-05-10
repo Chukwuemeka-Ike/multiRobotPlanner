@@ -18,7 +18,6 @@ from constants import all_machines, station_type_names, Mj
 from utils.display_utils import display_solution_stats, display_solver_information
 from utils.draw_utils import draw_tree_schedule
 from utils.job_utils import get_task_parent_indices,\
-    get_immediate_child_from_task_list, get_immediate_parent_from_task_list,\
     convert_task_list_to_job_list
 from utils.sched_utils import extract_schedule
 from utils.solver_utils import create_opt_variables, define_constraints,\
