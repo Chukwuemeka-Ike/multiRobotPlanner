@@ -9,6 +9,22 @@ Description:
 import pandas as pd
 
 
+def convert_job_list_to_task_list(job_list: list):
+    '''Converts a list of jobs to a dictionary of tickets.'''
+    task_list = {}
+
+    for job in job_list:
+        for task in job:
+            ticket = {}
+            ticket["job_id"] = task["job_id"]
+            ticket["ticket_id"] = task["ticket_id"]
+            ticket["parents"] = task["parents"]
+            ticket["station_type"] = task["station_type"]
+            ticket["duration"] = task["duration"]
+            ticket["time_left"] = task["duration"]
+            task_list[task["ticket_id"]] = ticket
+    return task_list
+
 def convert_task_list_to_job_list(task_list: dict):
     '''Converts a dictionary of tickets to a job list.'''
     job_list, visited = [], []

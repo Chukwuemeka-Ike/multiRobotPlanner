@@ -42,6 +42,11 @@ def display_solver_information(solver):
 def display_solution_stats(solver, status, horizon, solutionTime):
     ''''''
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+        if status == pywraplp.Solver.OPTIMAL:
+            print("Optimal solution found.")
+        else:
+            print("Feasible solution found.")
+
         print(f"Max Schedule Length: {horizon: .2f}")
         print(f"Objective Value: {solver.Objective().Value(): .2f}")
         print(f"Solution Runtime: {solutionTime: .2f} seconds.")

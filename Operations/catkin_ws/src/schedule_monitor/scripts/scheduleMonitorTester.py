@@ -13,7 +13,15 @@ Description:
 import rospy
 
 from schedule_monitor_msgs.msg import Ticket, Tickets
-from tickets import *
+# from tickets import *
+from constants.jobs import anchor_jobs
+from utils.job_utils import convert_job_list_to_task_list
+
+complete_ticket_list = convert_job_list_to_task_list(anchor_jobs)
+for ticket_id, ticket in complete_ticket_list.items():
+    ticket["actual_duration"] = ticket["duration"]
+initial_ticket_list = complete_ticket_list
+last_ticket_list = {}
 
 
 class ScheduleMonitorTester:
@@ -93,14 +101,15 @@ if __name__ == '__main__':
         sMT.add_initial_tix,
         oneshot=True
     )
-    rospy.Timer(
-        rospy.Duration(10),
-        sMT.add_ticket_8,
-        oneshot=True
-    )
-    rospy.Timer(
-        rospy.Duration(15),
-        sMT.add_last_tix,
-        oneshot=True
-    )
+    # print(complete_ticket_list)
+    # rospy.Timer(
+    #     rospy.Duration(10),
+    #     sMT.add_ticket_8,
+    #     oneshot=True
+    # )
+    # rospy.Timer(
+    #     rospy.Duration(15),
+    #     sMT.add_last_tix,
+    #     oneshot=True
+    # )
     rospy.spin()

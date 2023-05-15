@@ -68,7 +68,7 @@ print()
 
 # Invoke the solver.
 solutionStart = time.time()
-# solver.SetTimeLimit(100000)
+solver.SetTimeLimit(300000)
 status = solver.Solve()
 solutionEnd = time.time()
 
@@ -77,9 +77,9 @@ display_solution_stats(solver, status, horizon, solutionEnd-solutionStart)
 
 # Extract the schedule.
 schedule = extract_schedule(X, S, C, jobs_data, all_machines, station_type_names)
-print()
-print(schedule)
-print()
+# print()
+# print(schedule)
+# print()
 
 # Save the schedule and draw it.
 schedule.to_csv(f"Plans/optimalSchedule.csv")

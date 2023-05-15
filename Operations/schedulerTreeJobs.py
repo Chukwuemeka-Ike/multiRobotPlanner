@@ -28,8 +28,8 @@ from utils.solver_utils import *
 overallTime = time.time()
 
 # Job data.
-# jobs_data = tree_jobs
-jobs_data = physical_demo_jobs
+jobs_data = tree_jobs
+# jobs_data = physical_demo_jobs
 
 # # Print out the job and station information.
 # display_job_data(jobs_data)

@@ -91,8 +91,9 @@ def create_opt_variables(solver, job_list: list, horizon: float, all_machines: l
 
 def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
     '''Defines all the optimization constraints.'''
-    # Large number for slack variables.
-    L = 1000
+    # Large number for slack variables. This value has to be larger than the
+    # maximum horizon + a buffer, or the program will be infeasible.
+    L = 10000
 
     # Job-specific constraints.
     for job_idx, job in enumerate(job_list):
@@ -102,7 +103,7 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
                 sum(X[job_idx, task_idx, machine] for machine in Mj[task["station_type"]]) == 1
             )
 
-            # Within a job, each task must start after the previous parent task ends.
+            # Within a job, each task must start after the all parent tasks end.
             for parent in parent_ids[job_idx][task_idx]:
                 solver.Add(
                     sum(S[job_idx, task_idx, machine] for machine in Mj[task["station_type"]]) >=

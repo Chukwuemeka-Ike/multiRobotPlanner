@@ -14,7 +14,7 @@ from ortools.linear_solver import pywraplp
 
 from schedule_monitor_msgs.msg import Ticket, Tickets
 
-from constants import all_machines, station_type_names, Mj
+from constants.stations import all_machines, station_type_names, Mj
 from utils.display_utils import display_solution_stats, display_solver_information
 from utils.draw_utils import draw_tree_schedule
 from utils.job_utils import get_task_parent_indices,\
@@ -91,6 +91,7 @@ class ScheduleMonitor():
 
         # Convert the current task_list to job_list.
         self.job_list = convert_task_list_to_job_list(self.task_list)
+        # print(self.task_list)
 
         # Get the indices of each task's parents in the job list.
         # This is done now to ease lookup later.
@@ -324,7 +325,7 @@ class ScheduleMonitor():
         rospy.loginfo(f"New Monitor: time left: {self.ongoing[self.ongoing_timer_id]['time_left']}.")
 
         # Generate a new schedule.
-        rospy.loginfo(f"Monitor: Genrating new schedule.")
+        rospy.loginfo(f"Monitor: Generating new schedule.")
         self.generate_schedule()
         self.on_schedule_update()
 
