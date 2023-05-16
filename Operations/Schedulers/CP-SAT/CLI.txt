@@ -1,0 +1,97 @@
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+Optimal solution found.
+Objective Value:  790.00
+Solution Runtime:  334.12 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 54215
+  branches : 67537
+  wall time: 430.466331808 s
+  solution runtime:  430.62 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 95019
+  branches : 119788
+  wall time: 585.402000659 s
+  solution runtime:  585.49 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 72857
+  branches : 97072
+  wall time: 431.027204749 s
+  solution runtime:  431.10 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 48564
+  branches : 76350
+  wall time: 318.32780490700003 s
+  solution runtime:  318.38 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 89426
+  branches : 119693
+  wall time: 634.3955076880001 s
+  solution runtime:  634.45 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 43574
+  branches : 55107
+  wall time: 316.62287712700004 s
+  solution runtime:  316.68 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 60871
+  branches : 83020
+  wall time: 393.206687932 s
+  solution runtime:  393.27 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+
+Statistics
+  objective value:  790.00
+  status   : OPTIMAL
+  conflicts: 685577
+  branches : 891404
+  wall time: 4209.551425386 s
+  solution runtime:  4209.60 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ python3 OptimalScheduler.py 
+Max Schedule Length:  3224.00
+^C^C pressed 1 times. Interrupting the solver. Press 3 times to force termination.
+
+Statistics
+  objective value:  790.00
+  status   : FEASIBLE
+  conflicts: 393364
+  branches : 496183
+  wall time: 2688.2265557200003 s
+  solution runtime:  2688.30 seconds.
+mekahertz@RoboSheBobo:~/arm/Operations/Schedulers/CP-SAT$ 

@@ -69,7 +69,7 @@ def create_opt_variables(solver, job_list: list, horizon: float, all_machines: l
                         Y[job_a, task_a, job_b, task_b, machine] = solver.IntVar(
                             0, 1, f'Y{job_a}{task_a}{job_b}{task_b}{machine}'
                         )
-
+                    
     for job_idx, job in enumerate(job_list):
         combos = combinations(range(len(job)), 2)
         for combo in combos:
