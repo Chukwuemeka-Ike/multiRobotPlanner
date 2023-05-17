@@ -15,7 +15,8 @@ from ortools.linear_solver import pywraplp
 from schedule_monitor_msgs.msg import Ticket, Tickets
 
 from constants.stations import all_machines, station_type_names, Mj
-from utils.display_utils import display_solution_stats, display_solver_information
+from utils.display_utils import display_solution_stats, display_solver_information,\
+    display_task_list
 from utils.draw_utils import draw_tree_schedule
 from utils.job_utils import get_task_parent_indices,\
     convert_task_list_to_job_list
@@ -141,7 +142,9 @@ class ScheduleMonitor():
     # TODO: Name this better.
     def on_schedule_update(self):
         '''.'''
+        # display_task_list(self.task_list)
         self.parse_schedule()
+        # display_task_list(self.task_list)
         self.update_ready()
         self.update_ongoing_time_left()
         self.set_ongoing_timer()
@@ -166,6 +169,9 @@ class ScheduleMonitor():
         ticket["time_left"] = row["time_left"].item()
         ticket["station_num"] = row["station_num"].item()
 
+        # TODO: This currently updates task list with the schedule info. Best?
+        self.task_list[ticket_id] = ticket
+
 
 
 
@@ -176,7 +182,8 @@ class ScheduleMonitor():
         for ticket in ticket_list:
             # Create the ticket dictionary.
             tix = {}
-            tix["parents"] = list(ticket.related) #["parents"]
+            tix["job_id"] = ticket.job_id
+            tix["parents"] = list(ticket.parents) #["parents"]
             tix["station_type"] = ticket.machine_type #["station_type"]
             tix["duration"] = ticket.duration #["duration"]
 
@@ -184,8 +191,8 @@ class ScheduleMonitor():
             tix["time_left"] = ticket.duration#*60 #["duration"]*60
 
             # Add the ticket to task_list and waiting set.
-            self.task_list[ticket.id] = tix #["ticket_id"]] = tix
-            self.waiting[ticket.id] = tix #["ticket_id"]] = tix
+            self.task_list[ticket.ticket_id] = tix #["ticket_id"]] = tix
+            self.waiting[ticket.ticket_id] = tix #["ticket_id"]] = tix
 
     def add_ticket_message_callback(self, msg):
         '''Adds the tickets received to the task_list.'''
@@ -215,10 +222,11 @@ class ScheduleMonitor():
     def announce_ticket_start(self, ticket_id):
         '''Announces that we're starting the ticket.'''
         msg = Ticket()
-        msg.id = ticket_id
+        msg.ticket_id = ticket_id
+        msg.job_id = self.ongoing[ticket_id]["job_id"]
         msg.machine_type = self.ongoing[ticket_id]["station_type"]
         msg.duration = self.ongoing[ticket_id]["duration"]
-        msg.related = self.ongoing[ticket_id]["parents"]
+        msg.parents = self.ongoing[ticket_id]["parents"]
         self.ticket_started_pub.publish(msg)
         rospy.loginfo(f"Monitor: Starting ticket {ticket_id}.")
 
@@ -337,8 +345,8 @@ class ScheduleMonitor():
         '''Callback when a done signal is received.'''
         try:
             # End the ticket, update ready and set timers.
-            self.end_ticket(msg.id)
-            self.add_done_ticket_to_schedule(msg.id)
+            self.end_ticket(msg.ticket_id)
+            self.add_done_ticket_to_schedule(msg.ticket_id)
             self.update_ready()
             self.set_ready_timer()
             ongoing_time_left = self.update_ongoing_time_left()
@@ -359,7 +367,7 @@ class ScheduleMonitor():
                 self.on_schedule_update()
         except KeyError as e:
             rospy.logerr(
-                "Error ending ticket with ID {}.".format(msg.id)
+                "Error ending ticket with ID {}.".format(msg.ticket_id)
             )
             rospy.logerr(e)
 

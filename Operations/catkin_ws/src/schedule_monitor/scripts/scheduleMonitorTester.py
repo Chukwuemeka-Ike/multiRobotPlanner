@@ -13,15 +13,15 @@ Description:
 import rospy
 
 from schedule_monitor_msgs.msg import Ticket, Tickets
-# from tickets import *
+from tickets import *
 from constants.jobs import anchor_jobs
 from utils.job_utils import convert_job_list_to_task_list
 
-complete_ticket_list = convert_job_list_to_task_list(anchor_jobs)
-for ticket_id, ticket in complete_ticket_list.items():
-    ticket["actual_duration"] = ticket["duration"]
-initial_ticket_list = complete_ticket_list
-last_ticket_list = {}
+# complete_ticket_list = convert_job_list_to_task_list(anchor_jobs)
+# for ticket_id, ticket in complete_ticket_list.items():
+#     ticket["actual_duration"] = ticket["duration"]
+# initial_ticket_list = complete_ticket_list
+# last_ticket_list = {}
 
 
 class ScheduleMonitorTester:
@@ -42,16 +42,16 @@ class ScheduleMonitorTester:
     def end_ticket(self, ticket_id, event):
         '''.'''
         msg = Ticket()
-        msg.id = ticket_id
+        msg.ticket_id = ticket_id
         msg.machine_type = complete_ticket_list[ticket_id]["station_type"]
         msg.duration = complete_ticket_list[ticket_id]["duration"]
-        msg.related = complete_ticket_list[ticket_id]["parents"]
+        msg.parents = complete_ticket_list[ticket_id]["parents"]
         self.end_ticket_pub.publish(msg)
         rospy.loginfo(f"Tester: Ending ticket {ticket_id}.")
 
     def start_ticket_timer_callback(self, msg):
         '''.'''
-        ticket_id = msg.id
+        ticket_id = msg.ticket_id
         # self.end_ticket_id = ticket_id
         ticket_actual_duration_in_mins = \
             complete_ticket_list[ticket_id]["actual_duration"]
@@ -67,10 +67,10 @@ class ScheduleMonitorTester:
         ticket_list = []
         for ticket_id, ticket in tickets.items():
             ticket_msg = Ticket()
-            ticket_msg.id = ticket_id
+            ticket_msg.ticket_id = ticket_id
             ticket_msg.machine_type = ticket["station_type"]
             ticket_msg.duration = ticket["duration"]
-            ticket_msg.related = ticket["parents"]
+            ticket_msg.parents = ticket["parents"]
             ticket_list.append(ticket_msg)
 
         msg.tickets = ticket_list

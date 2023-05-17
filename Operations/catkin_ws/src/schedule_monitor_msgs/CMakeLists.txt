@@ -13,10 +13,16 @@ find_package(catkin REQUIRED COMPONENTS
 set(MSG_FILES 
     Ticket.msg Tickets.msg
 )
+
 add_message_files(
     DIRECTORY msg 
     FILES ${MSG_FILES}
 )
+
+add_service_files(
+    FILES Schedule.srv
+)
+
 generate_messages(
     DEPENDENCIES ${MSG_DEPS}
 )
