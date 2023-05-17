@@ -33,7 +33,7 @@ def convert_task_list_to_job_list(task_list: dict):
     for ticket_id, _ in task_list.items():
         if ticket_id not in visited:
             linear_job = [ticket_id, ]
-            get_immediate_child_from_task_list(
+            get_all_children_from_task_list(
                 ticket_id, task_list, linear_job
             )
 
@@ -41,7 +41,7 @@ def convert_task_list_to_job_list(task_list: dict):
             # Start there to traverse the whole tree.
             last_job_task = linear_job[-1]
             all_job_tasks = [last_job_task, ]
-            get_immediate_parent_from_task_list(
+            get_all_parents_from_task_list(
                 last_job_task, task_list, all_job_tasks
             )
 
@@ -74,24 +74,24 @@ def get_task_parent_indices(job_list: list):
         parent_indices.append(job_parent_indices)
     return parent_indices
 
-def get_immediate_child_from_task_list(id: int, task_list: dict, linear_job: list):
+def get_all_children_from_task_list(id: int, task_list: dict, linear_job: list):
     '''Recursively get the next child in a list of tasks and add it to a list.
     '''
     for ticket_id, ticket in task_list.items():
         if id in ticket["parents"]:
             linear_job.append(ticket_id)
-            get_immediate_child_from_task_list(
+            get_all_children_from_task_list(
                 ticket_id, 
                 task_list, 
                 linear_job
             )
 
-def get_immediate_parent_from_task_list(id: int, task_list: dict, linear_job: list):
+def get_all_parents_from_task_list(id: int, task_list: dict, linear_job: list):
     '''Recursively get the parents of a node using DFS.'''
     for parent in task_list[id]["parents"]:
         if parent in task_list.keys():
             linear_job.append(parent)
-            get_immediate_parent_from_task_list(
+            get_all_parents_from_task_list(
                 parent,
                 task_list,
                 linear_job
@@ -106,7 +106,7 @@ def get_tree_job_start_ids(ticket_id: int, task_list: dict):
     # Use any ticket in the job tree to traverse all the way to the end.
     # any_ticket = tree_job.iloc[0]
     linear_job = [ticket_id]
-    get_immediate_child_from_task_list(
+    get_all_children_from_task_list(
         ticket_id, task_list, linear_job
     )
 
@@ -156,7 +156,7 @@ def create_linear_jobs(tree_job: pd.DataFrame, task_list: dict):
     linear_jobs = []
     for ticket in start_ids:
         linear_job = [ticket]
-        get_immediate_child_from_task_list(ticket, task_list, linear_job)
+        get_all_children_from_task_list(ticket, task_list, linear_job)
         linear_jobs.append(linear_job)
     return linear_jobs
 

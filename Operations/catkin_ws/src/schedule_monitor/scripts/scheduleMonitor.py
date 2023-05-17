@@ -41,10 +41,10 @@ class ScheduleMonitor():
         # self.job_list = job_list
         
         self.task_list = {}
-        self.ongoing = {}
-        self.ongoing_start_times = {}
         self.waiting = {}
         self.ready = {}
+        self.ongoing = {}
+        self.ongoing_start_times = {}
         self.done = {}
 
         self.ongoing_timer = None
@@ -131,9 +131,9 @@ class ScheduleMonitor():
 
         # Extract the schedule.
         self.schedule = extract_schedule(X, S, C, self.job_list,
-                                    self.all_machines,
-                                    self.station_type_names
-                        )
+                    self.all_machines,
+                    self.station_type_names
+        )
         # draw_tree_schedule(self.schedule, f"schedule{self.schedule_num}.png")
         self.schedule.to_csv(f"schedule{self.schedule_num}.csv")
         self.schedule_times.append(rospy.Time.now().to_sec())
