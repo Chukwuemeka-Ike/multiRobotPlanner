@@ -7,6 +7,7 @@ Description:
     Utilities for displaying information about the scheduling process.
 '''
 from ortools.linear_solver import pywraplp
+from ortools.sat.python import cp_model
 
 def display_job_data(job_list: list):
     '''Displays all tickets in a job list.'''
@@ -39,8 +40,8 @@ def display_solver_information(solver):
     print(f"Number of constraints: {solver.NumConstraints()}")
 
 
-def display_solution_stats(solver, status, horizon, solutionTime):
-    ''''''
+def display_solution_stats_lp(solver, status, horizon, solutionTime):
+    '''Display the LP solver statistics.'''
     if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
         if status == pywraplp.Solver.OPTIMAL:
             print("Optimal solution found.")
@@ -53,6 +54,22 @@ def display_solution_stats(solver, status, horizon, solutionTime):
     else:
         print("Infeasible program. Exiting.\n")
         exit()
+
+def display_solution_stats_cpsat(solver, status):
+    '''Display the CP-SAT solver statistics.'''
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        # Statistics.
+        print('\nStatistics')
+        print(f"  objective value: {solver.ObjectiveValue(): .2f}")
+        print(f'  status   : {solver.StatusName(status)}')
+        print(f'  conflicts: {solver.NumConflicts()}')
+        print(f'  branches : {solver.NumBranches()}')
+        print(f'  wall time: {solver.WallTime()} s')
+        # print(f"  solution runtime: {solutionTime: .2f} seconds.")
+    else:
+        print("Infeasible program. Exiting.\n")
+        exit()
+
 
 def display_task_list(task_list: dict):
     '''Displays the task list.'''

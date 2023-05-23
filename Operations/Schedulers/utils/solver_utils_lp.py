@@ -4,7 +4,8 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
-    Utilities for creating variables and constraints for the solver.
+    Utilities for creating variables and constraints for the Google OR-TOOLS
+    linear solver.
 '''
 from itertools import combinations
 from utils.job_utils import get_task_idx_in_job
@@ -14,7 +15,7 @@ def intersection(lst1, lst2):
     '''Returns the common items between two lists.'''
     return list(set(lst1) & set(lst2))
 
-def create_opt_variables(solver, job_list: list, horizon: float, all_machines: list, Mj: list):
+def create_opt_variables(solver, job_list: list, all_machines: list, Mj: list):
     '''Creates all the optimization variables for the MILP problem.
 
     Returns:
@@ -37,6 +38,7 @@ def create_opt_variables(solver, job_list: list, horizon: float, all_machines: l
     C_job = {}
 
     num_jobs = len(job_list)
+    horizon = sum(task["duration"] for job in job_list for task in job)
 
     for job in range(num_jobs):
         for task in range(len(job_list[job])):
@@ -69,7 +71,7 @@ def create_opt_variables(solver, job_list: list, horizon: float, all_machines: l
                         Y[job_a, task_a, job_b, task_b, machine] = solver.IntVar(
                             0, 1, f'Y{job_a}{task_a}{job_b}{task_b}{machine}'
                         )
-
+                    
     for job_idx, job in enumerate(job_list):
         combos = combinations(range(len(job)), 2)
         for combo in combos:
@@ -201,7 +203,9 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
 
 # (solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
 def respect_ongoing_constraints(solver, X, S, job_list: list, ongoing: dict):
-    '''.'''
+    '''Adds constraints to ensure ongoing tasks are assigned to the
+    same stations and start at time zero.
+    '''
     for ticket_id, ticket in ongoing.items():
         # Get the ticket location in the job list and its assigned station.
         job_idx, task_idx = get_task_idx_in_job(ticket_id, job_list)
