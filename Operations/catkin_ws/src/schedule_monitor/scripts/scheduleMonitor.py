@@ -7,21 +7,21 @@ Author - Chukwuemeka Osaretin Ike
 Description:
 '''
 
+import math
 import pandas as pd
 import rospy
-import time
-from ortools.linear_solver import pywraplp
+from ortools.sat.python import cp_model
 
 from schedule_monitor_msgs.msg import Ticket, Tickets
 
 from constants.stations import all_machines, station_type_names, Mj
-from utils.display_utils import display_solution_stats, display_solver_information,\
+from utils.display_utils import display_solution_stats_cpsat,\
     display_task_list
 from utils.draw_utils import draw_tree_schedule
 from utils.job_utils import get_task_parent_indices,\
     convert_task_list_to_job_list
-from utils.sched_utils import extract_schedule
-from utils.solver_utils import create_opt_variables, define_constraints,\
+from utils.sched_utils import extract_schedule_cpsat
+from utils.solver_utils_cpsat import create_opt_variables, define_constraints,\
     respect_ongoing_constraints
 
 
@@ -85,14 +85,12 @@ class ScheduleMonitor():
 
     def generate_schedule(self):
         '''Generates.'''
-        # Create the mip solver with the SCIP backend.
-        solver = pywraplp.Solver.CreateSolver('SCIP')
-        if not solver:
-            exit()
-
         # Convert the current task_list to job_list.
         self.job_list = convert_task_list_to_job_list(self.task_list)
         # print(self.task_list)
+        for job in self.job_list:
+            for task in job:
+                task["time_left"] = math.ceil(task["time_left"])
 
         # Get the indices of each task's parents in the job list.
         # This is done now to ease lookup later.
@@ -102,37 +100,37 @@ class ScheduleMonitor():
         horizon = sum(
             task["duration"] for job in self.job_list for task in job
         )
+        # Declare the model for the problem.
+        model = cp_model.CpModel()
+
         # Create optimization variables, and define the constraints.
         X, Y, Z, S, C, S_job, C_job, C_max = create_opt_variables(
-            solver, self.job_list, horizon, self.all_machines, self.Mj
+            model, self.job_list, all_machines, Mj
         )
         define_constraints(
-            solver, X, Y, Z, S, C, S_job, C_job, C_max,
-            self.job_list, parent_ids, self.Mj
+            model, X, Y, Z, S, C, S_job, C_job, C_max, self.job_list, parent_ids, Mj
         )
         respect_ongoing_constraints(
-            solver, X, S, self.job_list, self.ongoing
+            model, X, S, self.job_list, self.ongoing
         )
 
         # Define the objective function to minimize the makespan, then
         # display some solver information.
-        solver.Minimize(C_max)
-        # display_solver_information(solver)
-        # print()
+        model.Minimize(C_max)
 
-        # Invoke the solver.
-        solutionStart = time.time()
-        solver.SetTimeLimit(20000)
-        status = solver.Solve()
-        solutionEnd = time.time()
-
+        # Create the solver and solve.
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = 10.0
+        status = solver.Solve(model)
+        
         # Display the initial solution.
-        display_solution_stats(solver, status, horizon, solutionEnd-solutionStart)
+        display_solution_stats_cpsat(solver, status)
 
         # Extract the schedule.
-        self.schedule = extract_schedule(X, S, C, self.job_list,
-                    self.all_machines,
-                    self.station_type_names
+        self.schedule = extract_schedule_cpsat(
+            solver, X, S, C, self.job_list,
+            self.all_machines,
+            self.station_type_names
         )
         # draw_tree_schedule(self.schedule, f"schedule{self.schedule_num}.png")
         self.schedule.to_csv(f"schedule{self.schedule_num}.csv")

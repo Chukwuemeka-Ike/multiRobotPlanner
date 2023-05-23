@@ -68,7 +68,7 @@ model.Minimize(C_max)
 # display_solver_information(solver)
 # print()
 
-# Creates the solver and solve.
+# Create the solver and solve.
 solutionStart = time.time()
 solver = cp_model.CpSolver()
 solver.parameters.max_time_in_seconds = 10.0

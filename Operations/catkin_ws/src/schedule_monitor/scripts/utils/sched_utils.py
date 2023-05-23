@@ -26,8 +26,9 @@ def load_schedule(filename):
 
     return schedule
 
-def extract_schedule(X, S, C, job_list: list, all_machines: list, station_type_names: list):
-    '''Extracts and formats the schedule from the solved MILP and job data.
+def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, station_type_names: list):
+    '''Extracts and formats the schedule solved by the LP solver and job data.
+
     Returns:
         Schedule - DataFrame of Job-Task schedule with start and end times.
     '''
@@ -50,6 +51,49 @@ def extract_schedule(X, S, C, job_list: list, all_machines: list, station_type_n
                     locations.append(station_type_names[task["station_type"]])
                     starts.append(int(S[job_idx, task_idx, machine].solution_value()))
                     ends.append(int(C[job_idx, task_idx, machine].solution_value()))
+                    durations.append(task["duration"])
+                    time_lefts.append(task["time_left"])
+
+    schedule = pd.DataFrame()
+    schedule["job_id"] = jobs
+    schedule["task_idx"] = tasks
+    schedule["ticket_id"] = ticket_ids
+    schedule["parents"] = parentses
+    schedule["station_num"] = station_nums
+    schedule["station_type"] = station_type_nums
+    schedule["location"] = locations
+    schedule["start"] = starts
+    schedule["end"] = ends
+    schedule["duration"] = durations
+    schedule["time_left"] = time_lefts
+
+    return schedule
+
+def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, station_type_names: list):
+    '''Extracts and formats the schedule solved by the CP-SAT solver and job data.
+
+    Returns:
+        Schedule - DataFrame of Job-Task schedule with start and end times.
+    '''
+    jobs, tasks = [], []
+    locations, station_nums, station_type_nums = [], [], []
+    ticket_ids, parentses = [], []
+    starts, ends, durations, time_lefts = [], [], [], []
+
+    for job_idx, job in enumerate(job_list):
+        for task_idx, task in enumerate(job):
+            for machine in all_machines:
+                if solver.Value(X[job_idx, task_idx, machine]) > 0.5:
+                    # jobs.append(job_idx)
+                    jobs.append(task["job_id"])
+                    tasks.append(task_idx)
+                    ticket_ids.append(task["ticket_id"])
+                    parentses.append(task["parents"])
+                    station_nums.append(machine)
+                    station_type_nums.append(task["station_type"])
+                    locations.append(station_type_names[task["station_type"]])
+                    starts.append(solver.Value(S[job_idx, task_idx, machine]))
+                    ends.append(solver.Value(C[job_idx, task_idx, machine]))
                     durations.append(task["duration"])
                     time_lefts.append(task["time_left"])
 
@@ -137,85 +181,3 @@ def get_total_idle_time(schedule, job_list, parent_ids):
             for parent in parent_ids[i][j]:
                 sum += (task["start"] - job.iloc[parent, 8])
     return sum
-
-
-def generate_subjob_timeline(job: pd.DataFrame, subjob: list, timeline_length: int):
-    '''Generates a minute-to-minute timeline given a linear subjob from a job.
-    Arguments:
-        job - DataFrame of a possible tree job containing multiple subjobs.
-        subjob - List of indices in Job that make up a subjob sequence.
-        timeline_length - Length of the desired timeline. Should match
-                            the overall schedule.
-    Returns:
-        timeline - List of locations based on the subjob's schedule.
-    '''
-    # TODO: Appending makes an implicit assumption that the schedule will
-    # always be solid. This fails if an end is after the subsequent task's
-    # start. Example:
-    # Start - 5, End - 10
-    # Start - 9, End - 29
-    # This case will give more entries than needed
-
-    subjob_length = len(subjob)
-    # print(job.iloc[subjob])
-    timeline = []
-    
-    # Padding at the beginning.
-    j = 0
-    for j in range(job.iloc[subjob[0]]["start"]):
-        timeline.append("WS_0_0")
-
-    # Start 
-    for i in range(subjob_length):
-        row = job.iloc[subjob[i]]
-        j = row["start"]
-
-        for _ in range(row["duration"]):
-            location = station_type_ws_nums[row["location"]] + str(Mjs[row["station_num"]])
-
-            timeline.append(
-                location
-                # row["location"]
-            )
-            j+=1
-
-        if i < subjob_length - 1:
-            while j < (job.iloc[subjob[i+1]]["start"]):
-                timeline.append(location)
-                j+=1
-
-    for j in range(job["end"].max(), timeline_length):
-        timeline.append(station_type_ws_nums["Loading Area"] + str(Mjs[0]))
-    print(len(timeline))
-    # print(timeline_length)
-    return timeline
-
-def create_robot_timelines(schedule):
-    ''''''
-    robot_timelines = pd.DataFrame()
-    
-    job_ids = schedule["job_id"].unique()
-    timeline_length = schedule["end"].max()+1
-
-    numRobots = [
-        [2, 2],
-        [3],
-        [2,1,2],
-        [1,2],
-        [2],
-        [2],
-        [2,2],
-    ]
-    robNum = 0
-
-    for job_num in job_ids:
-        job = schedule.loc[schedule["job_id"] == job_num]
-        linear_jobs = create_linear_jobs(job)
-
-        for linear_job_id, linear_job in enumerate(linear_jobs):
-            for m in range(numRobots[job_num][linear_job_id]):
-                # robot_timelines[f"Job {job_num} Sub-job {linear_job_id} Robot {m}"] = generate_subjob_timeline(job, linear_job, timeline_length)
-                robot_timelines[f"robot_{robNum}"] = generate_subjob_timeline(job, linear_job, timeline_length)
-                robNum += 1
-
-    return robot_timelines
