@@ -3,9 +3,9 @@
 Scripts in this folder are different types of schedulers for quickly comparing how they perform on different job sets, decoupled from ROS and any other mechanisms we're using elsewhere in the project.
 
 ## FIFO Scheduler
-This script follows the first-in-first-out (FIFO) method used by the company. The basic idea is that as products go down the line, they are sent to the machines they need in a queue fashion.
+The FIFO scheduler follows the first-in-first-out (FIFO) method used by the company. The basic idea is that as products go down the line, they are sent to the machines they need in a queue fashion. Tasks are sent to the shortest queue of a station type to attempt to optimize the overall production time.
 
-We use this script as a benchmark for the optimal scheduler. Given actual execution times of the tasks that make up a product, could we have sped up the process using the optimal scheduler?
+We use this scheduler as a benchmark for the optimal scheduler. Given actual execution times of the tasks that make up a product, could we have sped up the process using the optimal scheduler?
 
 ### How does the script work?
 1. Converts the job list to a dictionary of tickets. Each entry in this dict has the ticket ID as its key, and the remmaining ticket information in a dictionary as the value.
@@ -17,11 +17,9 @@ We use this script as a benchmark for the optimal scheduler. Given actual execut
 7. Runs the iterate() function. The iterate() function repeatedly steps the system forward and updates ticket states until there are no more tickets available.
 
 ## Optimal Scheduler
-This script uses the flexible job shop scheduling problem (FJSSP) to attempt to minimize the overall time spent on building all products in the input set. 
-
-The method implemented is from the paper "*Mathematical models for job-shop scheduling problems with routing and process plan flexibility*" - Ozguven et al (2010).
+The optimal scheduler uses the flexible job shop scheduling problem (FJSSP) to attempt to minimize the overall time spent on building all products in the input set. The method implemented is directly from the paper "*Mathematical models for job-shop scheduling problems with routing and process plan flexibility*" - Ozguven et al (2010). There are two solvers provided by Google OR-Tools used here - the linear program (LP) solver and the constraint programming satisfiability (CP-SAT) solver. We've found that the CP-SAT solver runs significantly faster than the LP solver, so that's what we have been using in the Schedule Monitor ROS node.
 
 ## Optimal Scheduler Idle Time
-Uses the same optimization method from Optimal Scheduler, but has a second optimization that instead minimizes the total idle time in the schedule given the output of the initial optimization.
+Uses the same optimization method from the Optimal Schedulers, but has a second optimization that instead minimizes the total idle time in the schedule given the output of the initial optimization.
 
-The second optimization adds the optimal makespan from the first as a constraint, then changes the objective function to minimize the total idle time.
+The second optimization adds the optimal makespan from the first as a constraint, then changes the objective function to minimize the total idle time between consecutive tasks within a job. It allows us to prioritize reducing how much idle time the robots might have. We have this implemented but don't know if it is of value to the company.
