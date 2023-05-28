@@ -85,10 +85,11 @@ class ScheduleMonitor():
 
     def generate_schedule(self):
         '''Generates a.'''
-        # Ensure the time_left values are all integers for the CP-SAT solver to work.
-        for _, ticket in self.task_list.items():
-            ticket["time_left"] = math.ceil(ticket["time_left"])
-            display_task_list(self.task_list)
+        # # Ensure the time_left values are all integers for the CP-SAT solver to work.
+        # for _, ticket in self.task_list.items():
+        #     ticket["time_left"] = math.ceil(ticket["time_left"])
+        # display_task_list(self.task_list)
+
         # Convert the current task_list to job_list.
         self.job_list = convert_task_list_to_job_list(self.task_list)
 

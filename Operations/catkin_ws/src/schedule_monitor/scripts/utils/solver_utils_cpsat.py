@@ -39,7 +39,7 @@ def create_opt_variables(model, job_list, all_machines, Mj):
     S_job = {}
     C_job = {}
 
-    horizon = math.ceil(sum(task["duration"] for job in job_list for task in job))
+    horizon = sum(math.ceil(task["duration"]) for job in job_list for task in job)
     num_jobs = len(job_list)
 
     for job in range(num_jobs):
@@ -145,10 +145,14 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
                     ).OnlyEnforceIf(X[job_idx, task_idx, machine].Not())
 
                     # Ensure that the completion time is exactly start + duration.
-                    model.Add(
-                        S[job_idx, task_idx, machine] + task["time_left"] 
-                            == C[job_idx, task_idx, machine]
-                    ).OnlyEnforceIf(X[job_idx, task_idx, machine])
+                    try:
+                        model.Add(
+                            S[job_idx, task_idx, machine] + math.ceil(task["time_left"])
+                                == C[job_idx, task_idx, machine]
+                        ).OnlyEnforceIf(X[job_idx, task_idx, machine])
+                    except TypeError as e:
+                        print(e)
+                        print(task["time_left"])
 
         # Precedence constraints. Iterate between every job-task-job-task pair to
         # make sure that no two tasks are assigned to the same machine at the

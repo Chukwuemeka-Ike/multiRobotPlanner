@@ -168,6 +168,7 @@ def draw_evolving_schedule(search_dir: str, saveFilename: str="animatedSched.mp4
             job_ids = schedule["job_id"].unique()
             sizes = get_job_subsizes(schedule, task_list)
             bounds = [0, actual_schedule_end, sum(sizes), 0]
+            # print(bounds)
             # print(schedule)
 
             # Draw rectangles for every task in the schedule.
