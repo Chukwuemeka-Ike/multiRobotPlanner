@@ -68,7 +68,7 @@ def display_solution_stats_cpsat(solver, status):
         # print(f"  solution runtime: {solutionTime: .2f} seconds.")
     else:
         print("Infeasible program. Exiting.\n")
-        exit()
+        # exit()
 
 
 def display_task_list(task_list: dict):

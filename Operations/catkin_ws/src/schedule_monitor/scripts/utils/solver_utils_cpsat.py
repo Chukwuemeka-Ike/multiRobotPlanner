@@ -95,9 +95,10 @@ def create_opt_variables(model, job_list, all_machines, Mj):
 
 def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
     '''Defines all the optimization constraints.'''
-    # Large number for slack variables. This value has to be larger than the
-    # maximum horizon + a buffer, or the program will be infeasible.
-    L = 10000
+    # # Ensure the time_left values are all integers for the CP-SAT solver to work.
+    # for job in job_list:
+    #     for task in job:
+    #         task["time_left"] = math.ceil(task["time_left"])
 
     # Job-specific constraints.
     for job_idx, job in enumerate(job_list):

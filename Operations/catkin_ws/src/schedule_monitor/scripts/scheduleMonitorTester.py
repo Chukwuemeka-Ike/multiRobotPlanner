@@ -9,24 +9,20 @@ Description:
     on a manually set schedule. It simulates how the signals might come in
     during a normal daily operation.
 '''
-
 import rospy
 
+from constants.test_jobs import *
+from functools import partial
 from schedule_monitor_msgs.msg import Ticket, Tickets
-from tickets import *
-from constants.jobs import anchor_jobs
-from utils.job_utils import convert_job_list_to_task_list
-
-# complete_ticket_list = convert_job_list_to_task_list(anchor_jobs)
-# for ticket_id, ticket in complete_ticket_list.items():
-#     ticket["actual_duration"] = ticket["duration"]
-# initial_ticket_list = complete_ticket_list
-# last_ticket_list = {}
+from utils.display_utils import display_task_list
 
 
 class ScheduleMonitorTester:
     '''.'''
-    def __init__(self):
+    def __init__(self, complete_ticket_dict):
+        rospy.init_node('schedule_monitor_tester')
+
+        self.complete_ticket_dict = complete_ticket_dict
         self.ticket_started_sub = rospy.Subscriber(
             'ticket_started', Ticket, self.start_ticket_timer_callback
         )
@@ -43,9 +39,9 @@ class ScheduleMonitorTester:
         '''.'''
         msg = Ticket()
         msg.ticket_id = ticket_id
-        msg.machine_type = complete_ticket_list[ticket_id]["station_type"]
-        msg.duration = complete_ticket_list[ticket_id]["duration"]
-        msg.parents = complete_ticket_list[ticket_id]["parents"]
+        msg.machine_type = complete_ticket_dict[ticket_id]["station_type"]
+        msg.duration = complete_ticket_dict[ticket_id]["duration"]
+        msg.parents = complete_ticket_dict[ticket_id]["parents"]
         self.end_ticket_pub.publish(msg)
         rospy.loginfo(f"Tester: Ending ticket {ticket_id}.")
 
@@ -54,20 +50,21 @@ class ScheduleMonitorTester:
         ticket_id = msg.ticket_id
         # self.end_ticket_id = ticket_id
         ticket_actual_duration_in_mins = \
-            complete_ticket_list[ticket_id]["actual_duration"]
+            complete_ticket_dict[ticket_id]["actual_duration"]
         rospy.Timer(
             rospy.Duration(ticket_actual_duration_in_mins), #60*
             lambda event: self.end_ticket(ticket_id, event),
             oneshot=True
         )
 
-    def add_tickets(self, tickets: dict):
+    def add_tickets(self, add_set_id: int, tickets: dict, event=None):
         '''Converts tickets to a Tickets msg and publishes it.'''
         msg = Tickets()
         ticket_list = []
         for ticket_id, ticket in tickets.items():
             ticket_msg = Ticket()
             ticket_msg.ticket_id = ticket_id
+            ticket_msg.job_id = ticket["job_id"]
             ticket_msg.machine_type = ticket["station_type"]
             ticket_msg.duration = ticket["duration"]
             ticket_msg.parents = ticket["parents"]
@@ -75,41 +72,65 @@ class ScheduleMonitorTester:
 
         msg.tickets = ticket_list
         self.add_ticket_pub.publish(msg)
+        rospy.loginfo(f"Published ticket set {add_set_id}.")
 
-    # def run(self):
-    #     '''.'''
-
-    def add_initial_tix(self, event):
-        '''.'''
-        self.add_tickets(initial_ticket_list)
-
-    def add_ticket_8(self, event):
-        '''.'''
-        tix = {}
-        tix[8] = complete_ticket_list[8]
-        self.add_tickets(tix)
-
-    def add_last_tix(self, event):
-        '''.'''
-        self.add_tickets(last_ticket_list)
 
 if __name__ == '__main__':
-    rospy.init_node('schedule_monitor_tester')
-    sMT = ScheduleMonitorTester()
+    # Load the test data.
+    test_data = test_data_1
+    test_data_info = test_data_1_info
+    complete_ticket_dict = test_data["complete_ticket_list"]
+    num_ticket_adds = test_data_info["num_ticket_adds"]
+    ticket_add_list = [i+1 for i in range(num_ticket_adds)]
+
+    # Create the schedule monitor tester node.
+    sMT = ScheduleMonitorTester(complete_ticket_dict)
+
+    # Set timers for each
+    add_times = [2, 50, 110, 150, 285, 300, 301]
+    # add_times = [0.5, 2, 3.5, 5, 285, 300, 301]
+
+    add_num_0 = 0
     rospy.Timer(
-        rospy.Duration(0.5),
-        sMT.add_initial_tix,
+        rospy.Duration(add_times[add_num_0]),
+        lambda event: sMT.add_tickets(
+            add_num_0,
+            test_data[f"ticket_add_{add_num_0}"],
+            event
+        ),
         oneshot=True
     )
-    # print(complete_ticket_list)
-    # rospy.Timer(
-    #     rospy.Duration(10),
-    #     sMT.add_ticket_8,
-    #     oneshot=True
-    # )
-    # rospy.Timer(
-    #     rospy.Duration(15),
-    #     sMT.add_last_tix,
-    #     oneshot=True
-    # )
+
+    add_num_1 = 1
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_1]),
+        lambda event: sMT.add_tickets(
+            add_num_1,
+            test_data[f"ticket_add_{add_num_1}"],
+            event
+        ),
+        oneshot=True
+    )
+
+    add_num_2 = 2
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_2]),
+        lambda event: sMT.add_tickets(
+            add_num_2,
+            test_data[f"ticket_add_{add_num_2}"],
+            event
+        ),
+        oneshot=True
+    )
+
+    add_num_3 = 3
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_3]),
+        lambda event: sMT.add_tickets(
+            add_num_3,
+            test_data[f"ticket_add_{add_num_3}"],
+            event
+        ),
+        oneshot=True
+    )
     rospy.spin()

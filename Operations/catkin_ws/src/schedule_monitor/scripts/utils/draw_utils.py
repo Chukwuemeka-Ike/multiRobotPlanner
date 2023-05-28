@@ -174,7 +174,7 @@ def draw_evolving_schedule(search_dir: str, saveFilename: str="animatedSched.mp4
             draw_env(bounds, fontSize)
             j = 0
             for job_id in job_ids:
-                job = schedule.loc[schedule["job_id"] == job_num]
+                job = schedule.loc[schedule["job_id"] == job_id]
                 linear_jobs = create_linear_jobs(job, task_list)
                 # print(linear_jobs)
 
@@ -194,6 +194,7 @@ def draw_evolving_schedule(search_dir: str, saveFilename: str="animatedSched.mp4
             for job_num in range(num_jobs):
                 runTotal += sizes[job_num]
                 plt.axhline(y = runTotal, color = 'k', linestyle = '-', lw=5)
+            plt.axvline(x = times[i], color = 'k', linestyle = '-', lw=5)
             plt.title(f"Schedule at T = {times[i]}.", fontsize = fontSize)
             plt.draw()
 
