@@ -19,7 +19,8 @@ import time
 from ortools.sat.python import cp_model
 
 from constants.jobs import *
-from constants.stations import *
+# from constants.stations import *
+from constants.stations_old import *
 # from constants.jobs_no_overlap import *
 # from constants.stations_no_overlap import *
 from utils.draw_utils import draw_tree_schedule

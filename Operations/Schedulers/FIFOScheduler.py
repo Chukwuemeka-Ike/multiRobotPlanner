@@ -304,78 +304,79 @@ class FIFOScheduler:
 
 # Test a simple case.
 if __name__ == '__main__':
-    from constants.jobs import tree_jobs, fifo_jobs, anchor_jobs
-    from constants.stations import station_type_names, station_type_numbers, num_stations
+    from constants.jobs import *
+    # from constants.stations import *
+    from constants.stations_old import *
 
     # horizon = sum(task["duration"] for job in fifo_jobs for task in job)
     # print(f"Worst case: {horizon}.")
 
     # jobs = tree_jobs
     # jobs = fifo_jobs
-    jobs = anchor_jobs
+    jobs = physical_demo_jobs
+    # jobs = anchor_jobs
     for job in jobs:
         for task in job:
             task["time_left"] = task["duration"]
 
-    # Start timing the scheduling runtime.
-    schedStart = time.time()
-    f = FIFOScheduler(
-        jobs, station_type_names, len(station_type_numbers), num_stations
-    )
-    schedEnd = time.time()
-    print(f"Solution Runtime: {schedEnd-schedStart: .2f} seconds.")
-
-
-    # # *************************************************************************
-    # # Run through permutations of job orders.
-    # indices = list(range(len(jobs)))
-
-    # # Generate a small number of permutations.
-    # perm = [random.sample(indices, len(jobs)) for _ in range(500)]
-
-    # # Generate all permutations. Likely too many for more than a few jobs.
-    # # perm = permutations(indices)
-
-    # print(perm[0])
-    # print(len(list(perm)))
-
     # # Start timing the scheduling runtime.
     # schedStart = time.time()
-
-    # makespans = []
-    # for p in perm:
-    #     input_jobs = [jobs[i] for i in p]
-    #     f = FIFOScheduler(
-    #         input_jobs, station_type_names, len(station_type_numbers), num_stations
-    #     )
-    #     makespans.append(f.cur_time)
-
-    #     # print(f"Makespan: {f.cur_time}")
-    #     # print(f.times)
-    #     # draw_tree_schedule(f.schedule, "Images/FIFOTreeSchedule.png")
-
+    # f = FIFOScheduler(
+    #     jobs, station_type_names, len(station_type_numbers), num_stations
+    # )
     # schedEnd = time.time()
-    # print(f"Permutation Runtime: {schedEnd-schedStart: .2f} seconds.")
+    # print(f"Solution Runtime: {schedEnd-schedStart: .2f} seconds.")
 
-    # # Print the makespan statistics.
-    # makespans = np.array(makespans)
-    # print(f"Max makespan: {np.max(makespans)}")
-    # print(f"Mean makespan: {np.mean(makespans)}")
-    # print(f"Median makespan: {np.median(makespans)}")
-    # print(f"Min makespan: {np.min(makespans)}")
 
-    # lb = math.floor(np.min(makespans)/10)*10    # Round down to nearest 10.
-    # ub = math.ceil(np.max(makespans)/10)*10     # Round up to nearest 10.
+    # *************************************************************************
+    # Run through permutations of job orders.
+    indices = list(range(len(jobs)))
 
-    # counts, bins = np.histogram(makespans)
-    # # plt.stairs(counts, bins)
-    # plt.hist(makespans, bins=10)
-    # plt.xlabel('Makespan')
-    # plt.ylabel('Frequency')
-    # plt.title('Makespan Distribution')
-    # plt.xticks(np.arange(lb, ub, 5))
-    # plt.grid()
-    # plt.show()
+    # Generate a small number of permutations.
+    perm = [random.sample(indices, len(jobs)) for _ in range(500)]
+
+    # Generate all permutations. Likely too many for more than a few jobs.
+    # perm = permutations(indices)
+
+    print(f"Number of permutations: {len(list(perm))}.")
+
+    # Start timing the scheduling runtime.
+    schedStart = time.time()
+
+    makespans = []
+    for p in perm:
+        input_jobs = [jobs[i] for i in p]
+        f = FIFOScheduler(
+            input_jobs, station_type_names, len(station_type_numbers), num_stations
+        )
+        makespans.append(f.cur_time)
+
+        # print(f"Makespan: {f.cur_time}")
+        # print(f.times)
+        # draw_tree_schedule(f.schedule, "Images/FIFOTreeSchedule.png")
+
+    schedEnd = time.time()
+    print(f"Permutation Runtime: {schedEnd-schedStart: .2f} seconds.")
+
+    # Print the makespan statistics.
+    makespans = np.array(makespans)
+    print(f"Max makespan: {np.max(makespans)}")
+    print(f"Mean makespan: {np.mean(makespans)}")
+    print(f"Median makespan: {np.median(makespans)}")
+    print(f"Min makespan: {np.min(makespans)}")
+
+    lb = math.floor(np.min(makespans)/10)*10    # Round down to nearest 10.
+    ub = math.ceil(np.max(makespans)/10)*10     # Round up to nearest 10.
+
+    counts, bins = np.histogram(makespans)
+    # plt.stairs(counts, bins)
+    plt.hist(makespans, bins=10)
+    plt.xlabel('Makespan')
+    plt.ylabel('Frequency')
+    plt.title('Makespan Distribution')
+    plt.xticks(np.arange(lb, ub, 5))
+    plt.grid()
+    plt.show()
     # *************************************************************************
 
     # print(f.schedule)

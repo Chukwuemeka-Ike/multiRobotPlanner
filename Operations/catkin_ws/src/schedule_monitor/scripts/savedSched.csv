@@ -1,4 +1,4 @@
-,job_id,task_id,ticket_id,parents,station_num,station_type,location,start,end,duration,time_left
+,job_idx,task_idx,ticket_id,parents,station_num,station_type,location,start,end,duration,time_left
 0,0,0,2,[],0,0,Loading Area,1682815316.3102522,1682815321.3173153,,
 1,0,1,5,[2],3,2,RF,1682815325.8224728,1682815350.850064,,
 2,0,2,1,[],0,0,Loading Area,1682815326.3306396,1682815336.3411756,,

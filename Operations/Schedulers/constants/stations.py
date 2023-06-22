@@ -30,7 +30,6 @@ station_type_abvs = ["L", "MS", "V", "H", "T", "RF", "G", "I"]
 num_stations = [2, 2, 2, 4, 2, 4, 4, 1]
 # num_stations = [1, 1, 1, 1, 1, 1, 1, 1]
 
-
 # Station type numbers are used for specifying tasks in a job. 
 # Num stations is how many of each type there are.
 station_type_numbers = list(range(len(station_type_names)))
@@ -50,7 +49,7 @@ for i in range(len(station_type_numbers)):
 
 
 # *******************************************************************
-# Variables for high level visualization.
+# Variables for high level visualization. This is the old set.
 station_type_ws_nums = {
     "Loading Area": "WS_0_",
     "Mega Stitch": "WS_1_",

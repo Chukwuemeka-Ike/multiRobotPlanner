@@ -15,8 +15,8 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
-from constants.stations import Mjs, station_type_abvs
-# from constants.stations_no_overlap import Mjs, station_type_abvs
+# from constants.stations import Mjs, station_type_abvs
+from constants.stations_old import Mjs, station_type_abvs
 from utils.job_utils import *
 from utils.sched_utils import convert_schedule_to_task_list, load_schedule
 
@@ -58,7 +58,7 @@ def draw_env(bounds: list, fontSize: int):
     plt.xticks(np.arange(bounds[0], bounds[1], xSpacing), fontsize=fontSize)
     plt.yticks(np.arange(bounds[3], bounds[2], 1), fontsize=fontSize)
     plt.xlabel('Time (mins)', fontsize=fontSize)
-    plt.ylabel('Job ID', fontsize=fontSize)
+    plt.ylabel('Job Branch', fontsize=fontSize)
     plt.grid()
 
 def draw_linear_schedule(schedule: pd.DataFrame):

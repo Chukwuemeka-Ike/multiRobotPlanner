@@ -17,7 +17,8 @@ import time
 from ortools.sat.python import cp_model
 
 from constants.jobs import *
-from constants.stations import *
+# from constants.stations import *
+from constants.stations_old import *
 # from constants.jobs_no_overlap import *
 # from constants.stations_no_overlap import *
 from utils.draw_utils import draw_tree_schedule
@@ -31,9 +32,9 @@ from utils.solver_utils_cpsat import *
 overallTime = time.time()
 
 # Job data.
-# job_list = tree_jobs
+job_list = tree_jobs
 # job_list = fifo_jobs
-job_list = physical_demo_jobs
+# job_list = physical_demo_jobs
 # job_list = anchor_jobs
 # job_list = convert_task_list_to_job_list(complete_ticket_list)
 for job in job_list:
