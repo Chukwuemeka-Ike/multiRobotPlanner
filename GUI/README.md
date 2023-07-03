@@ -25,3 +25,24 @@ sudo apt install ros-noetic-visualization-tutorials
 
 Plt in PyQt5
 https://www.geeksforgeeks.org/how-to-embed-matplotlib-graph-in-pyqt5/#
+
+RVizMeshVisualizer
+Changed object_visualizer.py to get the mesh visualization path parameter instead of always using the *meshes* folder in the *object_visualizer* package.
+
+Changed 
+```python
+visualizer_path = os.path.join(rp.get_path('object_visualizer'), 'meshes')
+```
+to 
+```python
+visualizer_path = rospy.get_param('~visualizer_path')
+```
+
+Line 37 - 
+```python
+marker.mesh_resource = 'package://object_visualizer/meshes/' + file
+```
+to
+```python
+marker.mesh_resource = 'file://' + os.path.join(visualizer_path, file)
+```

@@ -21,3 +21,6 @@ Scratch/
 Operations/catkin_ws/src/CMakeLists.txt
 scratch*
 tester*
+dingo/
+backup_ros_d
+dingo_namespace.svg

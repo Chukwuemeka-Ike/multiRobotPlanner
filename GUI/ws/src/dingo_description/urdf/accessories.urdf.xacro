@@ -1,0 +1,320 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    As you add to this URDF, please be aware that both the robot and
+    simulation include it. You must retain compatibility with all of
+    the following launch files:
+
+    dingo_viz/launch/view_model.launch
+    dingo_gazebo/launch/dingo_world.launch
+    dingo_base/launch/base.launch
+  -->
+
+  <xacro:include filename="$(find sick_tim)/urdf/sick_tim.urdf.xacro" />
+  <xacro:include filename="$(find dingo_description)/urdf/accessories/sick_lms1xx_mount.urdf.xacro" />
+  <xacro:include filename="$(find dingo_description)/urdf/accessories/hokuyo_ust10.urdf.xacro" />
+  <xacro:include filename="$(find dingo_description)/urdf/accessories/hdl32_mount.urdf.xacro" />
+  <xacro:include filename="$(find dingo_description)/urdf/accessories/vlp16_mount.urdf.xacro" />
+
+  <!--
+    Add a lidar sensor.  By default this is a SICK LMS1xx but can be changed with the
+    DINGO_LASER_MODEL environment variable. Valid model designations are:
+    - lms1xx (default) :: SICK LMS1xx
+    - tim551           :: SICK TIM551
+    - ust10            :: Hokuyo UST10
+  -->
+  <xacro:if value="$(optenv DINGO_LASER 0)">
+    <xacro:property name="mount" value="$(optenv DINGO_LASER_MOUNT front)" />
+    <xacro:property name="topic" value="$(optenv DINGO_LASER_TOPIC front/scan)" />
+    <xacro:property name="tower" value="$(optenv DINGO_LASER_TOWER 1)" />
+    <xacro:property name="prefix" value="$(optenv DINGO_LASER_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv DINGO_LASER_PARENT ${mount}_mount)" />
+    <xacro:property name="lidar_model" value="$(optenv DINGO_LASER_MODEL lms1xx)" />
+
+    <!-- SICK LMS1xx -->
+    <xacro:if value="${lidar_model == 'lms1xx'}">
+      <!-- Mount Enabled -->
+      <xacro:if value="${tower}">
+        <xacro:sick_lms1xx_mount prefix="${prefix}" topic="${topic}"/>
+        <joint name="${prefix}_laser_mount_joint" type="fixed">
+          <origin xyz="$(optenv DINGO_LASER_OFFSET 0 0 0)"
+                  rpy="$(optenv DINGO_LASER_RPY 0 0 0)" />
+          <parent link="${parent}" />
+          <child link="${prefix}_laser_mount" />
+        </joint>
+      </xacro:if>
+      <!-- Mount Disabled -->
+      <xacro:unless value="${tower}">
+        <xacro:sick_lms1xx frame="${prefix}_laser" topic="${topic}" />
+        <link name="${prefix}_laser_base"/>
+        <joint name="${prefix}_laser_base_joint" type="fixed">
+          <origin xyz="$(optenv DINGO_LASER_OFFSET 0 0 0)" 
+                  rpy="$(optenv DINGO_LASER_RPY 0 0 0)"/>
+          <parent link="${parent}"/>
+          <child link="${prefix}_laser_base"/>
+        </joint>
+        <joint name="${prefix}_laser_joint" type="fixed">
+          <origin xyz="0 0 0.116" rpy="0 0 0"/>
+          <parent link="${prefix}_laser_base"/>
+          <child link="${prefix}_laser"/>
+        </joint>
+      </xacro:unless>
+    </xacro:if>
+
+    <!-- Sick TIM -->
+    <xacro:if value="${lidar_model == 'tim551'}">
+      <xacro:property name="prefix" value="$(optenv DINGO_LASER_PREFIX tim551)" />
+      <xacro:sick_tim551 name="${prefix}" ros_topic="${topic}"/>
+      <joint name="${prefix}_mount_link_joint" type="fixed">
+        <origin xyz="$(optenv DINGO_LASER_OFFSET 0 0 0)" rpy="$(optenv DINGO_LASER_RPY 0 0 0)"/>
+        <parent link="${parent}"/>
+        <child link="${prefix}_mount_link"/>
+      </joint>
+    </xacro:if>
+
+    <!-- Hokuyo UST10 -->
+    <xacro:if value="${lidar_model == 'ust10'}">
+      <xacro:hokuyo_ust10_mount prefix="${prefix}" topic="${topic}" />
+      <joint name="${prefix}_laser_mount_joint" type="fixed">
+        <origin xyz="$(optenv DINGO_LASER_OFFSET 0 0 0)"
+                rpy="$(optenv DINGO_LASER_RPY 0 0 0)" />
+        <parent link="${parent}" />
+        <child link="${prefix}_laser_mount" />
+      </joint>
+    </xacro:if>
+  </xacro:if>
+
+  <!-- Add the secondary lidar, same format as the first, but on the rear -->
+  <xacro:if value="$(optenv DINGO_LASER_SECONDARY 0)">
+    <xacro:property name="mount" value="$(optenv DINGO_LASER_SECONDARY_MOUNT rear)" />
+    <xacro:property name="topic" value="$(optenv DINGO_LASER_SECONDARY_TOPIC rear/scan)" />
+    <xacro:property name="tower" value="$(optenv DINGO_LASER_SECONDARY_TOWER 1)" />
+    <xacro:property name="prefix" value="$(optenv DINGO_LASER_SECONDARY_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv DINGO_LASER_SECONDARY_PARENT ${mount}_mount)" />
+    <xacro:property name="lidar_model" value="$(optenv DINGO_LASER_SECONDARY_MODEL lms1xx)" />
+
+    <!-- Secondary SICK LMS1xx -->
+    <xacro:if value="${lidar_model == 'lms1xx'}">
+      <!-- Mount Enabled -->
+      <xacro:if value="${tower}">
+        <xacro:sick_lms1xx_mount prefix="${prefix}" topic="${topic}"/>
+        <joint name="${prefix}_laser_mount_joint" type="fixed">
+          <origin xyz="$(optenv DINGO_LASER_SECONDARY_OFFSET 0 0 0)"
+                  rpy="$(optenv DINGO_LASER_SECONDARY_RPY 0 0 ${M_PI})" />
+          <parent link="${parent}" />
+          <child link="${prefix}_laser_mount" />
+        </joint>
+      </xacro:if>
+      <!-- Mount Disabled -->
+      <xacro:unless value="${tower}">
+        <xacro:sick_lms1xx frame="${prefix}_laser" topic="${topic}" />
+        <link name="${prefix}_laser_base"/>
+        <joint name="${prefix}_laser_base_joint" type="fixed">
+          <origin xyz="$(optenv DINGO_LASER_SECONDARY_OFFSET 0 0 0)" 
+                  rpy="$(optenv DINGO_LASER_SECONDARY_RPY 0 0 ${M_PI})" />
+          <parent link="${parent}"/>
+          <child link="${prefix}_laser_base"/>
+        </joint>
+        <joint name="${prefix}_laser_joint" type="fixed">
+          <origin xyz="0 0 0.116" rpy="0 0 0"/>
+          <parent link="${prefix}_laser_base"/>
+          <child link="${prefix}_laser"/>
+        </joint>
+      </xacro:unless>
+    </xacro:if>
+
+    <!-- SICK Tim -->
+    <xacro:if value="${lidar_model == 'tim551'}">
+      <xacro:property name="prefix" value="$(optenv DINGO_LASER_SECONDARY_PREFIX tim551_2)" />
+      <xacro:sick_tim551 name="${prefix}" ros_topic="${topic}"/>
+      <joint name="${prefix}_mount_link_joint" type="fixed">
+        <origin xyz="$(optenv DINGO_LASER_SECONDARY_OFFSET 0 0 0)" rpy="$(optenv DINGO_LASER_SECONDARY_RPY 0 0 3.14159)"/>
+        <parent link="${parent}"/>
+        <child link="${prefix}_mount_link"/>
+      </joint>
+    </xacro:if>
+
+    <!-- Secondary Hokuyo UST10 -->
+    <xacro:if value="${lidar_model == 'ust10'}">
+      <xacro:hokuyo_ust10_mount prefix="${prefix}" topic="${topic}" />
+      <joint name="${prefix}_laser_mount_joint" type="fixed">
+        <origin xyz="$(optenv DINGO_LASER_SECONDARY_OFFSET 0 0 0)"
+                rpy="$(optenv DINGO_LASER_SECONDARY_RPY 0 0 ${M_PI})" />
+        <parent link="${parent}" />
+        <child link="${prefix}_laser_mount" />
+      </joint>
+    </xacro:if>
+  </xacro:if>
+
+  <!--
+    Add a 3D lidar sensor.  By default this is a VLP16 but can be changed with the
+    DINGO_LASER_3D_MODEL environment variable. Valid model designations are:
+    - vlp16 (default) :: Velodyne VLP16=
+  -->
+  <xacro:if value="$(optenv DINGO_LASER_3D 0)">
+    <xacro:property name="mount"  value="$(optenv DINGO_LASER_3D_MOUNT front)" />
+    <xacro:property name="topic"  value="$(optenv DINGO_LASER_3D_TOPIC front/points)" />
+    <xacro:property name="tower"  value="$(optenv DINGO_LASER_3D_TOWER 1)" />
+    <xacro:property name="angle"  value="$(optenv DINGO_LASER_3D_ANGLE 0)" />
+    <xacro:property name="prefix" value="$(optenv DINGO_LASER_3D_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv DINGO_LASER_3D_PARENT ${mount}_mount)" />
+    <xacro:property name="model"  value="$(optenv DINGO_LASER_3D_MODEL vlp16)" />
+    <xacro:property name="frame"  value="$(optenv DINGO_LASER_3D_FRAME velodyne)" />
+    <xacro:property name="xyz"    value="$(optenv DINGO_LASER_3D_OFFSET 0 0 0)" />
+    <xacro:property name="rpy"    value="$(optenv DINGO_LASER_3D_RPY 0 0 0)" />
+    <!-- Velodyne VLP16 -->
+    <xacro:if value="${model == 'vlp16'}">
+      <xacro:vlp16_mount topic="${topic}" tower="${tower}" angle="${angle}" prefix="${prefix}" parent_link="${parent}" frame_id="${frame}">
+        <origin xyz="${xyz}" rpy="${rpy}" />
+      </xacro:vlp16_mount>
+    </xacro:if>
+    <!-- Velodyne HDL-32E -->
+    <xacro:if value="${model == 'hdl32e'}">
+      <xacro:hdl32e_mount topic="${topic}" tower="${tower}" angle="${angle}" prefix="${prefix}" parent_link="${parent}" frame_id="${frame}">
+        <origin xyz="${xyz}" rpy="${rpy}" />
+      </xacro:hdl32e_mount>
+    </xacro:if>
+  </xacro:if>
+
+  <xacro:if value="$(optenv DINGO_LASER_3D_SECONDARY 0)">
+    <xacro:property name="mount"  value="$(optenv DINGO_LASER_3D_SECONDARY_MOUNT rear)" />
+    <xacro:property name="topic"  value="$(optenv DINGO_LASER_3D_SECONDARY_TOPIC rear/points)" />
+    <xacro:property name="tower"  value="$(optenv DINGO_LASER_3D_SECONDARY_TOWER 1)" />
+    <xacro:property name="angle"  value="$(optenv DINGO_LASER_3D_SECONDARY_ANGLE 0)" />
+    <xacro:property name="prefix" value="$(optenv DINGO_LASER_3D_SECONDARY_PREFIX ${mount})" />
+    <xacro:property name="parent" value="$(optenv DINGO_LASER_3D_SECONDARY_PARENT ${mount}_mount)" />
+    <xacro:property name="model"  value="$(optenv DINGO_LASER_3D_SECONDARY_MODEL vlp16)" />
+    <xacro:property name="frame"  value="$(optenv DINGO_LASER_3D_SECONDARY_FRAME secondary_velodyne)" />
+    <xacro:property name="xyz"    value="$(optenv DINGO_LASER_3D_SECONDARY_OFFSET 0 0 0)" />
+    <xacro:property name="rpy"    value="$(optenv DINGO_LASER_3D_SECONDARY_RPY 0 0 ${M_PI})" />
+    <!-- Velodyne VLP16 -->
+    <xacro:if value="${model == 'vlp16'}">
+      <xacro:vlp16_mount topic="${topic}" tower="${tower}" angle="${angle}" prefix="${prefix}" parent_link="${parent}" frame_id="${frame}">
+        <origin xyz="${xyz}" rpy="${rpy}" />
+      </xacro:vlp16_mount>
+    </xacro:if>
+    <!-- Velodyne HDL-32E -->
+    <xacro:if value="${model == 'hdl32e'}">
+      <xacro:hdl32e_mount topic="${topic}" tower="${tower}" angle="${angle}" prefix="${prefix}" parent_link="${parent}" frame_id="${frame}">
+        <origin xyz="${xyz}" rpy="${rpy}" />
+      </xacro:hdl32e_mount>
+    </xacro:if>
+  </xacro:if>
+
+  <!--
+    Add an Intel RealSense family camera.  By default this is a D435, but can be changed with the
+    DINGO_REALSENSE_MODEL environment variable. Valid model designations are:
+    - d435 (default)
+    - d435i
+    - d415
+    - d455
+    - l515
+    Note: If two realsense's are included, both must be the same model type.
+  -->
+  <xacro:include filename="$(find dingo_description)/urdf/accessories/intel_realsense.urdf.xacro" />
+  <!-- Primary Realsense Parameters -->
+  <xacro:property name="rs_enabled" value="$(optenv DINGO_REALSENSE 0)"/>
+  <xacro:property name="rs_model"   value="$(optenv DINGO_REALSENSE_MODEL d435)"/>
+  <xacro:property name="rs_topic"   value="$(optenv DINGO_REALSENSE_TOPIC realsense)" />
+  <xacro:property name="rs_mount"   value="$(optenv DINGO_REALSENSE_MOUNT front)" />
+  <xacro:property name="rs_prefix"  value="$(optenv DINGO_REALSENSE_PREFIX ${rs_mount})" />
+  <xacro:property name="rs_parent"  value="$(optenv DINGO_REALSENSE_PARENT ${rs_mount}_mount)" />
+  <xacro:property name="rs_xyz"     value="$(optenv DINGO_REALSENSE_OFFSET 0 0 0)" />
+  <xacro:property name="rs_rpy"     value="$(optenv DINGO_REALSENSE_RPY 0 0 0)" />
+  <!-- Secondary Realsense Parameters -->
+  <xacro:property name="rs_secondary_enabled" value="$(optenv DINGO_REALSENSE_SECONDARY 0)"/>
+  <xacro:property name="rs_secondary_model"   value="$(optenv DINGO_REALSENSE_SECONDARY_MODEL d435)"/>
+  <xacro:property name="rs_secondary_topic"   value="$(optenv DINGO_REALSENSE_SECONDARY_TOPIC realsense_secondary)" />
+  <xacro:property name="rs_secondary_mount"   value="$(optenv DINGO_REALSENSE_SECONDARY_MOUNT rear)" />
+  <xacro:property name="rs_secondary_prefix"  value="$(optenv DINGO_REALSENSE_SECONDARY_PREFIX ${rs_secondary_mount})" />
+  <xacro:property name="rs_secondary_parent"  value="$(optenv DINGO_REALSENSE_SECONDARY_PARENT ${rs_secondary_mount}_mount)" />
+  <xacro:property name="rs_secondary_xyz"     value="$(optenv DINGO_REALSENSE_SECONDARY_OFFSET 0 0 0)" />
+  <xacro:property name="rs_secondary_rpy"     value="$(optenv DINGO_REALSENSE_SECONDARY_RPY 0 0 ${M_PI})" />
+  <!-- Includes Required for `realsense_sensor` -->
+  <xacro:if value="${rs_model == 'd435'}">
+    <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+  </xacro:if>
+  <xacro:if value="${rs_model == 'd435i'}">
+    <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro" />
+  </xacro:if>
+  <xacro:if value="${rs_model == 'd415'}">
+    <xacro:include filename="$(find realsense2_description)/urdf/_d415.urdf.xacro" />
+  </xacro:if>
+  <xacro:if value="${rs_model == 'd455'}">
+    <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+  </xacro:if>
+
+  <xacro:if value="${rs_enabled}">
+    <xacro:realsense_sensor rs_model="${rs_model}"
+                            prefix="${rs_prefix}"
+                            parent="${rs_parent}"
+                            topic="${rs_topic}"
+                            include="0">
+      <origin xyz="${rs_xyz}" rpy="${rs_rpy}"/>
+    </xacro:realsense_sensor>
+  </xacro:if>
+
+  <xacro:if value="${rs_secondary_enabled}">
+    <xacro:realsense_sensor rs_model="${rs_secondary_model}"
+                            prefix="${rs_secondary_prefix}"
+                            parent="${rs_secondary_parent}"
+                            topic="${rs_secondary_topic}"
+                            include="0">
+      <origin xyz="${rs_secondary_xyz}" rpy="${rs_secondary_rpy}"/>
+    </xacro:realsense_sensor>
+  </xacro:if>
+
+  <!-- BlackflyS Camera Primary and Secondary -->
+  <xacro:include filename="$(find dingo_description)/urdf/accessories/flir_blackfly_mount.urdf.xacro"/>
+  <xacro:arg name="blackfly_enabled"                  default="$(optenv DINGO_BLACKFLY 0)"/>
+  <xacro:arg name="blackfly_mount_enabled"            default="$(optenv DINGO_BLACKFLY_MOUNT_ENABLED 1)"/>
+  <xacro:arg name="blackfly_mount_angle"              default="$(optenv DINGO_BLACKFLY_MOUNT_ANGLE 0)"/>
+  <xacro:arg name="blackfly_prefix"                   default="$(optenv DINGO_BLACKFLY_PREFIX blackfly)"/>
+  <xacro:arg name="blackfly_parent"                   default="$(optenv DINGO_BLACKFLY_PARENT top_plate_link)"/>
+  <xacro:arg name="blackfly_xyz"                      default="$(optenv DINGO_BLACKFLY_XYZ 0 0 0)"/>
+  <xacro:arg name="blackfly_rpy"                      default="$(optenv DINGO_BLACKFLY_RPY 0 0 0)"/>
+
+  <xacro:arg name="blackfly_secondary_enabled"        default="$(optenv DINGO_BLACKFLY_SECONDARY 0)"/>
+  <xacro:arg name="blackfly_secondary_mount_enabled"  default="$(optenv DINGO_BLACKFLY_SECONDARY_MOUNT_ENABLED 1)"/>
+  <xacro:arg name="blackfly_secondary_mount_angle"    default="$(optenv DINGO_BLACKFLY_SECONDARY_MOUNT_ANGLE 0)"/>
+  <xacro:arg name="blackfly_secondary_prefix"         default="$(optenv DINGO_BLACKFLY_SECONDARY_PREFIX blackfly_secondary)"/>
+  <xacro:arg name="blackfly_secondary_parent"         default="$(optenv DINGO_BLACKFLY_SECONDARY_PARENT top_plate_link)"/>
+  <xacro:arg name="blackfly_secondary_xyz"            default="$(optenv DINGO_BLACKFLY_SECONDARY_XYZ 0 0 0)"/>
+  <xacro:arg name="blackfly_secondary_rpy"            default="$(optenv DINGO_BLACKFLY_SECONDARY_RPY 0 0 0)"/>
+
+  <xacro:if value="$(arg blackfly_enabled)">
+    <xacro:flir_blackfly_mount prefix="$(arg blackfly_prefix)"
+                                parent="$(arg blackfly_parent)"
+                                mount_enabled="$(arg blackfly_mount_enabled)"
+                                mount_angle="$(arg blackfly_mount_angle)">
+      <origin xyz="$(arg blackfly_xyz)" rpy="$(arg blackfly_rpy)"/>
+    </xacro:flir_blackfly_mount>
+  </xacro:if>
+
+  <xacro:if value="$(arg blackfly_secondary_enabled)">
+    <xacro:flir_blackfly_mount prefix="$(arg blackfly_secondary_prefix)"
+                                parent="$(arg blackfly_secondary_parent)"
+                                mount_enabled="$(arg blackfly_secondary_mount_enabled)"
+                                mount_angle="$(arg blackfly_secondary_mount_angle)">
+      <origin xyz="$(arg blackfly_secondary_xyz)" rpy="$(arg blackfly_secondary_rpy)"/>
+    </xacro:flir_blackfly_mount>
+  </xacro:if>
+
+  <!--
+    Add Microstrain IMU. By default the DINGO comes equipped with an IMU linked to "imu_link". These extra
+    optional microstrain IMU's will be added to another frame, by default, "microstrain_link".
+  -->
+  <xacro:if value="$(optenv DINGO_IMU_MICROSTRAIN 0)">
+    <xacro:property name="frame"  value="$(optenv DINGO_IMU_MICROSTRAIN_LINK microstrain_link)"/>
+    <xacro:property name="parent" value="$(optenv DINGO_IMU_MICROSTRAIN_PARENT base_link)"/>
+    <xacro:property name="xyz"    value="$(optenv DINGO_IMU_MICROSTRAIN_OFFSET 0 0 0)"/>
+    <xacro:property name="rpy"    value="$(optenv DINGO_IMU_MICROSTRAIN_RPY 0 0 0)"/>
+    <link name="${frame}" />
+    <joint name="${frame}_joint" type="fixed">
+      <parent link="${parent}" />
+      <child link="${frame}" />
+      <origin xyz="${xyz}" rpy="${rpy}" />
+    </joint>
+  </xacro:if>
+
+</robot>

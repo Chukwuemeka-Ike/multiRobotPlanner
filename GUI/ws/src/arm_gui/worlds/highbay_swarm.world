@@ -1,0 +1,273 @@
+<sdf version='1.6'>
+  <world name='highbay_swarm_world'>
+
+    <plugin
+      filename="ignition-gazebo-collada-world-exporter-system"
+      name="ignition::gazebo::systems::ColladaWorldExporter">
+    </plugin>
+
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>1</shadows>
+    </scene>
+
+    <gravity>0 0 -9.8</gravity>
+    
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    
+    <atmosphere type='adiabatic'/>
+    
+    <physics name='default_physics' default='0' type='ode'>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose frame=''>9.7829 -4.73839 14.7825 0 0.905799 2.43206</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+
+    <!-- <include>
+      <uri>model://sun</uri>
+    </include> -->
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.0001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <include>
+      <uri>model://ground_plane_custom</uri>
+    </include>
+
+    <include>
+      <uri>model://highbay</uri>
+      <pose>0.73 0.88 0 0 -0 0</pose>
+      <static>1</static>
+    </include>
+
+    <include>
+        <uri>model://wall_table2</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <name>wall_table2_1</name>
+        <pose>4.42 4.5 0 0 -0 1.8e-05</pose>
+    </include>
+
+    <include>
+        <uri>model://wall_table2</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <name>wall_table2_2</name>
+        <pose>3.21 4.5 0 0 -0 1.8e-05</pose>
+    </include>
+
+    <include>
+        <uri>model://highbay_shelves</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>4.99 -2.33 0 0 -0 1.8e-05</pose>
+        <name>highbay_shelves_1</name>
+    </include>
+
+    <include>
+        <uri>model://highbay_shelves</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>5.7 3.41 0 0 -0 1.57</pose>
+        <name>highbay_shelves_2</name>
+    </include>
+
+    <include>
+        <uri>model://sand_blaster_and_brake</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>0.78 3.94 0 0 -0 0</pose>
+    </include>
+
+    <include>
+        <uri>model://abb_control_box</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>2.0 4.29 0 0 -0 0</pose>
+    </include>
+
+    <!-- Fill highbay with swarm project workstations -->
+
+    <!-- WS 1 - Mega Stitch machine and it's operator -->
+    <include>
+        <uri>model://mega_stitch</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>1.6 -2.6 0 0 -0 1.57</pose>
+        <name>ws_1</name>
+    </include>
+
+    <actor name="actor_standing_0">
+      <skin>
+        <filename>moonwalk.dae</filename>
+      </skin>
+      <animation name="standing">
+        <filename>stand.dae</filename>
+        <!-- <interpolate_x>true</interpolate_x> -->
+      </animation>
+      <script>
+        <loop>true</loop>
+        <delay_start>0.000000</delay_start>
+        <auto_start>true</auto_start>
+        <trajectory id="123213" type="standing">
+          <waypoint>
+            <time>0</time>
+            <pose>1. -1.8 0 0 -0 0</pose>
+          </waypoint>
+            <waypoint>
+              <time>10</time>
+              <pose>1.0 -1.8 0 0 -0 0</pose>
+            </waypoint>
+        </trajectory>
+      </script>
+    </actor>
+
+
+    <!-- WS 2 - RF welder and it's operators -->
+    <include>
+        <uri>model://rf_welder</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>-2.0 2.7 0 0 -0 0</pose>
+        <name>ws_2</name>
+    </include>
+
+    <actor name="actor_standing_1">
+      <skin>
+        <filename>walk.dae</filename>
+      </skin>
+      <animation name="standing">
+        <filename>stand.dae</filename>
+        <!-- <interpolate_x>true</interpolate_x> -->
+      </animation>
+      <script>
+        <loop>true</loop>
+        <delay_start>0.000000</delay_start>
+        <auto_start>true</auto_start>
+        <trajectory id="123213" type="standing">
+          <waypoint>
+            <time>0</time>
+            <pose>-3. 2.75 0 0 -0 0</pose>
+          </waypoint>
+            <waypoint>
+              <time>10</time>
+              <pose>-3. 2.75 0 0 -0 0</pose>
+            </waypoint>
+        </trajectory>
+      </script>
+    </actor>
+    <actor name="actor_standing_2">
+      <skin>
+        <filename>talk_b.dae</filename>
+      </skin>
+      <animation name="standing">
+        <filename>stand.dae</filename>
+        <!-- <interpolate_x>true</interpolate_x> -->
+      </animation>
+      <script>
+        <loop>true</loop>
+        <delay_start>0.000000</delay_start>
+        <auto_start>true</auto_start>
+        <trajectory id="123213" type="standing">
+          <waypoint>
+            <time>0</time>
+            <pose>-1. 2.75 0 0 -0 3.14</pose>
+          </waypoint>
+            <waypoint>
+              <time>10</time>
+              <pose>-1. 2.75 0 0 -0 3.14</pose>
+            </waypoint>
+        </trajectory>
+      </script>
+    </actor>
+
+    <!-- WS 3 - Short arm sewing machine and it's operator -->
+    <include>
+        <uri>model://sewing_short_arm</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>-2.20 -2.6 0 0 -0 1.57</pose>
+        <name>ws_3</name>
+    </include>
+    <actor name="actor_sitting">
+      <skin>
+        <filename>talk_a.dae</filename>
+      </skin>
+      <animation name="sitting">
+        <filename>sitting.dae</filename>
+        <!-- <interpolate_x>true</interpolate_x> -->
+      </animation>
+      <script>
+        <loop>true</loop>
+        <delay_start>0.000000</delay_start>
+        <auto_start>true</auto_start>
+        <trajectory id="123213" type="sitting">
+          <waypoint>
+            <time>0</time>
+            <pose>-2.70 -2.6 0 0 0 0</pose>
+          </waypoint>
+            <waypoint>
+              <time>10</time>
+              <pose>-2.70 -2.6 0 0 0 0</pose>
+            </waypoint>
+        </trajectory>
+      </script>
+    </actor>
+
+
+    <!-- ADD UWB ANCHORS -->
+    <!-- names should include the prefix: "uwb_anchor" -->
+    <include>
+        <name>uwb_anchor100</name>
+        <uri>model://uwb_anchor</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>-4.8 -2.8 2.5 0 0 0</pose>
+    </include>
+
+    <include>
+        <name>uwb_anchor101</name>
+        <uri>model://uwb_anchor</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>3.4 -2.8 2.5 0 0 0</pose>
+    </include>
+    
+    <include>
+        <name>uwb_anchor102</name>
+        <uri>model://uwb_anchor</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>3.4 4.5 2.5 0 0 0</pose>
+    </include>
+
+    <include>
+        <name>uwb_anchor103</name>
+        <uri>model://uwb_anchor</uri>
+        <static>1</static>
+        <!-- <allow_auto_disable>1</allow_auto_disable> -->
+        <pose>-4.8 2 2.5 0 0 0</pose>
+    </include>
+    
+  </world>
+</sdf>

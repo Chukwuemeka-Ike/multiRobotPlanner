@@ -24,7 +24,7 @@ class MyViz( QWidget ):
         self.frame.initialize()
         reader = rviz.YamlConfigReader()
         config = rviz.Config()
-        reader.readFile( config, "config.myviz" )
+        reader.readFile( config, "../rviz/tutorial.rviz" )
         self.frame.load( config )
         self.setWindowTitle( config.mapGetChild( "Title" ).getValue() )
         self.frame.setMenuBar( None )
