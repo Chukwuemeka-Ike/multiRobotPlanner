@@ -13,11 +13,9 @@ import os
 import sys
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtWidgets import QWidget
 
 import rospy
 import rospkg
-# import roslib; roslib.load_manifest('rviz_python_tutorial')
 from rviz import bindings as rviz
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -54,10 +52,10 @@ class SupervisorGUI(QMainWindow):
         
         rospy.init_node("supervisor_gui")
         # rate = rospy.Rate(1)
-        rospy.loginfo('Initializing Supervisor GUI')
+        rospy.loginfo("Initializing Supervisor GUI")
         rp = rospkg.RosPack()
-        self.gui_path = rp.get_path('arm_gui')
-        rospy.on_shutdown(self.shutdown_gui)
+        self.gui_path = rp.get_path("arm_gui")
+        rospy.on_shutdown(self.shutdownGUI)
 
         # Set the central widget and window layout.
         self.centralWidget = QWidget(self)
@@ -69,9 +67,9 @@ class SupervisorGUI(QMainWindow):
         self._createDisplay()
         self._createStatusBar()
 
-    def shutdown_gui(self):
+    def shutdownGUI(self):
         '''Gracefully shutdown the GUI elements. Particularly RViz.'''
-        self.manager
+        # self.manager
 
     def _createDisplay(self):
         '''Create the basic display.'''

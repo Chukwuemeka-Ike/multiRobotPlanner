@@ -1,0 +1,129 @@
+<?xml version="1.0" ?>
+<sdf version='1.6'>
+    <world name="default">
+        <scene>
+            <ambient>0.4 0.4 0.4 1</ambient>
+            <background>0.7 0.7 0.7 1</background>
+            <shadows>1</shadows>
+        </scene>
+        <gravity>0 0 -9.8</gravity>
+        <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+        <atmosphere type='adiabatic'/>
+        <physics type='ode'>
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1</real_time_factor>
+            <real_time_update_rate>1000</real_time_update_rate>
+        </physics>
+
+        <gui fullscreen='0'>
+            <camera name='user_camera'>
+                <pose>-2.43371 -6.05936 10.7894 0 1.0218 1.2058</pose>
+                <view_controller>orbit</view_controller>
+                <projection_type>perspective</projection_type>
+            </camera>
+        </gui>  
+
+        <include>
+            <uri>model://ground_plane</uri>
+        </include>
+        <include>
+            <uri>model://sun</uri>
+        </include>
+        
+        <include>
+            <uri>model://lab</uri>
+            <pose>0 0 0 0 -0 0</pose>
+            <!-- <static>1</static> -->
+        </include>
+
+        <include>
+            <uri>model://motoman_cabinet_and_table</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>-3.90038 2.11609 0.635 0 -0 0.002242</pose>
+        </include>
+
+        <include>
+            <uri>model://metal_two_cabinets</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>-4.15995 -2.60213 1.05 0 -1e-06 -4.9e-05</pose>
+        </include>
+
+
+        <include>
+            <uri>model://tool_boxes</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>-1.5 -3.0075 0.5 0 0 -2e-06</pose>
+        </include>
+
+        <include>
+            <uri>model://wall_table1</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>-0.212215 -3.44803 0.375 0 -0 0.017066</pose>
+        </include>
+
+        <include>
+            <uri>model://wall_table2</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>1.24359 -3.55 0.375 0 -0 0.003502</pose>
+        </include>
+
+        <include>
+            <uri>model://white_shelf</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>2.27632 3.22017 0.9075 0 0 -0.000797</pose>
+        </include>
+
+        <include>
+            <uri>model://refrigarator_table</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>4.1775 1.77 0.3825 0 0 -4e-06</pose>
+        </include>
+
+        <include>
+            <uri>model://printer_table</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>4.26675 3.36145 0.385 0 -0 1.8e-05</pose>
+        </include>
+
+        <include>
+            <uri>model://kitchen_cabinets</uri>
+            <!-- <static>0</static> -->
+            <!-- <allow_auto_disable>1</allow_auto_disable> -->
+            <pose>-1.30099 3.45819 0.475 0 -0 -0.000798</pose>
+        </include>
+
+        <actor name="actor_sitting">
+            <skin>
+                <filename>moonwalk.dae</filename>
+            </skin>
+            <animation name="sitting">
+                <filename>sitting.dae</filename>
+                <!-- <interpolate_x>true</interpolate_x> -->
+            </animation>
+            <script>
+                <loop>true</loop>
+                <delay_start>0.000000</delay_start>
+                <auto_start>true</auto_start>
+                <trajectory id="123213" type="sitting">
+                    <waypoint>
+                        <time>0</time>
+                        <pose>0 -1 0 0 0 0</pose>
+                    </waypoint>
+                    <waypoint>
+                        <time>10</time>
+                        <pose>0 -1 0 0 0 0</pose>
+                    </waypoint>
+                </trajectory>
+            </script>
+        </actor>
+
+    </world>
+</sdf>

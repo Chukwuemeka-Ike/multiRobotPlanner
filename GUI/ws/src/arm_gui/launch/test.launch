@@ -16,4 +16,7 @@
     <!-- Static transform from map to the robot base link for initial development. TODO: Get rid of this. -->
     <node pkg="tf" type="static_transform_publisher" name="world_to_base_link_tf_broadcaster"
         args="0 0 0 0 0 0 base_link map 100"/>
+
+    <node name="operator_gui" pkg="arm_gui" type="operator_gui.py" output="screen"/>
+    <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
 </launch>

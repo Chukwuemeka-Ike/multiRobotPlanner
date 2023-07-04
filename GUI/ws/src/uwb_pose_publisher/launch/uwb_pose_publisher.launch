@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="config_file"         default="$(find uwb_pose_publisher)/config/uwb_pose_publisher.yaml" />
+    <arg name="antenna_calib_file"  default="$(find uwb_pose_publisher)/config/antenna_calibration_fake.yaml" />
+
+    <node type="uwb_pose_publisher_node.py" name="uwb_pose_publisher" pkg="uwb_pose_publisher" output="screen">
+        <rosparam command="load" file="$(arg config_file)" subst_value="true" />
+        <rosparam command="load" file="$(arg antenna_calib_file)" subst_value="true" />
+    </node>
+</launch>

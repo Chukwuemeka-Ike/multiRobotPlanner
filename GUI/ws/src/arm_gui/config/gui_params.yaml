@@ -1,0 +1,76 @@
+number_of_robots: 4
+
+## Subscriber Topics
+# Topic that subscribes to a Twist msg (Deadman switch muxed Space mouse velocity command)
+input_command_topic: 'deadman_switch_spacenav_twist'
+
+
+## Publisher Topics
+
+# Publishes PoseStamped message for each robot to expand/shrink/load the swarm structure
+tf_changer_topic: "tf_changer"
+
+# If "Move Swarm" button is pressed, commands the whole swarm with this topic
+# with actually moving the robots with the spacemouse input
+closed_loop_swarm_command_topic: "desired_swarm_vel"
+
+# If "Move Swarm Frame" button is pressed, allows to virtually adjust the desired pose of the whole swarm 
+# (?, or just the swarm frame) without actually moving the robots with the spacemouse input
+open_loop_swarm_command_topic: "just_swarm_vel"
+
+
+# If an individual robot's "<name>" button is pressed, commands the individual robot 
+# with actually moving the robot with the spacemouse input
+closed_loop_command_topics:
+  - "just_robot_vel_1"
+  - "just_robot_vel_2"
+  - "just_robot_vel_3"
+  - "just_robot_vel_4"
+
+# If an individual robot's "<name> Frame" button is pressed, allows to virtaully adjust the desired pose 
+# of the individual robot without actually moving the robot with the spacemouse input
+open_loop_command_topics:
+  - "/d1/cmd_vel"
+  - "/d2/cmd_vel"
+  - "/d3/cmd_vel"
+  - "/d4/cmd_vel"
+
+# The LED button that enables or disables the robot from the swarm structure
+robot_enable_status_topic: "robot_enable_status"
+
+
+## TF names
+# Virtual (desired) swarm frame name
+swarm_tf_frame: "swarm_frame"
+
+# Virtual (desired) robot (control point) frame names 
+robot_tf_frames: 
+  - "tf_robot_1"
+  - "tf_robot_2"
+  - "tf_robot_3"
+  - "tf_robot_4"
+
+# Actual (current) robot (control point) frame names
+# Needed to be able to use the syncing desired robot frames function
+real_robot_tf_frames:
+  - "d1_tf_base_link"
+  - "d2_tf_base_link"
+  - "d3_tf_base_link"
+  - "d4_tf_base_link"
+
+# When expanding/shrinking the formation structre with "+" and "-" buttons, specifies the change ratio
+resize_scaling_factor: 0.05
+
+# Sets the name of each robot on the GUI 
+robot_type_information:
+  - "D_1"
+  - "D_2"
+  - "D_3"
+  - "D_4"
+
+#
+robot_node_names:
+  - ["/uwb_front_oarbot_silver","/uwb_back_oarbot_silver","/sensor_fusion_oarbot_silver","/oarbot_silver_ctrl"]
+  - ["/uwb_front_oarbot_blue","/uwb_back_oarbot_blue","/sensor_fusion_oarbot_blue","/oarbot_blue_ctrl"]
+  - []
+  - []

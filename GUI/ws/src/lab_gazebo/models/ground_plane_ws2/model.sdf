@@ -1,0 +1,64 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='ground_plane_ws2'>
+    <link name='link'>
+
+      <!-- <inertial>
+        <mass>500</mass>
+        <inertia>
+          <ixx>510.166667</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>510.166667</iyy>
+          <iyz>0</iyz>
+          <izz>510.166667</izz>
+        </inertia>
+        <pose>0 0 0 0 -0 0</pose>
+      </inertial> -->
+
+      <self_collide>0</self_collide>
+      <enable_wind>0</enable_wind>
+      <kinematic>0</kinematic>
+      <pose>0 0 0 0 -0 0</pose>
+      <gravity>1</gravity>
+     
+         
+      <visual name='visual'>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>12 12</size>
+          </plane>
+        </geometry>
+
+
+        <material>
+          <!-- <script>
+            <name>Gazebo/Grey</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <shader type='pixel'>
+            <normal_map>__default__</normal_map>
+          </shader> -->
+          <ambient>0.1 0.5 0.1 1</ambient>
+          <diffuse>0.1 0.5 0.1 1</diffuse>
+          <specular>0.1 0.5 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
+        </material>
+
+
+        <pose>0 0 0 0 -0 0</pose>
+
+        <transparency>0.8</transparency>
+
+        <cast_shadows>0</cast_shadows>
+
+      </visual>
+
+    </link>
+    
+    <static>1</static>
+
+    <!-- <allow_auto_disable>1</allow_auto_disable> -->
+  </model>
+</sdf>

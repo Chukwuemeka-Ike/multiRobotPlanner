@@ -1,0 +1,43 @@
+antenna_offsets: # in m
+  '0': 0.0 # d1_tag_1 sim
+  '1': 0.0 # d1_tag_2 sim
+  '2': 0.0 # d2_tag_1 sim
+  '3': 0.0 # d2_tag_2 sim
+  '4': 0.0 # d3_tag_1 sim
+  '5': 0.0 # d3_tag_2 sim
+  '6': 0.0 # d4_tag_1 sim
+  '7': 0.0 # d4_tag_2 sim
+  '100': 0.0 # anchor_1 sim
+  '101': 0.0 # anchor_2 sim
+  '102': 0.0 # anchor_3 sim
+  '103': 0.0 # anchor_4 sim
+  '2FEB': 0.037 # prev proj: 0.048
+  '152F': 0.023 # prev proj: 0.036
+  '0D40': 0.118 # prev proj: 0.094
+  '15ED': 0.041 # prev proj: 0.039
+  '48D3': 0.109 # prev proj: 0.029
+  '48C4': 0.134 # prev proj: 0.097
+  '43E6': 0.111 # prev proj: 0.054
+  'DA05': 0.097
+  'C326': 0.082
+  '1DB8': 0.083
+  '0418': 0.110
+  'C702': 0.085
+  '1337': 0.077
+  '028D': 0.060
+  'DA36': 0.084
+  '033B': 0.071 # 0.056 # ANCHOR 1
+  '85A7': 0.104 
+  'D82D': 0.079 # 0.063 # ANCHOR 2
+  '43A9': 0.066 # 0.083 # prev proj: 0.055 # ANCHOR 3
+  '2FFD': 0.020 # 0.041 # prev proj: 0.047 # ANCHOR 4
+  '1032': 0.110
+#   '2A32': 0.065 # Mobile Anchor 1 LL # ON THE FINAL DEMO AREA
+#   '29EF': 0.042 # Mobile Anchor 2 LR # ON THE FINAL DEMO AREA
+#   '2ED1': 0.062 # Mobile Anchor 4 TL # ON THE FINAL DEMO AREA
+#   '156D': 0.048 # Cage 2 # OARbot Silver Front
+#   '1511': 0.033 # Cage 4 # OARbot Silver Back
+#   '43AA': 0.051 # Cage 6 # OARbot Blue Front
+#   '1563': 0.048 # Cage 8 # OARbot Blue Back
+#   '0CAD': 0.125 # Ridgeback Back
+#   '0D8F': 0.077 # Ridgeback Front
