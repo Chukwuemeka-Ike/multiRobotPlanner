@@ -1,7 +1,7 @@
 import time
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import *
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QPixmap
 from constants.stations_old import *
 
 
@@ -164,3 +164,29 @@ class RemoveTicketDialog(QDialog):
     def _cancelRemoveTicket(self):
         '''Cancel the remove operation.'''
         self.close()
+
+
+class TicketInfoDialog(QDialog):
+    '''.'''
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent=parent)
+        self.setWindowTitle("Remove Ticket")
+        
+        self.dialogLayout = QHBoxLayout()
+
+        self.ticketInfoLayout = QVBoxLayout()
+        self.ticketInfoLayout.addWidget(QLabel(f"Job ID: {1}"))
+        self.ticketInfoLayout.addWidget(QLabel(f"Ticket ID: {4}"))
+        self.ticketInfoLayout.addWidget(QLabel(f"Parents: [{2},{3}]"))
+        self.ticketInfoLayout.addWidget(QLabel(f"Machine Type: RF"))
+
+        self.jobDrawing = QLabel()
+        # icon=QIcon()
+        # icon.addPixmap(QPixmap(self.plus))
+        jobDrawing = QPixmap('dd.jpg')
+        # jobDrawing.res
+        self.jobDrawing.setPixmap(jobDrawing)
+
+        self.dialogLayout.addLayout(self.ticketInfoLayout)
+        self.dialogLayout.addWidget(self.jobDrawing)
+        self.setLayout(self.dialogLayout)

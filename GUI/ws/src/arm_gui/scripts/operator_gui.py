@@ -22,9 +22,39 @@ import rospkg
 from rviz import bindings as rviz
 from tf import TransformListener
 
+# from dialogs import TicketInfoDialog
+from PyQt5.QtGui import QPixmap
+
 
 callback_lock = threading.Lock()
 structureButtonFontSize = 20
+
+class TicketInfoDialog(QDialog):
+    '''.'''
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent=parent)
+        self.setWindowTitle("Ticket Info")
+        
+        self.dialogLayout = QHBoxLayout()
+
+        self.ticketInfoLayout = QVBoxLayout()
+        self.ticketInfoLayout.addWidget(QLabel(f"Job ID: {1}"))
+        self.ticketInfoLayout.addWidget(QLabel(f"Ticket ID: {4}"))
+        self.ticketInfoLayout.addWidget(QLabel(f"Parents: [{2},{3}]"))
+        self.ticketInfoLayout.addWidget(QLabel(f"Machine Type: RF Weld"))
+        self.ticketInfoLayout.addStretch()
+
+        self.jobDrawing = QLabel(self)
+        # icon=QIcon()
+        # icon.addPixmap(QPixmap(self.plus))
+        dd = QPixmap("./dd.jpg")
+        dd.scaled(dd.width()//5, dd.height()//5)
+        self.jobDrawing.setPixmap(dd)
+        # self.jobDrawing.resize(dd.width(), dd.height())
+
+        self.dialogLayout.addLayout(self.ticketInfoLayout)
+        self.dialogLayout.addWidget(self.jobDrawing)
+        self.setLayout(self.dialogLayout)
 
 
 class ControlToggleButton(QPushButton):
@@ -143,12 +173,19 @@ class OperatorGUI(QMainWindow):
         ticketLabel = QLabel("Current Ticket: ")
         ticketLabel.setAlignment(Qt.AlignCenter)
         self.idButton = QPushButton(str(self.ticketID))
+        self.idButton.clicked.connect(self._displayJobCharacteristics)
         self.endButton = QPushButton("End")
         self.endButton.setStyleSheet("background-color : green")
         
         self.currentTicketLayout.addWidget(ticketLabel)
         self.currentTicketLayout.addWidget(self.idButton)
         self.currentTicketLayout.addWidget(self.endButton)
+
+    def _displayJobCharacteristics(self):
+        '''.'''
+        ticketInfoDialog = TicketInfoDialog(self)
+        ticketInfoDialog.setModal(True)
+        ticketInfoDialog.show()
 
     def _createButtonsLayout(self):
         '''.'''

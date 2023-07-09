@@ -21,12 +21,18 @@ from rviz import bindings as rviz
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 
-from dialogs import NewTicketDialog, EditTicketDialog, RemoveTicketDialog
+# from dialogs import NewTicketDialog, EditTicketDialog, RemoveTicketDialog
 
-from utils.display_utils import *
-from utils.draw_utils import draw_tree_schedule
-from utils.job_utils import *
-from utils.sched_utils import *
+from arm_gui.scripts.dialogs import NewTicketDialog, EditTicketDialog, RemoveTicketDialog
+from arm_gui.scripts.utils.display_utils import *
+from arm_gui.scripts.utils.draw_utils import draw_tree_schedule
+from arm_gui.scripts.utils.job_utils import *
+from arm_gui.scripts.utils.sched_utils import *
+
+# from utils.display_utils import *
+# from utils.draw_utils import draw_tree_schedule
+# from utils.job_utils import *
+# from utils.sched_utils import *
 
 
 # *****************************************************************************
@@ -86,7 +92,7 @@ class SupervisorGUI(QMainWindow):
 
         tabs.addTab(tab1, "Map & Schedule")
         tabs.addTab(tab2, "Job List")
-        tabs.addTab(tab3, "Debugging")
+        tabs.addTab(tab3, "Full Schedule")
 
         # Vertical layout for the map and schedule.
         mapSchedLayout = QVBoxLayout(tabs)
@@ -195,7 +201,8 @@ class SupervisorGUI(QMainWindow):
         reader = rviz.YamlConfigReader()
         config = rviz.Config()
 
-        reader.readFile(config, os.path.join(rviz_folder, "config.rviz"))
+        reader.readFile(config, os.path.join(rviz_folder, "multi_dingo.rviz"))
+        # reader.readFile(config, os.path.join(rviz_folder, "config.rviz"))
         # reader.readFile(config, os.path.join(rviz_folder, "tutorial.rviz"))
         self.mapWidget.frame.load(config)
 

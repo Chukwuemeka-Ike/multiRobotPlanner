@@ -7,7 +7,7 @@
         <rosparam param="visualizer_path" subst_value="True">$(find arm_gui)/worlds/highbay_swarm_world/meshes</rosparam>
     </node>
 
-    <include file="$(find arm_gui)/launch/highbay_sim.launch"/>
+    <!-- <include file="$(find arm_gui)/launch/highbay_sim.launch"/> -->
 
     <node name="operator_gui" pkg="arm_gui" type="operator_gui.py" output="screen"/>
     <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
