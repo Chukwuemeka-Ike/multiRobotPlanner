@@ -1,0 +1,10 @@
+Header header
+uint32 ticket_id
+uint32 job_id
+uint32 machine_type
+float32 duration
+uint32[] parents
+uint32 start
+uint32 end
+uint32 station_num 
+float32 time_left
