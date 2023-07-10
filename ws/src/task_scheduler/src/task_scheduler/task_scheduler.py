@@ -92,6 +92,8 @@ class TaskScheduler():
             self.schedule.to_csv(f"schedule{self.schedule_num}.csv")
             self.schedule_times.append(rospy.Time.now().to_sec())
             self.schedule_num += 1
+        else:
+            display_task_list(task_list)
 
     def send_schedule(self, request):
         '''.'''

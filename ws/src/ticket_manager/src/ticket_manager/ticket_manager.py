@@ -12,7 +12,10 @@ import rospy
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import Schedule, ScheduleRequest
 
-from arm_utils.job_utils import convert_ticket_list_to_task_dict, create_ticket_list
+from arm_utils.job_utils import convert_ticket_list_to_task_dict,\
+        create_ticket_list, get_tree_job_start_ids,\
+        get_all_children_from_task_list, get_all_parents_from_task_list
+from arm_utils.display_utils import display_task_list
 
 
 log_tag = "Ticket Manager"
@@ -32,6 +35,7 @@ class TicketManager():
         self.ready = {}
         self.ongoing = {}
         self.done = {}
+        self.minJobID = 0
 
         # Timer variables for triggering ticket starts and re-scheduling.
         self.ongoing_timer = None
@@ -109,8 +113,81 @@ class TicketManager():
         '''
         rospy.loginfo(f"{log_tag}: Received new set of tickets."
                         " Adding to task list.")
-        self.add_tickets_to_task_list(msg.tickets)
+        # self.add_tickets_to_task_list(msg.tickets)
+        temp_dict = self.convert_ticket_list_to_temp_dict(msg.tickets)
+        temp_dict = self.get_received_ticket_job_ids(temp_dict)
+        self.add_received_tickets_to_task_list(temp_dict)
+        # display_task_list(self.task_list)
         self.request_schedule()
+
+    def convert_ticket_list_to_temp_dict(self, ticket_list):
+        '''.'''
+        temp_dict = {}
+        for ticket in ticket_list:
+            tix = {}
+            tix["station_type"] = ticket.machine_type
+            tix["duration"] = ticket.duration
+            tix["parents"] = list(ticket.parents)
+
+            # Time left in seconds.
+            tix["time_left"] = ticket.duration
+            temp_dict[ticket.ticket_id] = tix
+        return temp_dict
+
+    def get_received_ticket_job_ids(self, temp_dict: dict):
+        '''Gets the job IDs for the tickets received.
+
+        Figures out the job IDs for the tickets received. They are either
+        related to an existing job, or brand new.
+        '''
+        # Iterate through the temp dictionary and search for its parents in the
+        # main task list. If they're not in there, save the key in a list.
+        # If any parent is, add the job_id. 
+        # If there are no parents, create a new job_id.
+        # Lastly, go through the dictionary and search for its parents in the
+        # temp dictionary. Go as high in the job tree, get the top job_id,
+        # then trickle it down to the descendants.
+
+        # Step 1.
+        no_found_parents = []
+        for ticket_id, ticket in temp_dict.items():
+            found_parent = False
+            if len(ticket["parents"]) == 0:
+                self.minJobID += 1
+                ticket["job_id"] = self.minJobID
+            for parent_id in ticket["parents"]:
+                if parent_id in self.task_list:
+                    ticket["job_id"] = self.task_list[parent_id]["job_id"]
+                    found_parent = True
+            if not found_parent:
+                no_found_parents.append(ticket_id)
+        
+        # Step 2. Iterate through the tickets with no found parents.
+        # For each, look for the parents in the dictionary recursively.
+        # When we get to the top, set the job_id to the ticket.
+        for ticket_id in no_found_parents:
+            ticket = temp_dict[ticket_id]
+            # start_ids = get_tree_job_start_ids(ticket_id, temp_dict)
+            # linear_job = [start_ids[0]]
+            # get_all_children_from_task_list(start_ids[0], temp_dict, linear_job)
+            linear_job = [ticket_id]
+            get_all_parents_from_task_list(ticket_id, temp_dict, linear_job)
+
+            # Set the job_id for the ticket.
+            # TODO: Set it for all descendants at once?
+            top_ticket = temp_dict[linear_job[-1]]
+            ticket["job_id"] = top_ticket["job_id"]
+
+        return temp_dict
+
+    def add_received_tickets_to_task_list(self, ticket_dict: dict):
+        '''Adds the modified received tickets dictionary to the main task list.'''
+        for ticket_id, ticket in ticket_dict.items():
+            ticket["time_left"] = ticket["duration"]
+
+            # Add the ticket to task_list and waiting set.
+            self.task_list[ticket_id] = ticket
+            self.waiting[ticket_id] = self.task_list[ticket_id]
 
     def add_tickets_to_task_list(self, ticket_list):
         '''Adds the list of tickets to the task_list and waiting.'''

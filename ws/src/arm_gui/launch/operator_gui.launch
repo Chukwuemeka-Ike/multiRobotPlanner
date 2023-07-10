@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- <group ns="d1"> -->
+    <node name="RVizMeshVisualizer" pkg="object_visualizer" type="object_visualizer.py">
+     <!-- output="screen"> -->
+        <rosparam param="frame" subst_value="True">map</rosparam>
+        <rosparam param="visualizer_path" subst_value="True">$(find arm_gui)/worlds/highbay_swarm_world/meshes</rosparam>
+    </node>
+
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_gui)/rviz/config.rviz" output="screen"/> -->
+
+        <!-- Dingo configuration to view. See dingo_description for details. -->
+    <!-- <include file="$(find dingo_description)/launch/description.launch"/> -->
+
+    <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dingo_viz)/rviz/model.rviz" /> -->
+
+    <!-- Static transform from map to the robot base link for initial development. TODO: Get rid of this. -->
+    <node pkg="tf" type="static_transform_publisher" name="world_to_base_link_tf_broadcaster"
+        args="0 0 0 0 0 0 base_link map 100"/>
+
+    <include file="$(find arm_gui)/launch/highbay_sim.launch"/>
+    <node name="operator_gui" pkg="arm_gui" type="operator_gui.py" output="screen"/>
+    <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
+
+    <!-- Robot Spawn Pose -->
+    <arg name="x"         default="0"/>
+    <arg name="y"         default="0"/>
+    <arg name="z"         default="0.1"/>
+    <arg name="yaw"       default="0"/>
+
+    <!-- Add Dingo to the world. -->
+    <include file="$(find dingo_gazebo)/launch/spawn_dingo.launch">
+        <!-- Optionally configure the spawn position -->
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="yaw" value="$(arg yaw)"/>
+    </include>
+    <!-- </group> -->
+</launch>

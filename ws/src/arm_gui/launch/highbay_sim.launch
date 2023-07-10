@@ -1,0 +1,54 @@
+<launch>
+    <arg name="use_sim_time" default="true" />
+    <arg name="gui" default="false" /> <!--make true to see Gazebo interface -->
+    <arg name="headless" default="false" />
+    <arg name="world_name" default="$(find lab_gazebo)/worlds/highbay_swarm.world" />
+
+    <!-- Launch Gazebo with the specified world -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="debug" value="0" />
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="use_sim_time" value="$(arg use_sim_time)" />
+        <arg name="headless" value="$(arg headless)" />
+        <arg name="world_name" value="$(arg world_name)" />
+    </include>
+
+    <!-- Configuration of Dingo which you would like to simulate.
+        See dingo_description for details. -->
+    <arg name="config" default="$(optenv DINGO_CONFIG base)" />
+
+    <!-- Robot spawn poses. -->
+    <arg name="x1"     default="1.0"/>
+    <arg name="y1"     default="1.0"/>
+    <arg name="z1"     default="0.0"/>
+    <arg name="yaw1"   default="0"/>
+    <arg name="name1"   default="d1"/>
+
+    <arg name="x2"     default="-1.0"/>
+    <arg name="y2"     default="1.0"/>
+    <arg name="z2"     default="0.0"/>
+    <arg name="yaw2"   default="0"/>
+    <arg name="name2"   default="d2"/>
+
+    <!-- Spawn the robots. -->
+    <group ns="$(arg name1)">
+        <include file="$(find arm_gui)/launch/spawn_dingos.launch">
+            <arg name="x"         value="$(arg x1)" />
+            <arg name="y"         value="$(arg y1)" />
+            <arg name="z"         value="$(arg z1)" />
+            <arg name="yaw"       value="$(arg yaw1)" />
+            <arg name="robot_namespace"  value="$(arg name1)" />
+            <arg name="config"  value="$(arg config)" />
+        </include>
+    </group>
+    <group ns="$(arg name2)">
+        <include file="$(find arm_gui)/launch/spawn_dingos.launch">
+            <arg name="x"         value="$(arg x2)" />
+            <arg name="y"         value="$(arg y2)" />
+            <arg name="z"         value="$(arg z2)" />
+            <arg name="yaw"       value="$(arg yaw2)" />
+            <arg name="robot_namespace"  value="$(arg name2)" />
+            <arg name="config"  value="$(arg config)" />
+        </include>
+    </group>
+</launch>
