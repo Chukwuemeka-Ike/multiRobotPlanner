@@ -1,7 +1,8 @@
 import rospy
 
-from PyQt5.QtWidgets import QPushButton
-from geometry_msgs.msg import Pose2D, Twist, PoseStamped
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QLabel, QLineEdit, QPushButton
+from geometry_msgs.msg import Twist
 
 
 class ControlToggleButton(QPushButton):
@@ -31,4 +32,20 @@ class RobotButton():
         # self.motion_frame = "world"
         self.button = ControlToggleButton(self.buttonName)
         self.publisher = rospy.Publisher(button_topic, Twist, queue_size=0)
-       
+
+
+class FixedWidthLabel(QLabel):
+    '''Creates a fixed width label. Allows us specify the size in the constructor.'''
+    def __init__(self, label, width=None):
+        super().__init__(label)
+        if width is not None:
+            self.setFixedWidth(width)
+        self.setAlignment(Qt.AlignCenter)
+
+
+class FixedWidthLineEdit(QLineEdit):
+    '''Creates a fixed width line edit.'''
+    def __init__(self, width=None):
+        super().__init__()
+        if width is not None:
+            self.setFixedWidth(width)

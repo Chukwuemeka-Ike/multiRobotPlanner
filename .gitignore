@@ -8,19 +8,33 @@ build/
 devel/
 saves/
 
+# Scheduler save directories.
 Plans/
 Images/
 Constraints/
-Videos/*
-
-Metric/Images/
-# Metric/
 Videos/
+
+# Metric 
 Metric/README.md
+*/src/CMakeLists.txt
+
+# Common testing dirs & files. I tend to create these across packages.
 Scratch/
-Operations/catkin_ws/src/CMakeLists.txt
 scratch*
 tester*
-dingo/
-backup_ros_d
+
+# Extraneous files.
 dingo_namespace.svg
+rosgraph.png
+dd.png
+sched_times.txt
+
+# Sandbox directories.
+backup_ros_d/
+dingo/
+dingo_ws/
+
+# External packages.
+ws/src/dingo_*
+ws/src/lab_gazebo
+ws/src/object_visualizer

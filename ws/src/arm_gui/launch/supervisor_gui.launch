@@ -1,22 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="RVizMeshVisualizer" pkg="object_visualizer" type="object_visualizer.py" output="screen">
-        <rosparam param="frame" subst_value="True">base_link</rosparam>
-        <rosparam param="visualizer_path" subst_value="True">$(find arm_gui)/worlds/highbay_swarm_world/meshes</rosparam>
-    </node>
+    <arg name="gui_rviz" default="config"/>
+    <rosparam param="gui_rviz_path">"$(find arm_gui)/rviz/$(arg gui_rviz).rviz"</rosparam>
 
-    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_gui)/rviz/config.rviz" output="screen"/> -->
-
-        <!-- Dingo configuration to view. See dingo_description for details. -->
-    <include file="$(find dingo_description)/launch/description.launch"/>
-
-    <!-- <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" /> -->
-    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dingo_viz)/rviz/model.rviz" /> -->
-
-    <!-- Static transform from map to the robot base link for initial development. TODO: Get rid of this. -->
-    <node pkg="tf" type="static_transform_publisher" name="world_to_base_link_tf_broadcaster"
-        args="0 0 0 0 0 0 base_link map 100"/>
-
-    <node name="supervisor_gui" pkg="arm_gui" type="supervisor_gui.py" output="screen"/>
+    <node name="supervisor_gui" pkg="arm_gui" type="supervisor_gui_node" output="screen"/>
     <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
 </launch>

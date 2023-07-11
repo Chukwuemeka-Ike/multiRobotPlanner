@@ -10,7 +10,7 @@ import math
 import rospy
 
 from arm_msgs.msg import Ticket, Tickets
-from arm_msgs.srv import Schedule, ScheduleRequest
+from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
 
 from arm_utils.job_utils import convert_ticket_list_to_task_dict,\
         create_ticket_list, get_tree_job_start_ids,\
@@ -59,6 +59,10 @@ class TicketManager():
             "ticket_started", Ticket, queue_size=100
         )
 
+        # Service for ticket lists.
+        self.ticket_service = rospy.Service(
+            'ticket_service', TicketList, self.send_ticket_lists
+        )
         # Spin.
         rospy.spin()
 
@@ -66,6 +70,21 @@ class TicketManager():
         '''Gracefully shutdown ticket manager.'''
         # Save current task list?
         rospy.loginfo(f"{log_tag}: Node shutdown.")
+
+    def send_ticket_lists(self, request):
+        '''Returns the complete list of tickets and the different subsets.'''
+        rospy.loginfo(f"{log_tag}: Returning current ticket information.")
+
+        # Merge task_list and done into one for the list of all tickets.
+        # The two are only separate for the sake of generating schedules.
+        all_tickets = {**self.task_list, **self.done}
+        all_tickets_list = create_ticket_list(all_tickets)
+
+        waiting = create_ticket_list(self.waiting)
+        ready = create_ticket_list(self.ready)
+        ongoing = create_ticket_list(self.ongoing)
+        done = create_ticket_list(self.done)
+        return TicketListResponse(all_tickets_list, waiting, ready, ongoing, done)
 
     def request_schedule(self):
         '''Requests a new schedule from the schedule service.

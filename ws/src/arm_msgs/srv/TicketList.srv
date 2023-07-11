@@ -1,0 +1,7 @@
+# No request data
+---
+Ticket[] all_tickets
+Ticket[] waiting
+Ticket[] ready
+Ticket[] ongoing
+Ticket[] done

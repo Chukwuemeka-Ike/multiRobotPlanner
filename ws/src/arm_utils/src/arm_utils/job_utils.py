@@ -10,6 +10,18 @@ import pandas as pd
 from arm_msgs.msg import Ticket, Tickets
 
 
+def get_job_id_ticket_ids(job_list: list) -> dict:
+    '''Creates a dictionary with job IDs as keys and lists of ticket IDs as values.'''
+    job_task_ids = {}
+    for job in job_list:
+        ticket_ids = []
+        for ticket in job:
+            ticket_ids.append(ticket["ticket_id"])
+        job_task_ids[job[0]["job_id"]] = ticket_ids
+    return job_task_ids
+
+
+
 def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
     '''Converts a list of tickets to a dictionary of tickets.
 
@@ -108,6 +120,7 @@ def convert_task_list_to_job_list(task_list: dict):
                 task_list[task]["job_id"] = job_id
                 job_tasks.append(task_list[task])
                 visited.append(task)
+            job_tasks.reverse()
             job_list.append(job_tasks)
             job_id += 1
     return job_list

@@ -7,6 +7,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
 
 from arm_constants.stations_old import *
+from gui_common.gui_elements import FixedWidthLineEdit, FixedWidthLabel
 
 
 class ImportTicketsDialog(QDialog):
@@ -16,9 +17,9 @@ class ImportTicketsDialog(QDialog):
     def __init__(self, parent: QWidget, min_ticket_number: int) -> None:
         super().__init__(parent)
         self.setWindowTitle("Import Tickets")
+        self.minTicketNumber = min_ticket_number
 
         self.dialogLayout = QGridLayout()
-        self.minTicketNumber = min_ticket_number
 
         ticket_id_label = QLabel("Ticket ID")
         ticket_id_label.setAlignment(Qt.AlignCenter)
@@ -42,8 +43,8 @@ class ImportTicketsDialog(QDialog):
 
         # Create the buttons.
         # Button to add a new ticket row.
-        self.addButton = QPushButton("Add Ticket")
-        self.addButton.clicked.connect(self.add_ticket)
+        self.addButton = QPushButton("Add Row")
+        self.addButton.clicked.connect(self.add_ticket_row)
         self.dialogLayout.addWidget(self.addButton, 2, 1, 1, 3)
 
         # Button to submit the tickets.
@@ -57,29 +58,25 @@ class ImportTicketsDialog(QDialog):
         self.dialogLayout.addWidget(self.cancelButton, 3, 3, 1, 2)
 
         self.resize(650, 100)
-        # self.setFixedSize(650, 100)
-        # self.setMinimumSize(650, 100)
         self.setLayout(self.dialogLayout)
         self.setSizeGripEnabled(False)
         
         self.setModal(True)
         self.show()
         self.square_width = self.dialogLayout.geometry().width()//5
-        print(self.dialogLayout.geometry().width())
-        print(self.square_width)
 
         # Add one ticket row for aesthetics.
-        self.add_ticket()
+        self.add_ticket_row()
 
-    def add_ticket(self):
+    def add_ticket_row(self):
         # Create the input fields for each ticket row.
-        ticket_id_label = QLabel(str(self.minTicketNumber))
-        ticket_id_label.setAlignment(Qt.AlignCenter)
-        ticket_id_label.setFixedWidth(self.square_width)
-        parents_edit = QLineEdit()
-        parents_edit.setFixedWidth(self.square_width)
-        duration_edit = QLineEdit()
-        duration_edit.setFixedWidth(self.square_width)
+        ticket_id_label = FixedWidthLabel(str(self.minTicketNumber), self.square_width)
+        # ticket_id_label.setAlignment(Qt.AlignCenter)
+        # ticket_id_label.setFixedWidth()
+        parents_edit = FixedWidthLineEdit(self.square_width)
+        # parents_edit.setFixedWidth(self.square_width)
+        duration_edit = FixedWidthLineEdit(self.square_width)
+        # duration_edit.setFixedWidth(self.square_width)
         station_type_combo = QComboBox()
         station_type_combo.addItems(station_type_names)
         station_type_combo.setFixedWidth(self.square_width)
@@ -111,20 +108,34 @@ class ImportTicketsDialog(QDialog):
         '''Submit all the tickets.'''
         ticket_count = self.formLayout.rowCount()
         entered_tickets = []
-        print(f"{ticket_count} ticket rows submitted.")
+
+        if ticket_count == 0:
+            message = f"No tickets imported."
+            QMessageBox.information(self, "Cancelled", message)
+            self.close()
+            return
 
         try:
             for row in range(ticket_count):
                 layout = self.formLayout.itemAt(row)
 
-                ticket_id = layout.itemAt(0).widget().text()
+                ticket_id = int(layout.itemAt(0).widget().text())
                 parents = layout.itemAt(1).widget().text()
+                parents_string_list = parents.split(',')
+                parents_list = []
+                for a in parents_string_list:
+                    if a != "":
+                        parents_list.append(int(a))
                 duration = layout.itemAt(2).widget().text()
+                if len(duration) == 0:
+                    raise ValueError("No duration specified.")
+                else:
+                    duration = float(duration)
                 station_name = layout.itemAt(3).widget().currentText()
                 station_num = station_type_names.index(station_name)
 
                 # Append the ticket row if it is valid.
-                entered_tickets.append([ticket_id, station_num, parents, duration])
+                entered_tickets.append([ticket_id, parents_list, duration, station_num])
 
             self.dataEntered.emit(entered_tickets)
             message = f"Imported tickets successfully."
@@ -144,61 +155,117 @@ class ImportTicketsDialog(QDialog):
         # Call the base class method.
         super().resizeEvent(event)
 
+
 class NewTicketDialog(QDialog):
-    '''.'''
-    def __init__(self, parent: QWidget) -> None:
+    '''Class for entering a single new ticket.'''
+    dataEntered = pyqtSignal(list)
+    def __init__(self, parent: QWidget, min_ticket_number: int, job_info: dict) -> None:
+        '''.
+        
+        Args:
+            job_info: {job_id: [ticket_id, ...], ...}
+        '''
         super().__init__(parent=parent)
         self.setWindowTitle("New Ticket")
+        self.minTicketNumber = min_ticket_number
+        self.jobInfo = job_info
+        # print(self.jobInfo)
 
         self.dialogLayout = QVBoxLayout()
+        self.setLayout(self.dialogLayout)
+        self.create_ui()
 
+    def create_ui(self):
+        '''Create the new ticket display.'''
+        # For picking an existing job ID.
         self.jobIDComboBox = QComboBox()
-        self.jobIDComboBox.addItems(["1","2","3"])
-        # jobIDComboBox.isEditable
+        self.jobIDComboBox.addItem("")
+        # Convert to list of strings for the function using list comprehension.
+        self.jobIDComboBox.addItems([str(key) for key in self.jobInfo.keys()])
+        self.jobIDComboBox.currentIndexChanged.connect(self.change_allowed_parents)
 
-        self.machineTypeComboBox = QComboBox()
-        self.machineTypeComboBox.addItems(station_type_names)
+        self.ticketID = str(self.minTicketNumber)
 
-        # Allow the user pick up to 3 parents. 
+        # Allow the user pick up to 2 parents. 
         # We don't envision a task having more than 2 parents.
         self.parentsLayout = QHBoxLayout()
         self.parentsComboBox1 = QComboBox()
-        self.parentsComboBox1.addItems(["1","2","3","4","5","6","7"])
         self.parentsComboBox2 = QComboBox()
-        self.parentsComboBox2.addItems(["1","2","3","4","5","6","7"])
-        self.parentsComboBox3 = QComboBox()
-        self.parentsComboBox3.addItems(["1","2","3","4","5","6","7"])
         self.parentsLayout.addWidget(self.parentsComboBox1)
         self.parentsLayout.addWidget(self.parentsComboBox2)
-        self.parentsLayout.addWidget(self.parentsComboBox3)
 
-        self.ticketID = str(15)
         self.duration = QLineEdit()
+        
+        self.machineTypeComboBox = QComboBox()
+        self.machineTypeComboBox.addItems(station_type_names)
 
         self.formLayout = QFormLayout()
         self.formLayout.addRow("Job ID", self.jobIDComboBox)
+        self.formLayout.addRow("Ticket ID", QLabel(self.ticketID))
+        self.formLayout.addRow("Parents", self.parentsLayout)
         self.formLayout.addRow("Duration", self.duration)
         self.formLayout.addRow("Machine Type", self.machineTypeComboBox)
-        self.formLayout.addRow("Parents", self.parentsLayout)
-        self.formLayout.addRow("Ticket ID", QLabel(self.ticketID))
         self.dialogLayout.addLayout(self.formLayout)
 
         self.buttons = QDialogButtonBox()
         addButton = self.buttons.addButton("Add", QDialogButtonBox.AcceptRole)
         cancelButton = self.buttons.addButton("Cancel", QDialogButtonBox.RejectRole)
         
-        addButton.clicked.connect(self._addNewTicket)
-        cancelButton.clicked.connect(self._cancelAddNewTicket)
+        addButton.clicked.connect(self.add_ticket)
+        cancelButton.clicked.connect(self.close)
 
         self.dialogLayout.addWidget(self.buttons)
-        self.setLayout(self.dialogLayout)
+        
+        self.setModal(True)
+        self.show()
 
-    def _addNewTicket(self):
+    def change_allowed_parents(self):
+        '''Change the parents combo boxes based on the selected job ID.
+
+        The choices for ticket parents are narrowed by the job ID chosen.
+        Helps to keep the drop-down list small.
+        '''
+        self.parentsComboBox1.clear()
+        self.parentsComboBox2.clear()
+
+        # If no selected job ID, there are no parent options.
+        if self.jobIDComboBox.currentText() == "":
+            self.parentsComboBox1.setEnabled(False)
+            self.parentsComboBox2.setEnabled(False)
+        else:
+            self.parentsComboBox1.setEnabled(True)
+            self.parentsComboBox2.setEnabled(True)
+
+            self.parentsComboBox1.addItem("")
+            self.parentsComboBox2.addItem("")
+
+            # Convert both to lists of strings using list comprehension.
+            self.parentsComboBox1.addItems(
+                [str(a) for a in self.jobInfo[int(self.jobIDComboBox.currentText())] ]
+            )
+            self.parentsComboBox2.addItems(
+                [str(a) for a in self.jobInfo[int(self.jobIDComboBox.currentText())] ]
+            )
+
+    def add_ticket(self):
         '''Add the new ticket.'''
+        if self.duration.text() == "":
+            message = f"Incomplete ticket information. Please fix the missing fields."
+            print("Incomplete ticket information")
+            QMessageBox.information(self, "Add Failed", message)
         try:
-            message = f"\nJob ID: {self.jobIDComboBox.currentText()}\n" +\
-                f"Ticket ID: {self.ticketID}\n" + \
-                f"Duration: {self.duration.text()}\n"
+            ticket_id = int(self.ticketID)
+            parents = []
+            if self.parentsComboBox1.currentText() != "":
+                parents.append(int(self.parentsComboBox1.currentText()))
+            if self.parentsComboBox2.currentText() != "":
+                parents.append(int(self.parentsComboBox2.currentText()))
+            duration = float(self.duration.text())
+            station_name = self.machineTypeComboBox.currentText()
+            station_num = station_type_names.index(station_name)
+
+            self.dataEntered.emit([ticket_id, parents, duration, station_num])
+            message = "Added ticket successfully."
             QMessageBox.information(self, "Success", message)
             print(message)
             self.accept()
@@ -206,17 +273,6 @@ class NewTicketDialog(QDialog):
             message = f"Error adding ticket."
             QMessageBox.information(self, "Failed", message)
             print(message)
-
-    def _cancelAddNewTicket(self):
-        '''Cancel adding the new ticket.'''
-        self.close()
-
-    def _generateNewTicketID(self):
-        '''.'''
-        # Get the current list of ticket IDs.
-
-        # Add 1 to the highest number.
-        pass
 
 
 class EditTicketDialog(QDialog):

@@ -1,17 +1,5 @@
 <launch>
-    <arg name="use_sim_time" default="true" />
-    <arg name="gui" default="false" /> <!--make true to see Gazebo interface -->
-    <arg name="headless" default="false" />
-    <arg name="world_name" default="$(find lab_gazebo)/worlds/highbay_swarm.world" />
-
-    <!-- Launch Gazebo with the specified world -->
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="debug" value="0" />
-        <arg name="gui" value="$(arg gui)" />
-        <arg name="use_sim_time" value="$(arg use_sim_time)" />
-        <arg name="headless" value="$(arg headless)" />
-        <arg name="world_name" value="$(arg world_name)" />
-    </include>
+    
 
     <!-- Configuration of Dingo which you would like to simulate.
         See dingo_description for details. -->
