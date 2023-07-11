@@ -1,5 +1,10 @@
 <launch>
-    
+     <arg name="use_sim_time" default="true" />
+     <arg name="show_gazebo" default="true" />
+     <arg name="headless" default="false" />
+
+     <!-- World to simulate. Default is "highbay_swarm". "anchor_plant" is the other option. -->
+     <arg name="world" default="highbay_swarm" />
 
     <!-- Configuration of Dingo which you would like to simulate.
         See dingo_description for details. -->
@@ -17,6 +22,15 @@
     <arg name="z2"     default="0.0"/>
     <arg name="yaw2"   default="0"/>
     <arg name="name2"   default="d2"/>
+
+
+    <!-- Launch the world simulation. -->
+    <include file="$(find arm_gui)/launch/world_sim.launch">
+        <arg name="show_gazebo" value="$(arg show_gazebo)" />
+        <arg name="use_sim_time" value="$(arg use_sim_time)" />
+        <arg name="headless" value="$(arg headless)" />
+        <arg name="world" value="$(arg world)" />
+    </include>
 
     <!-- Spawn the robots. -->
     <group ns="$(arg name1)">

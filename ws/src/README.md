@@ -17,7 +17,7 @@ The overall objective of the high-level is to plan jobs and tasks, assign robots
 6. task_scheduler
 7. ticket_manager
 
-## Added Packages
+## External Packages
 1. dingo_control
 2. dingo_description
 3. dingo_gazebo
