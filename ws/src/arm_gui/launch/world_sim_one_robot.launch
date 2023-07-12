@@ -1,6 +1,6 @@
 <launch>
      <arg name="use_sim_time" default="true" />
-     <arg name="show_gazebo" default="true" />
+     <arg name="show_gazebo" default="false" />
      <arg name="headless" default="false" />
 
      <!-- World to simulate. Default is "highbay_swarm". "anchor_plant" is the other option. -->
