@@ -26,7 +26,7 @@ from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketD
 from gui_common.gui_elements import FixedWidthLabel
 from gui_common import map_viz
 
-from arm_constants.stations_old import *
+from arm_constants.stations import *
 from arm_utils.display_utils import *
 from arm_utils.draw_utils import draw_tree_schedule
 from arm_utils.job_utils import *
@@ -66,11 +66,15 @@ class SupervisorGUI(QMainWindow):
         # self.rviz_path = rospy.get_param(
         #     "gui_rviz_path", os.path.join(rviz_folder, "config.rviz")
         # )
-        self.rviz_path = os.path.join(rviz_folder, "highbay_one_robot.rviz")
+        self.rviz_path = os.path.join(rviz_folder, "world_one_robot.rviz")
+        # self.rviz_path = os.path.join(rviz_folder, "world_multi_robot.rviz")
 
         # Publishers for ticket management. Add/edit/remove ticket/job.
         self.add_ticket_pub = rospy.Publisher(
             "add_ticket", Tickets, queue_size=10
+        )
+        self.edit_ticket_pub = rospy.Publisher(
+            "edit_ticket", Ticket, queue_size=10
         )
         self.end_ticket_pub = rospy.Publisher(
             "end_ticket", Ticket, queue_size=10
@@ -99,7 +103,7 @@ class SupervisorGUI(QMainWindow):
         self.center_window()
 
         # Create the display and status bar.
-        self.create_display()
+        self.create_ui()
         self.create_status_bar()
         self.update_gui()
 
@@ -127,7 +131,7 @@ class SupervisorGUI(QMainWindow):
         '''Gracefully shutdown the GUI elements. Particularly RViz.'''
         # self.manager
 
-    def create_display(self):
+    def create_ui(self):
         '''Create the basic display.'''
 
         # Create the matplotlib canvas for the schedule and RViz widget.
@@ -191,7 +195,7 @@ class SupervisorGUI(QMainWindow):
         buttonLayout.addWidget(QLabel("Ticket Management"))
         
         # Buttons for importing, adding, editing, and removing tickets.
-        importTixButton = QPushButton("Import Tickets")
+        importTixButton = QPushButton("Bulk Add Tickets")
         addTicketButton = QPushButton("Add Ticket")
         editTicketButton = QPushButton("Edit Ticket")
         editJobButton = QPushButton("Edit Job")
@@ -233,12 +237,8 @@ class SupervisorGUI(QMainWindow):
             ticket.parents = ticket_row[1]
             ticket.duration = ticket_row[2]
             ticket.machine_type = ticket_row[3]
-            # ticket.ticket_id = int(ticket_row[0])
-            # ticket.parents = self.get_parents_list(ticket_row[1])
-            # ticket.duration = float(ticket_row[2])
-            # ticket.machine_type = int(ticket_row[3])
 
-            print(ticket)
+            # print(ticket)
             ticket_list.append(ticket)
 
         # Create the Tickets msg and publish it.
@@ -246,18 +246,6 @@ class SupervisorGUI(QMainWindow):
         msg.tickets = ticket_list
         self.add_ticket_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Published imported tickets.")
-    
-    # def get_parents_list(self, parents_string: str):
-    #     '''Gets a list of parents from a string.
-
-    #     Returns an empty list if the string is empty.
-    #     '''
-    #     parents_string_list = parents_string.split(',')
-    #     parents_list = []
-    #     for a in parents_string_list:
-    #         if a != "":
-    #             parents_list.append(int(a))
-    #     return parents_list
 
     def _createNewTicketDialog(self):
         '''Create a dialog for creating a new ticket.'''
@@ -284,9 +272,19 @@ class SupervisorGUI(QMainWindow):
 
     def _createEditTicketDialog(self):
         '''Create a dialog for editing a target ticket.'''
-        editTicketDialog = EditTicketDialog(self)
-        editTicketDialog.setModal(True)
-        editTicketDialog.show()
+        editTicketDialog = EditTicketDialog(self, self.job_info, self.ongoing)
+        editTicketDialog.dataEntered.connect(self._processEditedTicket)
+
+    def _processEditedTicket(self, data):
+        '''Processes the edits made to the ticket.'''
+        ticket = Ticket()
+        ticket.ticket_id = data[0]
+        ticket.duration = data[1]
+        ticket.machine_type = data[2]
+
+        self.edit_ticket_pub.publish(ticket)
+        rospy.loginfo(f"{log_tag}: Published edited ticket.")
+
 
     def _createEditJobDialog(self):
         '''Create a dialog for editing a target job.'''

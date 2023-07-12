@@ -39,4 +39,5 @@ ws/src/dingo_*
 ws/src/lab_gazebo
 ws/src/object_visualizer
 ws/src/swarm2_launch
+ws/src/topic_tf_transformers
 ws/src/uwb_*
