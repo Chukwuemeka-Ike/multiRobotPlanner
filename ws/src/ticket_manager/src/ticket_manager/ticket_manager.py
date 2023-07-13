@@ -50,6 +50,12 @@ class TicketManager():
         self.add_ticket_sub = rospy.Subscriber(
             "add_ticket", Tickets, self.add_ticket_message_callback
         )
+        self.edit_ticket_sub = rospy.Subscriber(
+            "edit_ticket", Ticket, self.edit_ticket_message_callback
+        )
+        self.edit_job_sub = rospy.Subscriber(
+            "edit_job", Tickets, self.edit_job_message_callback
+        )
         self.end_ticket_sub = rospy.Subscriber(
             "end_ticket", Ticket, self.on_done_callback
         )
@@ -207,6 +213,12 @@ class TicketManager():
             # Add the ticket to task_list and waiting set.
             self.task_list[ticket_id] = ticket
             self.waiting[ticket_id] = self.task_list[ticket_id]
+
+    def edit_ticket_message_callback(self):
+        '''Callback when an edit_ticket message is received.'''
+
+    def edit_job_message_callback(self):
+        '''Callback when an edit_job message is received.'''
 
     def add_tickets_to_task_list(self, ticket_list):
         '''Adds the list of tickets to the task_list and waiting.'''
