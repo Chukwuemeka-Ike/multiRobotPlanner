@@ -272,7 +272,7 @@ class SupervisorGUI(QMainWindow):
 
     def _createEditTicketDialog(self):
         '''Create a dialog for editing a target ticket.'''
-        editTicketDialog = EditTicketDialog(self, self.job_info, self.ongoing)
+        editTicketDialog = EditTicketDialog(self, self.job_info, self.all_tickets, self.ongoing)
         editTicketDialog.dataEntered.connect(self._processEditedTicket)
 
     def _processEditedTicket(self, data):
