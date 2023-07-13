@@ -18,11 +18,23 @@ The overall objective of the high-level is to plan jobs and tasks, assign robots
 7. ticket_manager
 
 ## External Packages
+### Clearpath
 1. dingo_control
+2. dingo_desktop
 2. dingo_description
-3. dingo_gazebo
-4. dingo_msgs
-5. dingo_simulator
-6. dingo_viz
-7. lab_gazebo
-8. RVizMeshVisualizer
+3. dingo_msgs
+4. dingo_simulator
+5. dingo_viz
+
+### Object Visualizer
+1. RVizMeshVisualizer
+
+### Burak
+1. dingo_gazebo
+2. dingo_description - dingo-o-prefixed.urdf.xacro
+2. lab_gazebo
+3. swarm2_launch
+<!-- 3. swarm_msgs -->
+3. topic_tf_transformers
+4. uwb_pose_publisher
+5. uwb_reader
