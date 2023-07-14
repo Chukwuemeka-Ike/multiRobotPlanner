@@ -35,6 +35,7 @@ class TicketManager():
         self.ready = {}
         self.ongoing = {}
         self.done = {}
+        self.deleted = {}
         self.minJobID = 0
 
         # Timer variables for triggering ticket starts and re-scheduling.
@@ -58,6 +59,9 @@ class TicketManager():
         )
         self.end_ticket_sub = rospy.Subscriber(
             "end_ticket", Ticket, self.on_done_callback
+        )
+        self.delete_job_sub = rospy.Subscriber(
+            "delete_job", Tickets, self.on_delete_job_callback
         )
 
         # Publisher.
@@ -96,7 +100,7 @@ class TicketManager():
         '''Requests a new schedule from the schedule service.
 
         The request sends the whole task list and the ongoing tasks, so the
-        scheduler knows which station assignments to respect.        
+        scheduler knows which machine assignments to respect.        
         '''
         rospy.wait_for_service('schedule_service')
         try:
@@ -129,7 +133,7 @@ class TicketManager():
         old_ticket["start"] = new_ticket["start"]
         old_ticket["end"] = new_ticket["end"]
         old_ticket["time_left"] = new_ticket["time_left"]
-        old_ticket["station_num"] = new_ticket["station_num"]
+        old_ticket["machine_num"] = new_ticket["machine_num"]
 
     def add_ticket_message_callback(self, msg):
         '''Callback for new tickets received.
@@ -150,7 +154,7 @@ class TicketManager():
         temp_dict = {}
         for ticket in ticket_list:
             tix = {}
-            tix["station_type"] = ticket.machine_type
+            tix["machine_type"] = ticket.machine_type
             tix["duration"] = ticket.duration
             tix["parents"] = list(ticket.parents)
 
@@ -220,13 +224,50 @@ class TicketManager():
     def edit_job_message_callback(self):
         '''Callback when an edit_job message is received.'''
 
+    def on_delete_job_callback(self, msg):
+        '''Callback when a delete_job message is received.'''
+        # Only the ticket and job IDs matter here.
+        job_id = 0
+        deleted_ticket_ids = []
+        for ticket in msg.tickets:
+            self.delete_ticket(ticket.ticket_id)
+            job_id = ticket.job_id
+            deleted_ticket_ids.append(ticket.ticket_id)
+
+        rospy.loginfo(f"{log_tag}: Deleted job {job_id} with tickets "
+                      f"{deleted_ticket_ids}."
+        )
+
+        # Update the timers.
+        self.update_ready()
+        self.set_ready_timer()
+        self.update_ongoing_time_left()
+        self.set_ongoing_timer()
+
+    def delete_ticket(self, ticket_id):
+        '''Removes ticket_id from all sets.'''
+        self.deleted[ticket_id] = self.task_list[ticket_id]
+        self.deleted[ticket_id]["time_left"] = 0
+
+        # Delete the ticket from task_list and any set it might be in.
+        if ticket_id in self.task_list:
+            del(self.task_list[ticket_id])
+        if ticket_id in self.waiting:
+            del(self.waiting[ticket_id])
+        if ticket_id in self.ready:
+            del(self.ready[ticket_id])
+        if ticket_id in self.ongoing:
+            del(self.ongoing[ticket_id])
+        if ticket_id in self.done:
+            del(self.done[ticket_id])
+
     def add_tickets_to_task_list(self, ticket_list):
         '''Adds the list of tickets to the task_list and waiting.'''
         for ticket in ticket_list:
             # Create the ticket dictionary.
             tix = {}
             tix["job_id"] = ticket.job_id
-            tix["station_type"] = ticket.machine_type
+            tix["machine_type"] = ticket.machine_type
             tix["duration"] = ticket.duration
             tix["parents"] = list(ticket.parents)
 
@@ -283,12 +324,12 @@ class TicketManager():
         msg = Ticket()
         msg.ticket_id = ticket_id
         msg.job_id = self.task_list[ticket_id]["job_id"]
-        msg.machine_type = self.task_list[ticket_id]["station_type"]
+        msg.machine_type = self.task_list[ticket_id]["machine_type"]
         msg.duration = self.task_list[ticket_id]["duration"]
         msg.parents = self.task_list[ticket_id]["parents"]
         msg.start = self.task_list[ticket_id]["start"]
         msg.end = self.task_list[ticket_id]["end"]
-        msg.station_num = self.task_list[ticket_id]["station_num"]
+        msg.machine_num = self.task_list[ticket_id]["machine_num"]
         self.ticket_started_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Starting ticket {ticket_id}.")
 

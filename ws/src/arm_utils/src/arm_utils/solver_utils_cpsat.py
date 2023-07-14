@@ -64,8 +64,8 @@ def create_opt_variables(model, job_list, all_machines, Mj):
             for task_b in range(len(job_list[job_b])):
                 for task_a in range(len(job_list[job_a])):
                     M_intersection = intersection(
-                        Mj[job_list[job_b][task_b]["station_type"]],
-                        Mj[job_list[job_a][task_a]["station_type"]]
+                        Mj[job_list[job_b][task_b]["machine_type"]],
+                        Mj[job_list[job_a][task_a]["machine_type"]]
                     )
                     for machine in M_intersection:
                         # Binary variable - 1 if (job_a, task_a) precedes
@@ -78,8 +78,8 @@ def create_opt_variables(model, job_list, all_machines, Mj):
         combos = combinations(range(len(job)), 2)
         for combo in combos:
             M_intersection = intersection(
-                Mj[job[combo[0]]["station_type"]],
-                Mj[job[combo[1]]["station_type"]]
+                Mj[job[combo[0]]["machine_type"]],
+                Mj[job[combo[1]]["machine_type"]]
             )
             for machine in M_intersection:
                 # Binary variable - 1 if (job_idx, combo[0]) precedes
@@ -105,22 +105,22 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
         for task_idx, task in enumerate(job):
             # Each operation can only be assigned to one machine.
             model.AddExactlyOne(
-                X[job_idx, task_idx, machine] for machine in Mj[task["station_type"]]
+                X[job_idx, task_idx, machine] for machine in Mj[task["machine_type"]]
             )
 
             # Within a job, each task must start after the all parent tasks end.
             for parent in parent_ids[job_idx][task_idx]:
                 model.Add(
-                    sum(S[job_idx, task_idx, machine] for machine in Mj[task["station_type"]]) >=
-                    sum(C[job_idx, parent, machine] for machine in Mj[job[parent]["station_type"]])
+                    sum(S[job_idx, task_idx, machine] for machine in Mj[task["machine_type"]]) >=
+                    sum(C[job_idx, parent, machine] for machine in Mj[job[parent]["machine_type"]])
                 )
 
     for job_idx, job in enumerate(job_list):
         combos = combinations(range(len(job)), 2)
         for combo in combos:
             M_intersection = intersection(
-                Mj[job[combo[0]]["station_type"]],
-                Mj[job[combo[1]]["station_type"]]
+                Mj[job[combo[0]]["machine_type"]],
+                Mj[job[combo[1]]["machine_type"]]
             )
             # No two tasks within the same job can overlap on the same machine.
             for machine in M_intersection:
@@ -137,7 +137,7 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
         for job_idx, job in enumerate(job_list):
             for task_idx, task in enumerate(job):
                 # Set constraints for all machines that match the task requirement.
-                for machine in Mj[task["station_type"]]:
+                for machine in Mj[task["machine_type"]]:
                     # The start and end time must equal zero if the task is not
                     # assigned to that machine.
                     model.Add(
@@ -163,8 +163,8 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
                     for task_a in range(len(job_list[job_a])):
                         # Check if the task-task pair have overlapping machines.
                         M_intersection = intersection(
-                            Mj[job_list[job_b][task_b]["station_type"]],
-                            Mj[job_list[job_a][task_a]["station_type"]]
+                            Mj[job_list[job_b][task_b]["machine_type"]],
+                            Mj[job_list[job_a][task_a]["machine_type"]]
                         )   
                         # print(M_intersection)
                         for machine in M_intersection:
@@ -184,12 +184,12 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
                 # Job's start must be before the first task's start time.
                 model.Add(
                     S_job[job_idx] <= 
-                        sum(S[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["station_type"]])
+                        sum(S[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["machine_type"]])
                 )
                 # Job's completion must be after the last task's completion time.
                 model.Add(
                     C_job[job_idx] >= 
-                        sum(C[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["station_type"]])
+                        sum(C[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["machine_type"]])
                 )
 
             # The overall makespan must be after the last job's completion.
@@ -199,19 +199,19 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
 
 def respect_ongoing_constraints(model, X, S, job_list: list, ongoing: dict):
     '''Constraints to ensure ongoing tasks are assigned to the
-    same stations and start at time zero.
+    same machines and start at time zero.
     '''
     for ticket_id, ticket in ongoing.items():
-        # Get the ticket location in the job list and its assigned station.
+        # Get the ticket location in the job list and its assigned machine.
         job_idx, task_idx = get_task_idx_in_job(ticket_id, job_list)
-        station_num = ticket["station_num"]
+        machine_num = ticket["machine_num"]
 
         # Set the 
         model.Add(
-            X[job_idx, task_idx, station_num] == 1
+            X[job_idx, task_idx, machine_num] == 1
         )
         model.Add(
-            S[job_idx, task_idx, station_num] == 0
+            S[job_idx, task_idx, machine_num] == 0
         )
 
 def create_idle_time_objective(model, S, C, C_max, job_list, parent_ids, Mj, optimum):
@@ -227,7 +227,7 @@ def create_idle_time_objective(model, S, C, C_max, job_list, parent_ids, Mj, opt
             # Idle time between each task's start and its parents' completion.
             for parent in parent_ids[job_idx][task_idx]:
                 idle_times.append(
-                    sum(S[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["station_type"]])
-                    - sum(C[job_idx, parent, machine] for machine in Mj[job[parent]["station_type"]])
+                    sum(S[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["machine_type"]])
+                    - sum(C[job_idx, parent, machine] for machine in Mj[job[parent]["machine_type"]])
                 )
     model.Minimize(sum(idle_times))

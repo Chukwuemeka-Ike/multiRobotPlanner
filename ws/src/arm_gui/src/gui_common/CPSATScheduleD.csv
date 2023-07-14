@@ -1,4 +1,4 @@
-,job_id,task_idx,ticket_id,parents,station_num,station_type,location,start,end,duration,time_left
+,job_id,task_idx,ticket_id,parents,machine_num,machine_type,location,start,end,duration,time_left
 0,0,0,0,[],0,0,Loading Area,10,15,5,5
 1,0,1,1,[],0,0,Loading Area,0,5,5,5
 2,0,2,2,[0],2,1,Mega Stitch,15,35,20,20

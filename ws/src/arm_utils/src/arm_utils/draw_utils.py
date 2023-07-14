@@ -15,13 +15,13 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
-from arm_constants.stations import Mjs, station_type_abvs
-# from constants.stations_no_overlap import Mjs, station_type_abvs
+from arm_constants.machines import Mjs, machine_type_abvs
+# from constants.machines_no_overlap import Mjs, machine_type_abvs
 from arm_utils.job_utils import *
 from arm_utils.sched_utils import convert_schedule_to_task_list, load_schedule
 
 
-def draw_rectangle(job_num: int, station_type_num: int, station_num: int, start: int, duration: int, ax: plt.axes):
+def draw_rectangle(job_num: int, machine_type_num: int, machine_num: int, start: int, duration: int, ax: plt.axes):
     '''Draw a rectangle at the x-y location given by the start-job numbers.'''
     colors = ["#2f2f2f","#dc0001","#176d14","#006cdc","#b0b0b0"]
     # Create the rectangle and add it to the axes object.
@@ -29,8 +29,8 @@ def draw_rectangle(job_num: int, station_type_num: int, station_num: int, start:
             (start, job_num),
             duration, 1, linewidth=3.5,
             edgecolor="#5e2222",
-            # facecolor=colors[station_type_num],
-            facecolor=f"C{station_type_num}"
+            # facecolor=colors[machine_type_num],
+            facecolor=f"C{machine_type_num}"
             # linewidth=0.25
         )
     ax.add_patch(rectangle)
@@ -38,8 +38,8 @@ def draw_rectangle(job_num: int, station_type_num: int, station_num: int, start:
     cx = rx + rectangle.get_width()/2.0
     cy = ry + rectangle.get_height()/2.0
     ax.annotate(
-        f"{station_type_abvs[station_type_num]} {str(Mjs[station_num]+1)}",
-        # station_num,
+        f"{machine_type_abvs[machine_type_num]} {str(Mjs[machine_num]+1)}",
+        # machine_num,
         (cx, cy),
         color='black', weight='bold',
         fontsize=10, ha='center', va='center'
@@ -75,8 +75,8 @@ def draw_linear_schedule(schedule: pd.DataFrame):
     for i in range(len(schedule.index)):
         row = schedule.iloc[i]
         draw_rectangle(
-            row["job_id"], row["station_type"],
-            row["station_num"],
+            row["job_id"], row["machine_type"],
+            row["machine_num"],
             row["start"], row["duration"], 
             ax
         )
@@ -111,8 +111,8 @@ def draw_tree_schedule(schedule: pd.DataFrame, ax: plt.Axes):
             for ticket_id in linear_job:
                 ticket = task_list[ticket_id]
                 draw_rectangle(
-                    j, ticket["station_type"],
-                    ticket["station_num"],
+                    j, ticket["machine_type"],
+                    ticket["machine_num"],
                     ticket["start"], ticket["duration"], 
                     ax
                 )
@@ -155,8 +155,8 @@ def draw_tree_schedule(schedule: pd.DataFrame, ax: plt.Axes):
 #             for ticket_id in linear_job:
 #                 ticket = task_list[ticket_id]
 #                 draw_rectangle(
-#                     j, ticket["station_type"],
-#                     ticket["station_num"],
+#                     j, ticket["machine_type"],
+#                     ticket["machine_num"],
 #                     ticket["start"], ticket["duration"], 
 #                     ax
 #                 )
@@ -225,8 +225,8 @@ def draw_evolving_schedule(search_dir: str, saveFilename: str="animatedSched.mp4
                     for ticket_id in linear_job:
                         ticket = task_list[ticket_id]
                         draw_rectangle(
-                            j, ticket["station_type"],
-                            ticket["station_num"],
+                            j, ticket["machine_type"],
+                            ticket["machine_num"],
                             ticket["start"], ticket["time_left"], 
                             ax
                         )
@@ -264,7 +264,7 @@ def draw_labor_schedule(labor_schedule: pd.DataFrame, all_robots: list, schedule
         for assignment in range(len(robot_assigned)):
             row = robot_assigned.iloc[assignment]
             draw_rectangle(
-                robot, row["station_type"],
+                robot, row["machine_type"],
                 row["ticket_id"],
                 row["start"], row["duration"],
                 ax

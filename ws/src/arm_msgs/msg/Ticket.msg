@@ -6,5 +6,5 @@ float32 duration
 uint32[] parents
 uint32 start
 uint32 end
-uint32 station_num 
+uint32 machine_num 
 float32 time_left

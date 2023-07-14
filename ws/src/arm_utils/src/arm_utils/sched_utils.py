@@ -9,7 +9,7 @@ Description:
 import json
 import pandas as pd
 
-from arm_constants.stations import station_type_ws_nums, Mjs
+from arm_constants.machines import machine_type_ws_nums, Mjs
 from arm_utils.job_utils import *
 
 
@@ -26,14 +26,14 @@ def load_schedule(filename):
 
     return schedule
 
-def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, station_type_names: list):
+def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, machine_type_names: list):
     '''Extracts and formats the schedule solved by the LP solver and job data.
 
     Returns:
         Schedule - DataFrame of Job-Task schedule with start and end times.
     '''
     jobs, tasks = [], []
-    locations, station_nums, station_type_nums = [], [], []
+    locations, machine_nums, machine_type_nums = [], [], []
     ticket_ids, parentses = [], []
     starts, ends, durations, time_lefts = [], [], [], []
 
@@ -46,9 +46,9 @@ def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, station_typ
                     tasks.append(task_idx)
                     ticket_ids.append(task["ticket_id"])
                     parentses.append(task["parents"])
-                    station_nums.append(machine)
-                    station_type_nums.append(task["station_type"])
-                    locations.append(station_type_names[task["station_type"]])
+                    machine_nums.append(machine)
+                    machine_type_nums.append(task["machine_type"])
+                    locations.append(machine_type_names[task["machine_type"]])
                     starts.append(int(S[job_idx, task_idx, machine].solution_value()))
                     ends.append(int(C[job_idx, task_idx, machine].solution_value()))
                     durations.append(task["duration"])
@@ -59,8 +59,8 @@ def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, station_typ
     schedule["task_idx"] = tasks
     schedule["ticket_id"] = ticket_ids
     schedule["parents"] = parentses
-    schedule["station_num"] = station_nums
-    schedule["station_type"] = station_type_nums
+    schedule["machine_num"] = machine_nums
+    schedule["machine_type"] = machine_type_nums
     schedule["location"] = locations
     schedule["start"] = starts
     schedule["end"] = ends
@@ -69,14 +69,14 @@ def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, station_typ
 
     return schedule
 
-def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, station_type_names: list):
+def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, machine_type_names: list):
     '''Extracts and formats the schedule solved by the CP-SAT solver and job data.
 
     Returns:
         Schedule - DataFrame of Job-Task schedule with start and end times.
     '''
     jobs, tasks = [], []
-    locations, station_nums, station_type_nums = [], [], []
+    locations, machine_nums, machine_type_nums = [], [], []
     ticket_ids, parentses = [], []
     starts, ends, durations, time_lefts = [], [], [], []
 
@@ -89,9 +89,9 @@ def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, 
                     tasks.append(task_idx)
                     ticket_ids.append(task["ticket_id"])
                     parentses.append(task["parents"])
-                    station_nums.append(machine)
-                    station_type_nums.append(task["station_type"])
-                    locations.append(station_type_names[task["station_type"]])
+                    machine_nums.append(machine)
+                    machine_type_nums.append(task["machine_type"])
+                    locations.append(machine_type_names[task["machine_type"]])
                     starts.append(solver.Value(S[job_idx, task_idx, machine]))
                     ends.append(solver.Value(C[job_idx, task_idx, machine]))
                     durations.append(task["duration"])
@@ -102,8 +102,8 @@ def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, 
     schedule["task_idx"] = tasks
     schedule["ticket_id"] = ticket_ids
     schedule["parents"] = parentses
-    schedule["station_num"] = station_nums
-    schedule["station_type"] = station_type_nums
+    schedule["machine_num"] = machine_nums
+    schedule["machine_type"] = machine_type_nums
     schedule["location"] = locations
     schedule["start"] = starts
     schedule["end"] = ends
@@ -124,8 +124,8 @@ def convert_schedule_to_task_list(schedule: pd.DataFrame):
         ticket["job_id"] = row["job_id"]
         ticket["task_idx"] = row["task_idx"]
         ticket["parents"] = row["parents"]
-        ticket["station_num"] = row["station_num"]
-        ticket["station_type"] = row["station_type"]
+        ticket["machine_num"] = row["machine_num"]
+        ticket["machine_type"] = row["machine_type"]
         ticket["location"] = row["location"]
         ticket["start"] = row["start"]
         ticket["end"] = row["end"]
@@ -141,7 +141,7 @@ def convert_schedule_to_task_list(schedule: pd.DataFrame):
 def extract_labor_schedule(R, S, C, job_list, all_robots):
     ''''''
     jobs, tasks = [], []
-    robot_nums, station_type_nums = [], []
+    robot_nums, machine_type_nums = [], []
     ticket_ids, parentses = [], []
     starts, ends, durations = [], [], []
 
@@ -153,7 +153,7 @@ def extract_labor_schedule(R, S, C, job_list, all_robots):
                     tasks.append(task_idx)
                     ticket_ids.append(task["ticket_id"])
                     robot_nums.append(robot)
-                    station_type_nums.append(task["station_type"])
+                    machine_type_nums.append(task["machine_type"])
                     starts.append(int(S[job_idx, task_idx, robot].solution_value()))
                     ends.append(int(C[job_idx, task_idx, robot].solution_value()))
                     durations.append(task["duration"])
@@ -162,7 +162,7 @@ def extract_labor_schedule(R, S, C, job_list, all_robots):
     schedule["job_id"] = jobs
     schedule["ticket_id"] = ticket_ids
     schedule["robot_num"] = robot_nums
-    schedule["station_type"] = station_type_nums
+    schedule["machine_type"] = machine_type_nums
     schedule["start"] = starts
     schedule["end"] = ends
     schedule["duration"] = durations

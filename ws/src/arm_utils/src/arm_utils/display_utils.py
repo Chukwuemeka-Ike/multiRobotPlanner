@@ -25,12 +25,12 @@ def display_job_data(job_list: list):
     print("]")
     print()
 
-def display_station_numbers(station_type_names: list, station_numbers: list):
-    '''Displays the station numbers of each type.'''
-    print("Station numbers:")
+def display_machine_numbers(machine_type_names: list, machine_numbers: list):
+    '''Displays the machine numbers of each type.'''
+    print("Machine numbers:")
     print("[")
-    for i in range(len(station_type_names)):
-        print(f"{station_type_names[i]:>15}:    {station_numbers[i]}")
+    for i in range(len(machine_type_names)):
+        print(f"{machine_type_names[i]:>15}:    {machine_numbers[i]}")
     print("]")
     print()
 

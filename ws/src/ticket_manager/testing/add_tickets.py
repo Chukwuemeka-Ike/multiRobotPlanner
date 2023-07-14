@@ -12,7 +12,7 @@ def add_tickets(publisher, tickets: dict):
         ticket_msg = Ticket()
         ticket_msg.ticket_id = ticket_id
         ticket_msg.job_id = ticket["job_id"]
-        ticket_msg.machine_type = ticket["station_type"]
+        ticket_msg.machine_type = ticket["machine_type"]
         ticket_msg.duration = ticket["duration"]
         ticket_msg.parents = ticket["parents"]
         ticket_list.append(ticket_msg)

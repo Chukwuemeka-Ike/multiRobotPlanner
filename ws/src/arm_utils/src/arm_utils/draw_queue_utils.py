@@ -12,7 +12,7 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
-from constants.stations import station_type_names, station_type_numbers, Mj
+from constants.machines import machine_type_names, machine_type_numbers, Mj
 
 
 fontSize = 9
@@ -27,15 +27,15 @@ queueXGap = 15
 queueHeight = ticketHeight*(maxTickets + 2)
 queueColors = ["#2f2f2f","#dc0001","#176d14","#006cdc","#b0b0b0"]
 
-def draw_queue_rectangle(queue_id, station_type_num, ax):
+def draw_queue_rectangle(queue_id, machine_type_num, ax):
     '''.'''
     rectangle = patches.Rectangle(
         (queue_id*(queueWidth + queueXGap), 0),
         queueWidth, queueHeight,
         linewidth=1,
         edgecolor="none",
-        # facecolor=queueColors[station_type_num]
-        facecolor=f"C{station_type_num}"
+        # facecolor=queueColors[machine_type_num]
+        facecolor=f"C{machine_type_num}"
     )
     ax.add_patch(rectangle)
     rx, ry = rectangle.get_xy()
@@ -127,9 +127,9 @@ def draw_queues(queueSchedule: pd.DataFrame):
         # Draw the queued tickets.
         for idx, row in queueSchedule.iterrows():
             draw_env(num_queues)
-            for station_type_num, station_type in enumerate(Mj):
-                for station in station_type:
-                    draw_queue_rectangle(station, station_type_num, ax)
+            for machine_type_num, machine_type in enumerate(Mj):
+                for machine in machine_type:
+                    draw_queue_rectangle(machine, machine_type_num, ax)
 
             for queue_id in range(num_queues):
                 queue = row[f"Queue {queue_id}"]

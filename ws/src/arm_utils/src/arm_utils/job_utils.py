@@ -32,7 +32,7 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
     for ticket in tickets:
         tix = {}
         tix["job_id"] = ticket.job_id
-        tix["station_type"] = ticket.machine_type
+        tix["machine_type"] = ticket.machine_type
         tix["duration"] = ticket.duration
         tix["parents"] = ticket.parents
 
@@ -43,7 +43,7 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
             tix["time_left"] = ticket.time_left
             tix["start"] = ticket.start
             tix["end"] = ticket.end
-            tix["station_num"] = ticket.station_num
+            tix["machine_num"] = ticket.machine_num
         except KeyError as e:
             pass
             # print(f"Warning: {e}")
@@ -57,7 +57,7 @@ def create_ticket_list(ticket_dict: dict):
             msg = Ticket()
             msg.ticket_id = ticket_id
             msg.job_id = ticket["job_id"]
-            msg.machine_type = ticket["station_type"]
+            msg.machine_type = ticket["machine_type"]
             msg.duration = ticket["duration"]
             msg.parents = ticket["parents"]
 
@@ -66,7 +66,7 @@ def create_ticket_list(ticket_dict: dict):
             try:
                 msg.start = ticket["start"]
                 msg.end = ticket["end"]
-                msg.station_num = ticket["station_num"]
+                msg.machine_num = ticket["machine_num"]
                 msg.time_left = ticket["time_left"]
             except KeyError as e:
                 pass
@@ -85,7 +85,7 @@ def convert_job_list_to_task_list(job_list: list):
             ticket["job_id"] = task["job_id"]
             ticket["ticket_id"] = task["ticket_id"]
             ticket["parents"] = task["parents"]
-            ticket["station_type"] = task["station_type"]
+            ticket["machine_type"] = task["machine_type"]
             ticket["duration"] = task["duration"]
             ticket["time_left"] = task["duration"]
             task_list[task["ticket_id"]] = ticket

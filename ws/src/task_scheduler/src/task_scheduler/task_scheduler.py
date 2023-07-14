@@ -12,7 +12,7 @@ from ortools.sat.python import cp_model
 from arm_msgs.msg import Tickets, Ticket
 from arm_msgs.srv import Schedule, ScheduleResponse
 
-from arm_constants.stations import all_machines, station_type_names, Mj
+from arm_constants.machines import all_machines, machine_type_names, Mj
 from arm_utils.display_utils import display_solution_stats_cpsat,\
     display_task_list
 from arm_utils.draw_utils import draw_tree_schedule
@@ -87,7 +87,7 @@ class TaskScheduler():
             self.schedule = extract_schedule_cpsat(
                 solver, X, S, C, job_list,
                 all_machines,
-                station_type_names
+                machine_type_names
             )
             self.schedule.to_csv(f"schedule{self.schedule_num}.csv")
             self.schedule_times.append(rospy.Time.now().to_sec())

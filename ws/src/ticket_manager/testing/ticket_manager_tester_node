@@ -39,7 +39,7 @@ class TicketManagerTester:
             ticket_msg = Ticket()
             ticket_msg.ticket_id = ticket_id
             ticket_msg.job_id = ticket["job_id"]
-            ticket_msg.machine_type = ticket["station_type"]
+            ticket_msg.machine_type = ticket["machine_type"]
             ticket_msg.duration = ticket["duration"]
             ticket_msg.parents = ticket["parents"]
             ticket_list.append(ticket_msg)
@@ -64,7 +64,7 @@ class TicketManagerTester:
         '''.'''
         msg = Ticket()
         msg.ticket_id = ticket_id
-        msg.machine_type = complete_ticket_dict[ticket_id]["station_type"]
+        msg.machine_type = complete_ticket_dict[ticket_id]["machine_type"]
         msg.duration = complete_ticket_dict[ticket_id]["duration"]
         msg.parents = complete_ticket_dict[ticket_id]["parents"]
         self.end_ticket_pub.publish(msg)
