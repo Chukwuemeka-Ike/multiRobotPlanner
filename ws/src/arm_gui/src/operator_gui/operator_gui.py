@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 
-from ws.src.arm_gui.src.gui_common.gui_elements import ControlToggleButton, RobotButton
+from gui_common.gui_elements import ControlToggleButton, RobotButton
 from gui_common.dialogs import TicketInfoDialog
 from gui_common.map_viz import create_map_widget
 

@@ -519,7 +519,142 @@ class RemoveTicketDialog(QDialog):
         '''Cancel the remove operation.'''
         self.close()
 
-# class Edit
+class EditJobDialog(BasicDialog):
+    '''.'''
+    def __init__(self, parent: QWidget, job_info: dict, all_tickets: dict, ongoing: dict) -> None:
+        '''.
+        
+        Args:
+            job_info: {job_id: [ticket_id, ...], ...}
+        '''
+        super().__init__(parent)
+        self.setWindowTitle("Job Editor")
+
+        self.jobInfo = job_info
+        self.allTickets = all_tickets
+
+        self.dialogLayout = QGridLayout()
+        self.setLayout(self.dialogLayout)
+        self.resize(650, 100)
+        self.square_width = self.layout().geometry().width()//8
+
+        self.create_ui()
+
+    def create_ui(self):
+        '''Create the ui.'''
+
+        # For picking an existing job ID.
+        # If left on default, there will be no parents allowed.
+        self.jobIDLabel = FixedWidthLabel("Job ID", self.square_width)
+        self.jobIDComboBox = QComboBox()
+        # self.jobIDComboBox.setFixedWidth(self.square_width)
+        self.jobIDComboBox.addItem("Select Job ID")
+
+        # Convert to list of strings for the function using list comprehension.
+        self.jobIDComboBox.addItems([str(key) for key in self.jobInfo.keys()])
+        self.jobIDComboBox.currentIndexChanged.connect(self.show_job_tickets)
+        
+        self.dialogLayout.addWidget(self.jobIDLabel, 0, 0)
+        self.dialogLayout.addWidget(self.jobIDComboBox, 0, 1, 1, 2)
+
+        # self.jobFrame = QFrame()
+        # self.jobFrame.setStyleSheet("QFrame { border: 1px solid black; }") 
+
+        self.jobLayout = QVBoxLayout()
+
+        self.titleLayout = QHBoxLayout()
+        self.titleLayout.addWidget(FixedWidthLabel("Ticket"), self.square_width)
+        self.titleLayout.addWidget(FixedWidthLabel("Parents"), self.square_width)
+        self.titleLayout.addWidget(FixedWidthLabel("Duration"), self.square_width)
+        self.titleLayout.addWidget(FixedWidthLabel("Machine Type"), self.square_width)
+        self.titleLayout.addWidget(FixedWidthLabel("Status"), self.square_width)
+        self.titleLayout.addWidget(FixedWidthLabel("Time Left"), self.square_width)
+        self.titleLayout.addWidget(FixedWidthLabel("Remove?"), self.square_width)
+
+        # self.jobFrame.setLayout(self.jobLayout)
+        self.jobLayout.addLayout(self.titleLayout)
+
+        # Create the job list display.
+        # Create a layout to hold the scroll area.
+        self.jobScrollLayout = QVBoxLayout()
+
+        # Create the scroll area, scroll widget, and the job list layout.
+        self.jobScrollArea = QScrollArea()
+        self.jobScrollWidget = QWidget()
+        self.jobListLayout = QVBoxLayout()
+
+        self.jobScrollWidget.setLayout(self.jobListLayout)
+
+        self.jobScrollArea.setWidget(self.jobScrollWidget)
+        self.jobScrollArea.setWidgetResizable(True)
+        self.jobScrollArea.setMaximumHeight(self.height())
+        
+        self.jobScrollLayout.addWidget(self.jobScrollArea)
+
+        # # Update the job list and add the elements to the layout.
+        # self.update_job_list_layout()
+
+        # self.dialogLayout.addWidget(self.jobFrame, 1, 0, 1, 7)
+        self.dialogLayout.addLayout(self.jobLayout, 1, 0, 1, 7)
+
+    def show_job_tickets(self):
+        '''Shows the tickets for the selected job.'''
+        job_id = int(self.jobIDComboBox.currentText())
+        
+        # Clear the layout first.
+        self.clear_layout(self.ticketListLayout)
+        labelWidth = self.width()//8
+        
+        # Ticket information.
+        # ticketListLayout = QVBoxLayout()
+        for ticket_id in self.jobInfo[job_id]:
+            ticket = self.allTickets[ticket_id]
+            ticketLayout = QHBoxLayout()
+            ticketLayout.addWidget(FixedWidthLabel(f"{ticket['ticket_id']}", labelWidth))
+            ticketLayout.addWidget(FixedWidthLineEdit(f"{ticket['parents']}", labelWidth))
+            ticketLayout.addWidget(FixedWidthLineEdit(f"{ticket['duration']: .2f}", labelWidth))
+
+            machineType = QComboBox()
+            machineType.addItems(station_type_names)
+            machineType.setFixedWidth(labelWidth)
+
+            # ticketLayout.addWidget(FixedWidthLabel(f"{station_type_names[ticket['station_type']]}", labelWidth))
+            ticketLayout.addWidget(FixedWidthLabel(f"{ticket['status']}", labelWidth))
+            removeCheck = QCheckBox()
+            ticketLayout.addWidget(removeCheck)
+
+            self.ticketListLayout.addLayout(ticketLayout)
+        self.ticketListLayout.addStretch()
+
+
+    def fill_in_ticket_info(self, row_layout):
+        '''Fills in the row information for the given ticket.'''
+        ticket_id = str(self.allTickets[ticket_id]["ticket_id"])
+        parents = str(self.allTickets[ticket_id]["parents"]).replace('[', '').replace(']', '')
+        duration = str(self.allTickets[ticket_id]["duration"])
+        station_num = self.allTickets[ticket_id]["station_type"]
+        status = self.allTickets[ticket_id]["status"]
+
+        row_layout.itemAt(0).setText(duration)
+        row_layout.itemAt().setText(duration)
+        row_layout.itemAt().setText(duration)
+
+        self.machineTypeComboBox.setCurrentIndex(station_num)
+
+    def clear_layout(self, layout):
+        '''Clears the specified layout.
+
+        Need to do so recursively to clean everything properly.
+        '''
+        for i in reversed(range(layout.count())): 
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+            elif isinstance(item, QVBoxLayout) or isinstance(item, QHBoxLayout):
+                self.clear_layout(item)
+            else:
+                layout.removeItem(item)
 
 class TicketInfoDialog(QDialog):
     '''.'''

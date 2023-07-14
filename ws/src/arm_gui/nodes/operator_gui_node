@@ -5,6 +5,15 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
+    Constructs and shows the Operator GUI.
 '''
-def test_operator():
-    print("Operator succesfully imported!")
+import sys
+
+from PyQt5.QtWidgets import QApplication
+from operator_gui.operator_gui import OperatorGUI
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    gui = OperatorGUI()
+    sys.exit(app.exec())

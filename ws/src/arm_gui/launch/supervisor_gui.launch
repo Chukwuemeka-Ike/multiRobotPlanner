@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="gui_rviz" default="config"/>
-    <rosparam param="gui_rviz_path">$(find arm_gui)/rviz/$(arg gui_rviz).rviz</rosparam>
-
+    <arg name="gui_rviz" default="world_one_robot"/>
+    <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/>
     <node name="supervisor_gui" pkg="arm_gui" type="supervisor_gui_node" output="screen"/>
-    <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
 </launch>

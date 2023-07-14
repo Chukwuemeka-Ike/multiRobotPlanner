@@ -51,7 +51,7 @@ class TicketManager():
             "add_ticket", Tickets, self.add_ticket_message_callback
         )
         self.edit_ticket_sub = rospy.Subscriber(
-            "edit_ticket", Ticket, self.edit_ticket_message_callback
+            "edit_ticket", Tickets, self.edit_ticket_message_callback
         )
         self.edit_job_sub = rospy.Subscriber(
             "edit_job", Tickets, self.edit_job_message_callback
