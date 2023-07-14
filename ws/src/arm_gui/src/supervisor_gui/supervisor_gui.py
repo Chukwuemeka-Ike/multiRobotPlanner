@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import *
 
-from arm_constants.stations import *
+from arm_constants.machines import *
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import TicketList, TicketListRequest
 
@@ -78,6 +78,9 @@ class SupervisorGUI(QMainWindow):
         )
         self.end_ticket_pub = rospy.Publisher(
             "end_ticket", Ticket, queue_size=10
+        )
+        self.delete_job_pub = rospy.Publisher(
+            "delete_job", Tickets, queue_size=10
         )
 
         # Ticket list and subsets - waiting, ready, ongoing, done.
@@ -249,9 +252,9 @@ class SupervisorGUI(QMainWindow):
         self.jobScrollArea.setWidgetResizable(True)
         self.jobScrollArea.setMaximumHeight(self.height())
         
-        # Layout for the column names.
-        labelWidth = self.tabs.width()//8 # Currently 7 columns.
-        print(f"Create width: {labelWidth}")
+        # # Layout for the column names.
+        # labelWidth = self.tabs.width()//8 # Currently 7 columns.
+        # print(f"Create width: {labelWidth}")
 
         # self.jobScrollLayout.addLayout(titleLayout)
         self.jobScrollLayout.addWidget(self.jobScrollArea)
@@ -359,9 +362,52 @@ class SupervisorGUI(QMainWindow):
             self, self.job_ticket_ids, self.all_tickets, self.ongoing
         )
         editJobDialog.dataEntered.connect(self._processEditedJob)
+        editJobDialog.deleteJobID.connect(self._processDeletedJob)
 
     def _processEditedJob(self, data):
-        '''Process the edits made to the job.'''
+        '''Process the edits made to the job.
+
+        Args:
+            data - list of edited tickets. Each ticket contains the
+                    ticket_id, parents, duration, and machine_type_num.
+        '''
+        ticket_list = []
+        edited_ticket_ids = []
+        for ticket_row in data:
+            ticket = Ticket()
+            ticket.ticket_id = ticket_row[0]
+            ticket.parents = ticket_row[1]
+            ticket.duration = ticket_row[2]
+            ticket.machine_type = ticket_row[3]
+
+            ticket_list.append(ticket)
+            edited_ticket_ids.append(ticket_row[0])
+
+        # Create the Tickets msg and publish it.
+        msg = Tickets()
+        msg.tickets = ticket_list
+        self.edit_ticket_pub.publish(msg)
+        rospy.loginfo(f"{log_tag}: Edited ticket(s) {edited_ticket_ids}.")
+
+    def _processDeletedJob(self, deleted_job_id):
+        '''Deletes the specified job.'''
+        ticket_list = []
+        deleted_ticket_ids = []
+        for ticket_id in self.job_ticket_ids[deleted_job_id]:
+            ticket = Ticket()
+            ticket.ticket_id = ticket_id
+            ticket.job_id = deleted_job_id
+
+            ticket_list.append(ticket)
+            deleted_ticket_ids.append(ticket_id)
+
+        # Create the Tickets msg and publish it.
+        msg = Tickets()
+        msg.tickets = ticket_list
+        self.delete_job_pub.publish(msg)
+        rospy.loginfo(f"{log_tag}: Deleted job {deleted_job_id} with tickets "
+                      f"{deleted_ticket_ids}."
+        )
 
     def _onTopButtonClick(self):
         '''.'''
@@ -414,7 +460,7 @@ class SupervisorGUI(QMainWindow):
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
-    # TODO: This belongs in the ticket manager.
+    # TODO: Feels like this belongs in the ticket manager...
     def add_ticket_status(self):
         '''Adds a status key to all_tickets based on which subset they are in.'''
         for ticket_id, ticket in self.all_tickets.items():
@@ -429,11 +475,12 @@ class SupervisorGUI(QMainWindow):
 
     def update_job_list_layout(self):
         '''Update the list of jobs and their ticket states.'''
+        # TODO: Fix the inconsistent labelWidth btw titleLayout and jobLayouts.
 
         # Clear the layout first.
         self.clear_layout(self.jobListLayout)
         labelWidth = self.tabs.width()//8 # Currently 7 columns.
-        print(f"Update width: {labelWidth}")
+        # print(f"Update width: {labelWidth}")
         titleLayout = QHBoxLayout()
         titleLayout.addWidget(FixedWidthLabel("Job", labelWidth))
         titleLayout.addWidget(FixedWidthLabel("Ticket", labelWidth))
@@ -443,7 +490,6 @@ class SupervisorGUI(QMainWindow):
         titleLayout.addWidget(FixedWidthLabel("Status", labelWidth))
         titleLayout.addWidget(FixedWidthLabel("Time Left", labelWidth))
         self.jobListLayout.addLayout(titleLayout)
-
 
         # Iterate through the jobs and display each in its own layout.
         for job in self.job_list:
@@ -466,7 +512,7 @@ class SupervisorGUI(QMainWindow):
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['ticket_id']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['parents']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['duration']: .2f}", labelWidth))
-                ticketLayout.addWidget(FixedWidthLabel(f"{station_type_names[ticket['station_type']]}", labelWidth))
+                ticketLayout.addWidget(FixedWidthLabel(f"{machine_type_names[ticket['machine_type']]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['status']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['time_left']: .2f}", labelWidth))
 
@@ -491,12 +537,12 @@ class SupervisorGUI(QMainWindow):
 
         Need to do so recursively to clean everything properly.
         '''
-        for i in reversed(range(layout.count())): 
-            item = layout.itemAt(i)
+        while layout.count():
+            item = layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.setParent(None)
-            elif isinstance(item, QVBoxLayout) or isinstance(item, QHBoxLayout):
+            elif isinstance(item, QLayout):
                 self.clear_layout(item)
             else:
                 layout.removeItem(item)
