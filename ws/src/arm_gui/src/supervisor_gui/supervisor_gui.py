@@ -25,6 +25,7 @@ from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import TicketList, TicketListRequest
 
 # from arm_utils.display_utils import *
+from arm_utils.data_utils import convert_ticket_list_to_task_dict, convert_task_list_to_schedule
 from arm_utils.draw_utils import draw_tree_schedule
 from arm_utils.job_utils import *
 from arm_utils.sched_utils import *
@@ -122,7 +123,7 @@ class SupervisorGUI(QMainWindow):
         self.show()
 
         # Set the update interval for the GUI in milliseconds.
-        self.update_interval = 5000
+        self.update_interval = 1000
         self.updateTimer = QTimer()
         self.updateTimer.timeout.connect(self.update_gui)
         self.updateTimer.setInterval(self.update_interval)
@@ -550,10 +551,10 @@ class SupervisorGUI(QMainWindow):
 
     def update_schedule_display(self):
         '''Update the schedule shown to the user.'''
-        print(self.all_tickets[38])
-        # schedule = convert_task_list_to_schedule(self.all_tickets, machine_type_names)
+        # print(self.all_tickets[38])
+        schedule = convert_task_list_to_schedule(self.all_tickets, machine_type_names)
         # print(schedule)
 
-        # # Check if schedule
-        # if schedule is not None and schedule["end"].max() != 0:
-        #     self._drawSchedule(schedule)
+        # Check if schedule
+        if schedule is not None and schedule["end"].max() != 0:
+            self._drawSchedule(schedule)

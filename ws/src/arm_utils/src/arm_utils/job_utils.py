@@ -7,7 +7,6 @@ Description:
     Utilities for handling data about an individual jobs.
 '''
 import pandas as pd
-from arm_msgs.msg import Ticket, Tickets
 
 
 def get_job_id_ticket_ids(job_list: list) -> dict:
@@ -19,59 +18,6 @@ def get_job_id_ticket_ids(job_list: list) -> dict:
             ticket_ids.append(ticket["ticket_id"])
         job_task_ids[job[0]["job_id"]] = ticket_ids
     return job_task_ids
-
-def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
-    '''Converts a list of tickets to a dictionary of tickets.
-
-    Tickets is a custom message type that holds multiple Ticket types.
-    '''
-    task_dict = {}
-
-    for ticket in tickets:
-        tix = {}
-        tix["job_id"] = ticket.job_id
-        tix["machine_type"] = ticket.machine_type
-        tix["duration"] = ticket.duration
-        tix["parents"] = ticket.parents
-
-        # These only exist once a schedule has been created.
-        # Failing shouldn't stop the workflow.
-        # TODO: Time left 
-        try:
-            tix["time_left"] = ticket.time_left
-            tix["start"] = ticket.start
-            tix["end"] = ticket.end
-            tix["machine_num"] = ticket.machine_num
-        except KeyError as e:
-            pass
-            # print(f"Warning: {e}")
-        task_dict[ticket.ticket_id] = tix
-    return task_dict
-
-def create_ticket_list(ticket_dict: dict):
-        '''Creates a list of Ticket messages from ticket_dict.'''
-        ticket_list = []
-        for ticket_id, ticket in ticket_dict.items():
-            msg = Ticket()
-            msg.ticket_id = ticket_id
-            msg.job_id = ticket["job_id"]
-            msg.machine_type = ticket["machine_type"]
-            msg.duration = ticket["duration"]
-            msg.parents = ticket["parents"]
-
-            # These only exist once a schedule has been created.
-            # Failing shouldn't stop the workflow.
-            try:
-                msg.start = ticket["start"]
-                msg.end = ticket["end"]
-                msg.machine_num = ticket["machine_num"]
-                msg.time_left = ticket["time_left"]
-            except KeyError as e:
-                pass
-                print(f"Warning: {e}")
-
-            ticket_list.append(msg)
-        return ticket_list
 
 def convert_job_list_to_task_list(job_list: list):
     '''Converts a list of jobs to a dictionary of tickets.'''

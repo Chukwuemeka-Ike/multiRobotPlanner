@@ -13,12 +13,11 @@ from arm_msgs.msg import Tickets, Ticket
 from arm_msgs.srv import Schedule, ScheduleResponse
 
 from arm_constants.machines import all_machines, machine_type_names, Mj
-from arm_utils.display_utils import display_solution_stats_cpsat,\
-    display_task_list
-from arm_utils.draw_utils import draw_tree_schedule
+from arm_utils.display_utils import display_solution_stats_cpsat
 from arm_utils.job_utils import get_task_parent_indices,\
-    convert_task_list_to_job_list, create_ticket_list, convert_ticket_list_to_task_dict
-from arm_utils.sched_utils import extract_schedule_cpsat, convert_schedule_to_task_list
+    convert_task_list_to_job_list
+from arm_utils.data_utils import create_ticket_list, convert_schedule_to_task_list, convert_ticket_list_to_task_dict
+from arm_utils.sched_utils import extract_schedule_cpsat
 from arm_utils.solver_utils_cpsat import create_opt_variables, define_constraints,\
     respect_ongoing_constraints
 

@@ -17,8 +17,9 @@ import pandas as pd
 
 from arm_constants.machines import Mjs, machine_type_abvs
 # from constants.machines_no_overlap import Mjs, machine_type_abvs
+from arm_utils.data_utils import convert_schedule_to_task_list
 from arm_utils.job_utils import *
-from arm_utils.sched_utils import convert_schedule_to_task_list, load_schedule
+from arm_utils.sched_utils import load_schedule
 
 
 def draw_rectangle(job_num: int, machine_type_num: int, machine_num: int, start: int, duration: int, ax: plt.axes):
@@ -54,8 +55,7 @@ def draw_env(bounds: list, fontSize: int):
     # print(number)
     xSpacing = math.ceil(number/10)*10      # Round up to nearest 10.
     # xSpacing = round(number, -1)            # Round to nearest 10.
-    print(xSpacing)
-    print(bounds)
+    # print(xSpacing)
     plt.xticks(np.arange(bounds[0], bounds[1], xSpacing), fontsize=fontSize)
     plt.yticks(np.arange(bounds[3], bounds[2], 1), fontsize=fontSize)
     plt.xlabel('Time (mins)', fontsize=fontSize)
