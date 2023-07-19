@@ -812,7 +812,7 @@ class ConfirmJobDeletionDialog(BasicDialog):
         self.buttons = QDialogButtonBox()
         applyButton = self.buttons.addButton("Yes", QDialogButtonBox.AcceptRole)
         cancelButton = self.buttons.addButton("No", QDialogButtonBox.RejectRole)
-        
+
         applyButton.clicked.connect(self.accept)
         cancelButton.clicked.connect(self.close)
 

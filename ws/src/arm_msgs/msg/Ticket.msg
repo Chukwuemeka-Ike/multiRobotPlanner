@@ -1,9 +1,9 @@
 Header header
-uint32 ticket_id
 uint32 job_id
-uint32 machine_type
-float32 duration
+uint32 ticket_id
 uint32[] parents
+float32 duration
+uint32 machine_type
 uint32 start
 uint32 end
 uint32 machine_num 

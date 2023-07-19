@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 
-from gui_common.gui_elements import ControlToggleButton, RobotButton
+from gui_common.gui_elements import ControlToggleButton, RobotButton, FixedWidthLabel
 from gui_common.dialogs import TicketInfoDialog
 from gui_common.map_viz import create_map_widget
 
@@ -40,6 +40,13 @@ class OperatorGUI(QMainWindow):
         rospy.loginfo("Initializing Operator GUI")
         rp = rospkg.RosPack()
         self.gui_path = rp.get_path("arm_gui")
+        # RViz configuration location.
+        rviz_folder = os.path.join(
+            rospkg.RosPack().get_path("arm_gui"), 'rviz'
+        )
+        self.rviz_path = rospy.get_param(
+            "gui_rviz_path", os.path.join(rviz_folder, "config.rviz")
+        )
         rospy.on_shutdown(self.shutdownGUI)
 
         self.ticketID = 4
@@ -144,6 +151,7 @@ class OperatorGUI(QMainWindow):
     def _createPerimeterLayout(self):
         '''.'''
         self.perimeterLayout = QVBoxLayout()
+        self.perimeterLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
 
     def _createControlLayout(self):
         '''.'''

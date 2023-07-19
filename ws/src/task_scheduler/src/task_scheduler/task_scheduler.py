@@ -22,7 +22,9 @@ from arm_utils.sched_utils import extract_schedule_cpsat, convert_schedule_to_ta
 from arm_utils.solver_utils_cpsat import create_opt_variables, define_constraints,\
     respect_ongoing_constraints
 
+
 log_tag = "Task Scheduler"
+
 
 class TaskScheduler():
     '''.'''

@@ -20,8 +20,6 @@ def get_job_id_ticket_ids(job_list: list) -> dict:
         job_task_ids[job[0]["job_id"]] = ticket_ids
     return job_task_ids
 
-
-
 def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
     '''Converts a list of tickets to a dictionary of tickets.
 
@@ -70,7 +68,7 @@ def create_ticket_list(ticket_dict: dict):
                 msg.time_left = ticket["time_left"]
             except KeyError as e:
                 pass
-                # print(f"Warning: {e}")
+                print(f"Warning: {e}")
 
             ticket_list.append(msg)
         return ticket_list
@@ -134,9 +132,9 @@ def get_task_parent_indices(job_list: list):
         for task_idx in range(len(job)):
             task_parent_indices = []
             for parent_ticket_id in job[task_idx]["parents"]:
-                for task_idx in range(len(job)):
-                    if job[task_idx]["ticket_id"] == parent_ticket_id:
-                        task_parent_indices.append(task_idx)
+                for task in range(len(job)):
+                    if job[task]["ticket_id"] == parent_ticket_id:
+                        task_parent_indices.append(task)
             job_parent_indices.append(task_parent_indices)
         parent_indices.append(job_parent_indices)
     return parent_indices

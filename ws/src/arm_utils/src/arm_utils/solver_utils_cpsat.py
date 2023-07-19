@@ -13,12 +13,20 @@ from arm_utils.job_utils import get_task_idx_in_job
 
 import math
 
+
 def intersection(lst1, lst2):
     '''Returns the common items between two lists.'''
     return list(set(lst1) & set(lst2))
 
-def create_opt_variables(model, job_list, all_machines, Mj):
+def create_opt_variables(model: cp_model.CpModel, job_list: list, all_machines: list, Mj: list):
     '''Creates all the optimization variables for the MILP problem.
+    Args:
+        model: - .
+        job_list: List of lists, where each sub-list is a job made up of
+                    task dictionaries.
+        all_machines: List of unique identifiers for each machine.
+        Mj: List of lists, where each sub-list contains the unique identifiers
+            of the machines of a specific type. 
 
     Returns:
         X: Binary variable - 1 if job i task j is assigned to machine k.
@@ -28,6 +36,7 @@ def create_opt_variables(model, job_list, all_machines, Mj):
             (job_idx, task_b) on machine k. 0, otherwise.
         S: Start time of (job, task) on machine if assigned. 0, otherwise.
         C: Completion time of (job, task) on machine if assigned. 0, otherwise.
+        S_job: Start time of each job.
         C_job: Completion time of each job.
         C_max: Overall makespan (length of the schedule).
     '''
@@ -93,8 +102,28 @@ def create_opt_variables(model, job_list, all_machines, Mj):
 
     return X, Y, Z, S, C, S_job, C_job, C_max
 
-def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
-    '''Defines all the optimization constraints.'''
+def define_constraints(model: cp_model.CpModel, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
+    '''Defines all the optimization constraints.
+    
+    Args:
+        model: - Instance of cp_model.
+        X: Binary variable - 1 if job i task j is assigned to machine k.
+        Y: Binary variable - 1 if (job_a, task_a) precedes
+            (job_b, task_b) on machine k. 0, otherwise.
+        Z: Binary variable - 1 if (job_idx, task_a) precedes
+            (job_idx, task_b) on machine k. 0, otherwise.
+        S: Start time of (job, task) on machine if assigned. 0, otherwise.
+        C: Completion time of (job, task) on machine if assigned. 0, otherwise.
+        S_job: Start time of each job.
+        C_job: Completion time of each job.
+        C_max: Overall makespan (length of the schedule).
+        job_list: List of lists, where each sub-list is a job made up of
+                    task dictionaries.
+        parent_ids: List of lists, where each sub-list contains the ticket IDs
+            of the corresponding ticket's parents.
+        Mj: List of lists, where each sub-list contains the unique identifiers
+            of the machines of a specific type.
+    '''
     # # Ensure the time_left values are all integers for the CP-SAT solver to work.
     # for job in job_list:
     #     for task in job:
@@ -197,9 +226,17 @@ def define_constraints(model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, pare
                 C_max >= C_job[job_idx]
             )
 
-def respect_ongoing_constraints(model, X, S, job_list: list, ongoing: dict):
+def respect_ongoing_constraints(model: cp_model.CpModel, X, S, job_list: list, ongoing: dict):
     '''Constraints to ensure ongoing tasks are assigned to the
     same machines and start at time zero.
+
+    Args:
+        model: - Instance of cp_model.
+        job_list: List of lists, where each sub-list is a job made up of
+                    task dictionaries.
+        X: Binary variable - 1 if job i task j is assigned to machine k.
+        S: Start time of (job, task) on machine if assigned. 0, otherwise.
+        ongoing: Dictionary of ongoing tickets. Ticket ID is the key.
     '''
     for ticket_id, ticket in ongoing.items():
         # Get the ticket location in the job list and its assigned machine.
@@ -214,7 +251,7 @@ def respect_ongoing_constraints(model, X, S, job_list: list, ongoing: dict):
             S[job_idx, task_idx, machine_num] == 0
         )
 
-def create_idle_time_objective(model, S, C, C_max, job_list, parent_ids, Mj, optimum):
+def create_idle_time_objective(model: cp_model.CpModel, S, C, C_max, job_list, parent_ids, Mj, optimum):
     '''Sets the schedule's total idle time as the objective.'''
     # TODO: Ensure this actually works.
     # Add constraint for makespan based on previously found optimum.

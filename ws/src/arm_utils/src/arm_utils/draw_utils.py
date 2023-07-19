@@ -54,7 +54,8 @@ def draw_env(bounds: list, fontSize: int):
     # print(number)
     xSpacing = math.ceil(number/10)*10      # Round up to nearest 10.
     # xSpacing = round(number, -1)            # Round to nearest 10.
-    # print(xSpacing)
+    print(xSpacing)
+    print(bounds)
     plt.xticks(np.arange(bounds[0], bounds[1], xSpacing), fontsize=fontSize)
     plt.yticks(np.arange(bounds[3], bounds[2], 1), fontsize=fontSize)
     plt.xlabel('Time (mins)', fontsize=fontSize)

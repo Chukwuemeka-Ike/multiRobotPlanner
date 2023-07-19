@@ -24,7 +24,7 @@ from arm_constants.machines import *
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import TicketList, TicketListRequest
 
-from arm_utils.display_utils import *
+# from arm_utils.display_utils import *
 from arm_utils.draw_utils import draw_tree_schedule
 from arm_utils.job_utils import *
 from arm_utils.sched_utils import *
@@ -158,6 +158,7 @@ class SupervisorGUI(QMainWindow):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         self.request_ticket_list()
         self.update_job_list_layout()
+        self.update_schedule_display()
 
     def shutdown_gui(self):
         '''Announce GUI shutdown.'''
@@ -279,9 +280,9 @@ class SupervisorGUI(QMainWindow):
         self.ax = figure.add_subplot(111)
 
         # Draw the placeholder schedule.
-        self._drawSchedule()
+        self._drawSchedule(schedule)
 
-    def _drawSchedule(self):
+    def _drawSchedule(self, schedule):
         '''.'''
         # Clear the old figure.
         self.ax.clear()
@@ -546,3 +547,13 @@ class SupervisorGUI(QMainWindow):
                 self.clear_layout(item)
             else:
                 layout.removeItem(item)
+
+    def update_schedule_display(self):
+        '''Update the schedule shown to the user.'''
+        print(self.all_tickets[38])
+        # schedule = convert_task_list_to_schedule(self.all_tickets, machine_type_names)
+        # print(schedule)
+
+        # # Check if schedule
+        # if schedule is not None and schedule["end"].max() != 0:
+        #     self._drawSchedule(schedule)
