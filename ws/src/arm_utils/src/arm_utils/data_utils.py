@@ -7,10 +7,10 @@ Description:
     Common utilities for manipulating data structures.
 
     Functions here are for converting between:
-        1. ticket lists
-        2. task dicts
+        1. ticket lists,
+        2. ticket dictionaries,
         3. schedules, and
-        4. job lists
+        4. job lists.
     
 '''
 import pandas as pd

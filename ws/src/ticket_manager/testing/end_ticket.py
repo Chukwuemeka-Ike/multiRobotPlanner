@@ -24,7 +24,7 @@ if __name__ == "__main__":
     
     msg = Ticket()
     if len(sys.argv) > 1:
-        msg.ticket_id = sys.argv[1]
+        msg.ticket_id = int(sys.argv[1])
     else:
         msg.ticket_id = 18
     end_ticket_pub.publish(msg)

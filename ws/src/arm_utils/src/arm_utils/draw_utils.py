@@ -7,16 +7,16 @@ Description:
     Utilities for graphing, decorating, and saving the assignment and schedule.
 '''
 import glob
-import json
 import math
-from matplotlib.animation import FFMpegWriter
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
+from matplotlib.animation import FFMpegWriter
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 from arm_constants.machines import Mjs, machine_type_abvs
-# from constants.machines_no_overlap import Mjs, machine_type_abvs
+
 from arm_utils.data_utils import convert_schedule_to_task_list
 from arm_utils.job_utils import *
 from arm_utils.sched_utils import load_schedule

@@ -7,11 +7,12 @@ Description:
     Utilities for creating variables and constraints for the Google OR-TOOLS
     CP-SAT solver.
 '''
+import math
+
 from ortools.sat.python import cp_model
 from itertools import combinations
-from arm_utils.job_utils import get_task_idx_in_job
 
-import math
+from arm_utils.job_utils import get_task_idx_in_job
 
 
 def intersection(lst1, lst2):
@@ -124,11 +125,6 @@ def define_constraints(model: cp_model.CpModel, X, Y, Z, S, C, S_job, C_job, C_m
         Mj: List of lists, where each sub-list contains the unique identifiers
             of the machines of a specific type.
     '''
-    # # Ensure the time_left values are all integers for the CP-SAT solver to work.
-    # for job in job_list:
-    #     for task in job:
-    #         task["time_left"] = math.ceil(task["time_left"])
-
     # Job-specific constraints.
     for job_idx, job in enumerate(job_list):
         for task_idx, task in enumerate(job):

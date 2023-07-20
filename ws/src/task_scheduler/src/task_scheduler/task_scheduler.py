@@ -5,57 +5,59 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
+    Defines the Task Scheduler class, which generates schedules whenever
+    the Ticket Manager requests. An object is instantiated in the
+    task_scheduler_node.
 '''
 import rospy
 from ortools.sat.python import cp_model
 
-from arm_msgs.msg import Tickets, Ticket
+from arm_constants.machines import all_machines, machine_type_names, Mj
+
 from arm_msgs.srv import Schedule, ScheduleResponse
 
-from arm_constants.machines import all_machines, machine_type_names, Mj
 from arm_utils.display_utils import display_solution_stats_cpsat
-from arm_utils.job_utils import get_task_parent_indices,\
-    convert_task_list_to_job_list
+from arm_utils.job_utils import get_task_parent_indices, convert_task_list_to_job_list
 from arm_utils.data_utils import create_ticket_list, convert_schedule_to_task_list, convert_ticket_list_to_task_dict
 from arm_utils.sched_utils import extract_schedule_cpsat
-from arm_utils.solver_utils_cpsat import create_opt_variables, define_constraints,\
-    respect_ongoing_constraints
+from arm_utils.solver_utils_cpsat import create_opt_variables, define_constraints, respect_ongoing_constraints
 
 
 log_tag = "Task Scheduler"
 
 
 class TaskScheduler():
-    '''.'''
+    '''Class for the Task Scheduler responsible for generating schedules
+    whenever the Ticket Manager requests it.
+    '''
 
     def __init__(self) -> None:
         '''.'''
         rospy.init_node('task_scheduler')
         rospy.on_shutdown(self.shutdown_task_scheduler)
         rospy.loginfo(f"{log_tag}: Node started.")
+
+        # Service through which the Ticket Manager can request schedules.
         self.sched_service = rospy.Service(
             'schedule_service', Schedule, self.send_schedule
         )
+
+        # Variables for tracking how many schedules have been generated
+        # and the times each was generated.
         self.schedule_num = 0
         self.schedule_times = []
-        
+
         rospy.spin()
 
-    def generate_schedule(self, task_list: dict, ongoing: dict):
-        '''Generates a schedule from the given task_list.'''
-        # display_task_list(task_list)
-
-        # Convert the task_list to job_list.
-        job_list = convert_task_list_to_job_list(task_list)
+    def generate_schedule(self, ticket_dict: dict, ongoing: dict):
+        '''Generates a schedule from the given ticket_dict.'''
+        # Convert the ticket_dict to job_list, which is the format
+        # that the solver_utils functions expect it in.
+        job_list = convert_task_list_to_job_list(ticket_dict)
 
         # Get the indices of each task's parents in the job list.
-        # This is done now to ease lookup later.
+        # This is done now to ease lookup when building the constraints.
         parent_ids = get_task_parent_indices(job_list)
-
-        # Maximum horizon if all jobs and tasks were done in sequence.
-        horizon = sum(
-            task["duration"] for job in job_list for task in job
-        )
 
         # Declare the model for the problem.
         model = cp_model.CpModel()
@@ -71,16 +73,17 @@ class TaskScheduler():
             model, X, S, job_list, ongoing
         )
 
-        # Define the objective function to minimize the makespan, then
-        # display some solver information.
+        # Define the objective function to minimize the makespan.
         model.Minimize(C_max)
 
-        # Create the solver and solve.
+        # Create the solver and solve the optimization problem.
+        # Set a hard time limit of 10 seconds. So far, planning
+        # for 12 jobs has never taken up to 10 seconds.
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = 10.0
         status = solver.Solve(model)
-        
-        # Display the initial solution.
+
+        # Display the solution information.
         display_solution_stats_cpsat(solver, status)
 
         if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
@@ -94,22 +97,34 @@ class TaskScheduler():
             self.schedule_times.append(rospy.Time.now().to_sec())
             self.schedule_num += 1
         else:
-            pass
-            # display_task_list(task_list)
+            rospy.logwarn(f"{log_tag}: Failed to generate a schedule.")
+            # display_task_list(ticket_dict)
 
     def send_schedule(self, request):
-        '''.'''
+        '''Called when a schedule is requested by the Ticket Manager.
+        
+        Generates a schedule, converts it to a dictionary, then sends
+        it to back to the client.
+        '''
         rospy.loginfo(f"{log_tag}: Generating a schedule.")
-        task_list = convert_ticket_list_to_task_dict(request.tickets)
+
+        # Convert the ongoing and all ticket lists to dictionaries.
+        ticket_dict = convert_ticket_list_to_task_dict(request.tickets)
         ongoing = convert_ticket_list_to_task_dict(request.ongoing)
-        self.generate_schedule(task_list, ongoing)
+
+        # Generate the schedule.
+        self.generate_schedule(ticket_dict, ongoing)
+
+        # Convert the generated schedule back to a dictionary then
+        # ticket list, then send it back.
         task_dict = convert_schedule_to_task_list(self.schedule)
         ticket_list = create_ticket_list(task_dict)
+
         return ScheduleResponse(ticket_list)
 
     def shutdown_task_scheduler(self):
-        '''Gracefully shutdown task scheduler.'''
-        # Save all generated schedules
+        '''Gracefully shutdown the task scheduler.'''
+        # Save all generated schedules.
         '''Saves the actual executed schedule for future reference.'''
         # with open('sched_times.txt', 'w') as f:
         #     for time in self.schedule_times:

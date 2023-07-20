@@ -9,6 +9,7 @@ Description:
 from ortools.linear_solver import pywraplp
 from ortools.sat.python import cp_model
 
+
 def display_job_data(job_list: list):
     '''Displays all tickets in a job list.'''
     num_jobs = len(job_list)

@@ -5,6 +5,9 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
+    Defines the Ticket Manager class, which maintains ticket states and
+    provides their information over a service to the GUIs. It requests
+    schedules from the Task Scheduler as needed.
 '''
 import math
 import rospy

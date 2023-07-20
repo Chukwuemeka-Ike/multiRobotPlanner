@@ -9,12 +9,9 @@ Description:
 import json
 import pandas as pd
 
-from arm_constants.machines import machine_type_ws_nums, Mjs
-from arm_utils.job_utils import *
 
-
-def load_schedule(filename):
-    '''.'''
+def load_schedule(filename: str):
+    '''Loads a schedule from the given filename.'''
     schedule = pd.read_csv(filename, index_col=0)
 
     # Parents list gets saved as a string. Convert it back to a list.
@@ -111,38 +108,6 @@ def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, 
     schedule["time_left"] = time_lefts
 
     return schedule
-
-def extract_labor_schedule(R, S, C, job_list, all_robots):
-    ''''''
-    jobs, tasks = [], []
-    robot_nums, machine_type_nums = [], []
-    ticket_ids, parentses = [], []
-    starts, ends, durations = [], [], []
-
-    for job_idx, job in enumerate(job_list):
-        for task_idx, task in enumerate(job):
-            for robot in all_robots:
-                if R[job_idx, task_idx, robot].solution_value() > 0.5:
-                    jobs.append(job_idx)
-                    tasks.append(task_idx)
-                    ticket_ids.append(task["ticket_id"])
-                    robot_nums.append(robot)
-                    machine_type_nums.append(task["machine_type"])
-                    starts.append(int(S[job_idx, task_idx, robot].solution_value()))
-                    ends.append(int(C[job_idx, task_idx, robot].solution_value()))
-                    durations.append(task["duration"])
-
-    schedule = pd.DataFrame()
-    schedule["job_id"] = jobs
-    schedule["ticket_id"] = ticket_ids
-    schedule["robot_num"] = robot_nums
-    schedule["machine_type"] = machine_type_nums
-    schedule["start"] = starts
-    schedule["end"] = ends
-    schedule["duration"] = durations
-
-    return schedule
-
 
 def get_total_idle_time(schedule, job_list, parent_ids):
     '''Gets the total idle time between connected tasks in the schedule.'''
