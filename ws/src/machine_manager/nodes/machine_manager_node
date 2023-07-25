@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+'''
+Rensselaer Polytechnic Institute - Julius Lab
+ARM Project
+Author - Chukwuemeka Osaretin Ike
+
+Description:
+'''
+from machine_manager.machine_manager import MachineManager
+
+
+if __name__ == "__main__":
+    manager = MachineManager()
