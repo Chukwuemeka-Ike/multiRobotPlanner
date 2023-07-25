@@ -160,3 +160,54 @@ def convert_task_list_to_schedule(task_dict: dict, machine_type_names: list) -> 
         return schedule
     else:
         return None
+
+
+def convert_job_list_to_task_list(job_list: list):
+    '''Converts a list of jobs to a dictionary of tickets.'''
+    task_list = {}
+
+    for job in job_list:
+        for task in job:
+            ticket = {}
+            ticket["job_id"] = task["job_id"]
+            ticket["ticket_id"] = task["ticket_id"]
+            ticket["parents"] = task["parents"]
+            ticket["machine_type"] = task["machine_type"]
+            ticket["duration"] = task["duration"]
+            ticket["time_left"] = task["duration"]
+            task_list[task["ticket_id"]] = ticket
+    return task_list
+
+def convert_task_list_to_job_list(task_list: dict):
+    '''Converts a dictionary of tickets to a job list.'''
+    job_list, visited = [], []
+    job_id = 0
+
+    for ticket_id, _ in task_list.items():
+        if ticket_id not in visited:
+            linear_job = [ticket_id, ]
+            get_all_children_from_task_list(
+                ticket_id, task_list, linear_job
+            )
+
+            # The last id in the linear job is the root of the job tree.
+            # Start there to traverse the whole tree.
+            last_job_task = linear_job[-1]
+            all_job_tasks = [last_job_task, ]
+            get_all_parents_from_task_list(
+                last_job_task, task_list, all_job_tasks
+            )
+
+            # Add the list of all the job's tasks to the job_list.
+            # Add all the indices to visited to avoid duplicates.
+            # job_tasks = [task_list[id] for id in all_job_tasks]
+            job_tasks = []
+            for task in all_job_tasks:
+                task_list[task]["ticket_id"] = task
+                task_list[task]["job_id"] = job_id
+                job_tasks.append(task_list[task])
+                visited.append(task)
+            job_tasks.reverse()
+            job_list.append(job_tasks)
+            job_id += 1
+    return job_list

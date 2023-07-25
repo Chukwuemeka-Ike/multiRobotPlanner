@@ -19,56 +19,6 @@ def get_job_id_ticket_ids(job_list: list) -> dict:
         job_task_ids[job[0]["job_id"]] = ticket_ids
     return job_task_ids
 
-def convert_job_list_to_task_list(job_list: list):
-    '''Converts a list of jobs to a dictionary of tickets.'''
-    task_list = {}
-
-    for job in job_list:
-        for task in job:
-            ticket = {}
-            ticket["job_id"] = task["job_id"]
-            ticket["ticket_id"] = task["ticket_id"]
-            ticket["parents"] = task["parents"]
-            ticket["machine_type"] = task["machine_type"]
-            ticket["duration"] = task["duration"]
-            ticket["time_left"] = task["duration"]
-            task_list[task["ticket_id"]] = ticket
-    return task_list
-
-def convert_task_list_to_job_list(task_list: dict):
-    '''Converts a dictionary of tickets to a job list.'''
-    job_list, visited = [], []
-    job_id = 0
-
-    for ticket_id, _ in task_list.items():
-        if ticket_id not in visited:
-            linear_job = [ticket_id, ]
-            get_all_children_from_task_list(
-                ticket_id, task_list, linear_job
-            )
-
-            # The last id in the linear job is the root of the job tree.
-            # Start there to traverse the whole tree.
-            last_job_task = linear_job[-1]
-            all_job_tasks = [last_job_task, ]
-            get_all_parents_from_task_list(
-                last_job_task, task_list, all_job_tasks
-            )
-
-            # Add the list of all the job's tasks to the job_list.
-            # Add all the indices to visited to avoid duplicates.
-            # job_tasks = [task_list[id] for id in all_job_tasks]
-            job_tasks = []
-            for task in all_job_tasks:
-                task_list[task]["ticket_id"] = task
-                task_list[task]["job_id"] = job_id
-                job_tasks.append(task_list[task])
-                visited.append(task)
-            job_tasks.reverse()
-            job_list.append(job_tasks)
-            job_id += 1
-    return job_list
-
 def get_task_parent_indices(job_list: list):
     '''Get the indices of each task's parents within the job list.'''
     parent_indices = []
@@ -180,3 +130,19 @@ def get_job_subsizes(schedule: pd.DataFrame, task_list: dict):
         start_ids = get_tree_job_start_ids(job.iloc[0].ticket_id, task_list)
         sizes.append(len(start_ids))
     return sizes
+
+def get_all_job_start_points(job_list: list, task_dict: dict) -> dict:
+    '''Gets the starting points of each job in the job list.
+
+    Args:
+        job_list: list of lists where each job is a list of dictionaries.
+    Returns:
+        start_points: dictionary of {job_id: [starting points]}.
+    '''
+    start_points = {}
+    for job in job_list:
+        start_points[job[0]["job_id"]] = get_tree_job_start_ids(
+            job[0]["ticket_id"],
+            task_dict
+        )
+    return start_points

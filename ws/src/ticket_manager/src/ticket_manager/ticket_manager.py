@@ -15,7 +15,7 @@ import rospy
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
 
-from arm_utils.data_utils import create_ticket_list, convert_ticket_list_to_task_dict
+from arm_utils.conversion_utils import create_ticket_list, convert_ticket_list_to_task_dict
 from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list
 
 

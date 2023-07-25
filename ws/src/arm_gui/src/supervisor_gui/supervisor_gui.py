@@ -20,14 +20,15 @@ import matplotlib.pyplot as plt
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import *
 
-from arm_constants.machines import *
+from arm_constants.machines import machine_type_names
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import TicketList, TicketListRequest
 
 # from arm_utils.display_utils import *
-from arm_utils.data_utils import convert_ticket_list_to_task_dict, convert_task_list_to_schedule
+from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
+      convert_task_list_to_schedule, convert_task_list_to_job_list
 from arm_utils.draw_utils import draw_tree_schedule
-from arm_utils.job_utils import *
+from arm_utils.job_utils import get_job_id_ticket_ids
 from arm_utils.sched_utils import *
 
 from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketDialog, EditJobDialog
