@@ -8,5 +8,6 @@ Description:
 '''
 from ticket_manager.ticket_manager import TicketManager
 
+
 if __name__ == "__main__":
     manager = TicketManager()

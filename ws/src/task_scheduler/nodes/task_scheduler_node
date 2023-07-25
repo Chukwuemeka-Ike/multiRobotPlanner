@@ -8,5 +8,6 @@ Description:
 '''
 from task_scheduler.task_scheduler import TaskScheduler
 
+
 if __name__ == "__main__":
     scheduler = TaskScheduler()
