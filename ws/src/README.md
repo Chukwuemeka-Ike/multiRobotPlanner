@@ -5,6 +5,7 @@ The packages in this workspace encompass the high-level components of the ARM pr
 3. Task scheduling - Task Scheduler
 4. Robot assignment - Robot Assigner
 5. Destination planning - Destination Planner
+6. Machine management - Machine Manager
 
 The overall objective of the high-level is to plan jobs and tasks, assign robots to those jobs, and to ensure that the robots head to the correct destinations at the right time. The ticket manager also maintains the states of jobs and tasks in the system.
 
@@ -13,9 +14,10 @@ The overall objective of the high-level is to plan jobs and tasks, assign robots
 2. arm_msgs
 3. arm_utils
 4. destination_planner
-5. robot_assigner
-6. task_scheduler
-7. ticket_manager
+5. machine_manager
+6. robot_assigner
+7. task_scheduler
+8. ticket_manager
 
 ## External Packages
 ### Clearpath
