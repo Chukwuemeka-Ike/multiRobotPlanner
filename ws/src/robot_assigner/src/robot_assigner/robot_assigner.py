@@ -124,6 +124,7 @@ class RobotAssigner():
                 self.update_existing_job_assigned_number(job)
 
                 # Check that the assigned robots are still functional.
+                # TODO.
 
             else:
                 unassigned_jobs.append(job)
@@ -152,6 +153,83 @@ class RobotAssigner():
         # Delete the job from assignments and job_assigned_ids.
         del(self.assignments[job_id])
         del(self.job_assigned_ids[job_id])
+
+    def update_existing_job_assigned_number(self, job: list):
+        '''Updates the number of robots in an existing job.
+
+        Takes care of edits made to the number of robots needed for a job.
+        If more robots are needed, it adds them to the relevant branches.
+        If fewer robots are needed, it removes the difference from the
+        relevant branches.
+
+        Currently only implemented for if changes are made to top-level
+        tickets.
+
+        Args:
+            job: list of tickets within that job.
+        '''
+        # TODO: Decide whether to allow changes to lower-level tickets.
+
+        # Check how many robots were already assigned to the job.
+        job_id = job[0]["job_id"]
+        old_num_assigned = len(self.job_assigned_ids[job_id])
+
+        # Get the start points of the job.
+        start_points = get_all_job_start_points([job], self.task_dict)
+
+        # Count how many robots are now needed for the job.
+        new_num_needed = 0
+        for starter in start_points[job_id]:
+            new_num_needed += self.task_dict[starter]["num_robots"]
+
+        # If the number needed is still correct, exit the function.
+        # Otherwise, make the changes to the relevant branches.
+        if old_num_assigned - new_num_needed == 0:
+            return
+        else:
+            for starter in start_points[job_id]:
+                old_num = len(self.assignments[job_id][starter])
+                new_num = self.task_dict[starter]["num_robots"]
+                diff_num = old_num - new_num
+
+                # Get the whole branch.
+                linear_job = [starter]
+                get_all_children_from_task_list(
+                    starter, self.task_dict, linear_job
+                )
+
+                if diff_num > 0:
+                    # Remove the diff from the whole branch.
+                    remove_ids = self.assignments[job_id][starter][:diff_num]
+
+                    for ticket_id in linear_job:
+                        for id in remove_ids:
+                            self.assignments[job_id][ticket_id].remove(id)
+
+                    # Remove the IDs from occupied and job_assigned_ids.
+                    for id in remove_ids:
+                        self.job_assigned_ids[job_id].remove(id)
+                        del(self.occupied[id])
+
+                    # Add the IDs back to available.
+                    self.available += remove_ids.copy()
+                elif diff_num < 0:
+                    # Add up to the diff to the branch.
+                    if diff_num <= len(self.available):
+                        add_ids = self.available[:diff_num]
+                    else:
+                        add_ids = self.available[:]
+
+                    for ticket_id in linear_job:
+                        for id in add_ids:
+                            self.assignments[job_id][ticket_id].append(id)
+
+                    # Add the IDs to occupied and job_assigned_ids, and remove
+                    # the IDs from available.
+                    for id in add_ids:
+                        self.job_assigned_ids[job_id].append(id)
+                        self.occupied[id] = job_id
+                        self.available.remove(id)
 
     def new_job_robot_assignments(self, job_list):
         '''Attmepts to assign robots to jobs if they are new or still ongoing.
