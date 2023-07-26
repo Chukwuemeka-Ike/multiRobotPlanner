@@ -146,3 +146,31 @@ def get_all_job_start_points(job_list: list, task_dict: dict) -> dict:
             task_dict
         )
     return start_points
+
+def get_job_last_ticket_status(job: list, task_dict: dict) -> str:
+    '''Gets the status of the job.
+    
+    Args:
+        job: list of tickets where each ticket is a dictionary.
+        task_dict: dictionary of all tickets.
+    Returns:
+        job_status: string - Unfinished or Done.
+    '''
+    # TODO: This will need more status options if we want to make more
+    # decisions based on the status.
+
+    # Take the first ticket in the list and use it to traverse all the way down.
+    any_task = job[0]
+    linear_job = [any_task["ticket_id"]]
+    get_all_children_from_task_list(
+        any_task["ticket_id"], task_dict, linear_job
+    )
+
+    # linear_job's last element is the end of the job. Check the status.
+    # If it's not in the task dictionary, it must have been deleted.
+    if linear_job[-1] not in task_dict:
+        return "Deleted"
+    elif task_dict[linear_job[-1]]["status"] == "Done":
+        return "Done"
+    else:
+        return "Unfinished"

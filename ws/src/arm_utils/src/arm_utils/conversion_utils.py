@@ -17,6 +17,7 @@ import pandas as pd
 
 from arm_msgs.msg import Ticket, Tickets
 
+from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list
 
 def create_ticket_list(ticket_dict: dict) -> list:
         '''Creates a list of Ticket messages from ticket_dict.'''
@@ -65,6 +66,9 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
             tix["start"] = ticket.start
             tix["end"] = ticket.end
             tix["machine_num"] = ticket.machine_num
+
+            if len(ticket.parents) == 0:
+                tix["num_robots"] = ticket.num_robots
         except KeyError as e:
             pass
             # print(f"Warning: {e}")

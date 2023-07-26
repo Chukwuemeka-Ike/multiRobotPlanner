@@ -4,6 +4,7 @@ uint32 ticket_id
 uint32[] parents
 float32 duration
 uint32 machine_type
+uint32 num_robots
 uint32 start
 uint32 end
 uint32 machine_num 
