@@ -15,8 +15,8 @@ import rospy
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
 
-from arm_utils.conversion_utils import create_ticket_list, convert_ticket_list_to_task_dict
-from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list
+from arm_utils.conversion_utils import convert_task_dict_to_ticket_list, convert_ticket_list_to_task_dict
+from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list, get_job_last_ticket_status
 
 
 log_tag = "Ticket Manager"
@@ -28,7 +28,7 @@ class TicketManager():
     Workhorse of the ticketing system. Subscribes to:
         add_ticket
         edit_ticket
-        delete_ticket
+        delete_ticket - currently disabled.
         delete_job
         start_ticket
         end_ticket
@@ -42,18 +42,28 @@ class TicketManager():
         rospy.on_shutdown(self.shutdown_ticket_manager)
         rospy.loginfo(f"{log_tag}: Node started.")
 
-        # Ticket list and subsets - waiting, ready, ongoing, done, deleted.
+        # Ticket dictionary and its subsets - waiting, ready, ongoing.
+        # The dictionary is what is sent to the scheduler repeatedly.
+        # The subsets are lists of IDs for minimal space use.
         self.ticket_dict = {}
-        self.waiting = {}
-        self.ready = {}
-        self.ongoing = {}
+        self.waiting = []
+        self.ready = []
+        self.ongoing = []
+
+        # When a ticket is done or deleted, it's removed from ticket_dict
+        # and placed in done or deleted. It is no longer relevant for
+        # scheduling.
         self.done = {}
         self.deleted = {}
+
+        # Dictionary of {job_id: {"tickets": [ticket_ids], "status": ""}, ...}.
+        # Status is either Finished or Unfinished.
+        self.jobs = {}
 
         # The lowest job ID we can use when adding a new one to the list.
         self.minJobID = 0
 
-        # Timer variables for triggering ticket starts and re-scheduling.
+        # Timer variables for triggering re-scheduling.
         self.ongoing_timer = None
         self.ongoing_timer_id = 0
         self.ongoing_timer_set_time = 0
@@ -67,11 +77,14 @@ class TicketManager():
         self.edit_ticket_sub = rospy.Subscriber(
             "edit_ticket", Tickets, self.edit_ticket_message_callback
         )
-        self.delete_ticket_sub = rospy.Subscriber(
-            "delete_ticket", Tickets, self.delete_ticket_message_callback
-        )
+        # Currently disabling ticket deletion to avoid dealing with all
+        # the complications that come with it.
+        # self.delete_ticket_sub = rospy.Subscriber(
+        #     "delete_ticket", Tickets, self.delete_ticket_message_callback
+        # )
+        # Delete job uses a Ticket, but only the job_id matters.
         self.delete_job_sub = rospy.Subscriber(
-            "delete_job", Tickets, self.delete_job_message_callback
+            "delete_job", Ticket, self.delete_job_message_callback
         )
 
         # Subscribers for starting and ending tasks.
@@ -87,17 +100,22 @@ class TicketManager():
             "ticket_started", Ticket, queue_size=100
         )
 
+        # Publisher for announcing whenever the ticket list has changed.
+        self.ticket_list_update_pub = rospy.Publisher(
+            "ticket_list_update", Tickets, queue_size=100
+        )
+
         # Service for ticket lists.
         self.ticket_service = rospy.Service(
             'ticket_service', TicketList, self.send_ticket_lists
         )
 
-        self.time_left_update_interval = 1
-        self.time_left_update_timer = rospy.Timer(
-            rospy.Duration(self.time_left_update_interval),
-            self.update_time_left,
-            oneshot=False
-        )
+        self.time_left_update_interval = 5
+        # self.time_left_update_timer = rospy.Timer(
+        #     rospy.Duration(self.time_left_update_interval),
+        #     self.update_time_left,
+        #     oneshot=False
+        # )
 
         # Spin.
         rospy.spin()
@@ -111,7 +129,7 @@ class TicketManager():
         '''Callback for new tickets received.
 
         Assigns job IDs to the received tickets, adds them to the ticket list,
-        then requests a new schedule with the update list.
+        then requests a new schedule with the updated list.
         '''
         rospy.loginfo(f"{log_tag}: Received new set of tickets."
                         " Adding to ticket list.")
@@ -134,17 +152,20 @@ class TicketManager():
             if ticket_id in self.ticket_dict:
                 if ticket_id in self.ongoing:
                     rospy.loginfo(f"{log_tag}: Editing ongoing ticket {ticket_id}.")
-                    del(self.ongoing[ticket_id])
-                if ticket_id in self.ready:
-                    del(self.ready[ticket_id])
+                    self.ongoing.remove(ticket_id)
+                elif ticket_id in self.ready:
+                    self.ready.remove(ticket_id)
 
-                # Update the ticket and put it back in waiting.
-                self.ticket_dict[ticket_id]["parents"] = ticket["parents"]
+                # Update the ticket.
+                # self.ticket_dict[ticket_id]["parents"] = ticket["parents"]
                 self.ticket_dict[ticket_id]["machine_type"] = ticket["machine_type"]
                 self.ticket_dict[ticket_id]["duration"] = ticket["duration"]
                 self.ticket_dict[ticket_id]["time_left"] = ticket["duration"]
+                # self.ticket_dict[ticket_id]["num_robots"] = ticket["num_robots"]
 
-                self.waiting[ticket_id] = self.ticket_dict[ticket_id]
+                # Put it back in waiting it wasn't still there.
+                if ticket_id not in self.waiting:
+                    self.waiting.append(ticket_id)
 
                 edited_tickets.append(ticket_id)
             elif ticket_id in self.done:
@@ -152,20 +173,20 @@ class TicketManager():
                 # cross-check.
                 rospy.loginfo(f"{log_tag}: Attempted to edit a done ticket "
                               f"{ticket_id}. Ignoring")
-                continue
             else:
                 rospy.logwarn(f"{log_tag}: Attempted to edit a non-existent "
                               "ticket. Ignoring")
 
         rospy.loginfo(f"{log_tag}: Edited tickets {edited_tickets}.")
 
-        # Update the ready set.
-        self.update_ready()
+        # Request a new schedule with the updated list.
+        self.request_schedule()
 
     def delete_ticket_message_callback(self, msg):
         '''Callback when a delete_ticket message is received.
 
         Deletes the tickets and all their children to avoid dangling branches.
+        TODO: Currently unused. May never be. I just didn't want to delete it.
         '''
         ticket_list = msg.tickets
         delete_ids = []
@@ -190,29 +211,27 @@ class TicketManager():
 
         rospy.loginfo(f"{log_tag}: Deleted tickets {delete_ids}.")
 
-        # Update the sets.
-        self.update_ready()
-        self.update_ongoing_time_left()
-        self.set_ongoing_timer()
+        # Request a new schedule with the updated list.
+        self.request_schedule()
 
     def delete_job_message_callback(self, msg):
-        '''Callback when a delete_job message is received.'''
-        # Only the ticket and job IDs matter here.
-        job_id = 0
+        '''Callback when a delete_job message is received.
+        
+        The message just contains the job ID we want to delete.
+        '''
+        job_id = msg.job_id
+
         deleted_ticket_ids = []
-        for ticket in msg.tickets:
-            self.delete_ticket(ticket.ticket_id)
-            job_id = ticket.job_id
-            deleted_ticket_ids.append(ticket.ticket_id)
+        for ticket_id in self.jobs[job_id]["ticket_ids"]:
+            self.delete_ticket(ticket_id)
+            deleted_ticket_ids.append(ticket_id)
 
         rospy.loginfo(f"{log_tag}: Deleted job {job_id} with tickets "
                       f"{deleted_ticket_ids}."
         )
 
-        # Update the sets.
-        self.update_ready()
-        self.update_ongoing_time_left()
-        self.set_ongoing_timer()
+        # Request a new schedule with the updated list.
+        self.request_schedule()
 
     def start_ticket_message_callback(self, msg):
         '''Called when a ticket is set to start by the Operator GUI.
@@ -234,11 +253,11 @@ class TicketManager():
         self.update_ongoing_time_left()
 
         # Add the ticket ID to the ongoing set and mark when it started.
-        self.ongoing[ticket_id] = self.ticket_dict[ticket_id]
+        self.ongoing.append(ticket_id)
         self.ongoing_start_times[ticket_id] = rospy.Time.now().to_sec()
 
         # Remove the ticket from the ready set.
-        del(self.ready[ticket_id])
+        self.ready.remove(ticket_id)
 
         # Set the ongoing timer.
         self.set_ongoing_timer()
@@ -247,6 +266,10 @@ class TicketManager():
         self.announce_ticket_start(ticket_id)
 
         rospy.loginfo(f"{log_tag}: Ticket {ticket_id} set to ongoing.")
+
+        # Update ticket and job statuses.
+        self.update_ticket_statuses()
+        self.update_job_statuses()
 
         # # Add the ticket to the executed schedule.
         # self.add_started_ticket_to_schedule(ticket_id, self.ticket_dict[ticket_id])
@@ -257,17 +280,21 @@ class TicketManager():
             # Update the ongoing time left for all ongoing tix.
             self.update_ongoing_time_left()
 
-            # End the ticket and get how much time it had left
+            # End the ticket and get how much time it had left.
             ticket_time_left = self.end_ticket(msg.ticket_id)
 
             # Update ready and set timer.
             self.update_ready()
             self.set_ongoing_timer()
 
+            # Update ticket and job statuses.
+            self.update_ticket_statuses()
+            self.update_job_statuses()
+
             # Add the done ticket to executed schedule?
             # self.add_done_ticket_to_schedule(msg.ticket_id)
 
-            # If the timer has more than 5 minutes left, we re-schedule.
+            # If the ticket had more than 5 minutes left, we re-schedule.
             # Otherwise, we let it run down.
             if ticket_time_left >= 5:
                 self.request_schedule()
@@ -280,17 +307,22 @@ class TicketManager():
         '''Returns the complete list of tickets and the different subsets.'''
         rospy.logdebug(f"{log_tag}: Returning current ticket information.")
 
+        self.update_jobs()
+        self.update_ticket_statuses()
+        self.update_job_statuses()
+
         # Merge ticket_dict and done into one for the list of all tickets.
         # The two are only separate for the sake of generating schedules.
         all_tickets = {**self.ticket_dict, **self.done}
-        all_tickets_list = create_ticket_list(all_tickets)
+        all_tickets_list = convert_task_dict_to_ticket_list(all_tickets)
 
-        waiting = create_ticket_list(self.waiting)
-        ready = create_ticket_list(self.ready)
-        ongoing = create_ticket_list(self.ongoing)
-        done = create_ticket_list(self.done)
-
-        return TicketListResponse(all_tickets_list, waiting, ready, ongoing, done)
+        return TicketListResponse(
+            all_tickets_list,
+            self.waiting,
+            self.ready,
+            self.ongoing,
+            self.done.keys()
+        )
 
     def request_schedule(self):
         '''Requests a new schedule from the schedule service.
@@ -301,14 +333,19 @@ class TicketManager():
         rospy.wait_for_service('schedule_service')
         try:
             request = ScheduleRequest()
-            request.tickets = create_ticket_list(self.ticket_dict)
-            request.ongoing = create_ticket_list(self.ongoing)
+            request.tickets = convert_task_dict_to_ticket_list(self.ticket_dict)
+            # Create ongoing dictionary from list with dictionary
+            # comprehension. How cool?? Who knew - dict comprehensions!
+            request.ongoing = convert_task_dict_to_ticket_list(
+                {ticket_id: self.ticket_dict[ticket_id] for ticket_id in self.ongoing}
+            )
 
             schedule = rospy.ServiceProxy('schedule_service', Schedule)
             response = schedule(request)
 
-            # Update the ticket list and its subsets with the received schedule.
+            # Update the ticket list and subsets with the received schedule.
             self.on_schedule_update(response.tickets)
+
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Schedule request failed: {e}.')
 
@@ -317,11 +354,16 @@ class TicketManager():
         updated_task_dict = convert_ticket_list_to_task_dict(tickets)
 
         for ticket_id, old_ticket in self.ticket_dict.items():
-            self.update_tickets_from_schedule(old_ticket, updated_task_dict[ticket_id])
-
+            self.update_tickets_from_schedule(
+                old_ticket,
+                updated_task_dict[ticket_id]
+            )
         self.update_ready()
         self.update_ongoing_time_left()
         self.set_ongoing_timer()
+        self.update_jobs()
+        self.update_ticket_statuses()
+        self.update_job_statuses()
 
     def update_tickets_from_schedule(self, old_ticket, new_ticket):
         '''Updates an old ticket based on a new ticket from a schedule.
@@ -335,91 +377,123 @@ class TicketManager():
         old_ticket["time_left"] = new_ticket["time_left"]
         old_ticket["machine_num"] = new_ticket["machine_num"]
 
-    def convert_ticket_list_to_temp_dict(self, ticket_list):
-        '''.'''
+    def convert_ticket_list_to_temp_dict(self, ticket_list) -> dict:
+        '''Creates a temporary dictionary of tickets using the Tickets list.
+
+        We need this temporary dictionary before the TM adds job ID and other
+        important information it is responsible for maintaining.
+
+        Args:
+            ticket_list: list of Ticket messages to parse. Each ticket from the
+                        Supervisor GUI will only have machine_type, duration,
+                        parents, and num_robots (if it's a top-level ticket).
+        Returns:
+            temp_dict: dictionary of tickets without job ID information.
+        '''
         temp_dict = {}
         for ticket in ticket_list:
             tix = {}
             tix["machine_type"] = ticket.machine_type
             tix["duration"] = ticket.duration
             tix["parents"] = list(ticket.parents)
+            tix["ticket_id"] = ticket.ticket_id
+
+            # # TODO: Add num_robots section.
+            # if len(tix["parents"]) > 0:
+            #     tix["num_robots"] = ticket.num_robots
 
             # Time left in seconds.
             tix["time_left"] = ticket.duration
             temp_dict[ticket.ticket_id] = tix
         return temp_dict
 
-    def get_received_ticket_job_ids(self, temp_dict: dict):
+    def get_received_ticket_job_ids(self, temp_dict: dict) -> dict:
         '''Gets the job IDs for the tickets received.
 
         Figures out the job IDs for the tickets received. They are either
         related to an existing job, or brand new.
+
+        Args:
+            temp_dict: temp dictionary of tickets that need job IDs added.
+        Returns:
+            temp_dict: the original dictionary with job IDs.
         '''
-        # Iterate through the temp dictionary and search for its parents in the
-        # main ticket list. If they're not in there, save the key in a list.
-        # If any parent is, add the job_id. 
-        # If there are no parents, create a new job_id.
-        # Lastly, go through the dictionary and search for its parents in the
-        # temp dictionary. Go as high in the job tree, get the top job_id,
-        # then trickle it down to the descendants.
+        # Step 1. Iterate through the temp dictionary and search for each
+        # ticket's parents in the main ticket list or done.
+        # If any parent is in either, add that parent's job_id to the ticket.
+        # If they're not in the main list, the parents are probably the temp
+        # dictionary. Save the ticket in a list.
+        # If there are no parents, create a new job_id for the ticket.
+        # Step 2. Go through the no_found_parents list and search for each
+        # ticket's parents in the temp dictionary.
+        # Go as high as possible in the job tree, get the top job_id,
+        # then set it to the ticket.
 
         # Step 1.
         no_found_parents = []
         for ticket_id, ticket in temp_dict.items():
-            found_parent = False
             if len(ticket["parents"]) == 0:
                 self.minJobID += 1
                 ticket["job_id"] = self.minJobID
+                continue
             for parent_id in ticket["parents"]:
                 if parent_id in self.ticket_dict:
                     ticket["job_id"] = self.ticket_dict[parent_id]["job_id"]
-                    found_parent = True
-            if not found_parent:
-                no_found_parents.append(ticket_id)
-        
+                    continue
+                elif parent_id in self.done:
+                    ticket["job_id"] = self.done[parent_id]["job_id"]
+                    continue
+            no_found_parents.append(ticket_id)
+
         # Step 2. Iterate through the tickets with no found parents.
         # For each, look for the parents in the dictionary recursively.
         # When we get to the top, set the job_id to the ticket.
         for ticket_id in no_found_parents:
             ticket = temp_dict[ticket_id]
-            # start_ids = get_tree_job_start_ids(ticket_id, temp_dict)
-            # linear_job = [start_ids[0]]
-            # get_all_children_from_task_list(start_ids[0], temp_dict, linear_job)
+
             linear_job = [ticket_id]
             get_all_parents_from_task_list(ticket_id, temp_dict, linear_job)
 
             # Set the job_id for the ticket.
-            # TODO: Set it for all descendants at once?
             top_ticket = temp_dict[linear_job[-1]]
             ticket["job_id"] = top_ticket["job_id"]
 
         return temp_dict
 
-    def add_received_tickets_to_ticket_dict(self, received_tickets: dict):
-        '''Adds the modified received tickets dictionary to the main ticket list.'''
-        for ticket_id, ticket in received_tickets.items():
-            ticket["time_left"] = ticket["duration"]
+    def add_received_tickets_to_ticket_dict(self, received_tickets: dict) -> None:
+        '''Adds the received tickets dictionary to the main ticket list.
 
+        Args:
+            received_tickets: dictionary of received tickets with job IDs
+                added.
+        '''
+        for ticket_id, ticket in received_tickets.items():
             # Add the ticket to ticket_dict and waiting set.
             self.ticket_dict[ticket_id] = ticket
-            self.waiting[ticket_id] = self.ticket_dict[ticket_id]
+            self.waiting.append(ticket_id)
 
     def delete_ticket(self, ticket_id):
-        '''Removes ticket_id from all sets.'''
-        # TODO: This isn't robust.
+        '''Removes ticket_id from all possible sets and puts it in deleted.'''
+
         # Delete the ticket from ticket_dict and any set it might be in.
         if ticket_id in self.ticket_dict:
+            # Add the ticket to deleted first and set time_left to 0.
             self.deleted[ticket_id] = self.ticket_dict[ticket_id]
             self.deleted[ticket_id]["time_left"] = 0
             del(self.ticket_dict[ticket_id])
+
+            # Remove it from the subset it is in.
             if ticket_id in self.waiting:
-                del(self.waiting[ticket_id])
-            if ticket_id in self.ready:
-                del(self.ready[ticket_id])
-            if ticket_id in self.ongoing:
-                del(self.ongoing[ticket_id])
+                self.waiting.remove(ticket_id)
+            elif ticket_id in self.ready:
+                self.ready.remove(ticket_id)
+            elif ticket_id in self.ongoing:
+                self.ongoing.remove(ticket_id)
+
         # If the ticket is already done, remove it from there.
         elif ticket_id in self.done:
+            self.deleted[ticket_id] = self.done[ticket_id]
+            self.deleted[ticket_id]["time_left"] = 0
             del(self.done[ticket_id])
 
     def end_ticket(self, ticket_id) -> float:
@@ -436,7 +510,7 @@ class TicketManager():
         self.done[ticket_id]["time_left"] = 0
 
         # Delete the ticket from ongoing and ticket_dict.
-        del(self.ongoing[ticket_id])
+        self.ongoing.remove(ticket_id)
         del(self.ticket_dict[ticket_id])
         rospy.loginfo(f"{log_tag}: Ended ticket {ticket_id}.")
 
@@ -456,11 +530,48 @@ class TicketManager():
         self.ticket_started_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Starting ticket {ticket_id}.")
 
+    def update_time_left(self, event):
+        '''Updates ongoing set's time left. Keeps the time up to date for the GUI.'''
+        # TODO: Thread safety. Doing this means there's a possibility that the
+        # function is called from multiple threads.
+        self.update_ongoing_time_left()
+
+    def update_ready(self):
+        '''Moves tickets whose parents are done from waiting to ready.'''
+        ready_ticket_ids = []
+        for ticket_id in self.waiting:
+            ticket = self.ticket_dict[ticket_id]
+            num_parents = len(ticket["parents"])
+            num_done_parents = 0
+            for parent in ticket["parents"]:
+                if parent in self.done:
+                    num_done_parents += 1
+            if num_done_parents == num_parents:
+                self.ready.append(ticket_id)
+                ready_ticket_ids.append(ticket_id)
+
+        # Remove the newly ready tickets from waiting.
+        for ticket_id in ready_ticket_ids:
+            self.waiting.remove(ticket_id)
+
+    def update_ongoing_time_left(self):
+        '''Updates the time left on all ongoing tickets.'''
+        # Get the time that has passed since ongoing timer was last started.
+        ongoing_time_elapsed = rospy.Time.now().to_sec() -\
+                                self.ongoing_timer_set_time
+        ongoing_time_left = self.lowest_time_left - ongoing_time_elapsed
+
+        # Subtract the elapsed time from all ongoing tickets' time_left.
+        # TODO: Probable source of the negative values being printed.
+        for ticket_id in self.ongoing:
+            self.ticket_dict[ticket_id]["time_left"] -= ongoing_time_elapsed
+        return ongoing_time_left
+
     def set_ongoing_timer(self):
         '''Sets the timer for the shortest time left on an ongoing ticket.'''
         # Find the lowest time_left ticket in ongoing.
         lowest_time_left = 50000
-        for ticket_id in self.ongoing.keys():
+        for ticket_id in self.ongoing:
             ticket = self.ticket_dict[ticket_id]
             if ticket["time_left"] <= lowest_time_left:
                 lowest_time_left = ticket["time_left"]
@@ -485,9 +596,11 @@ class TicketManager():
         '''
         # Add time to triggering ticket.
         rospy.loginfo(f"{log_tag}: Adding time to ticket {self.ongoing_timer_id}.")
-        rospy.loginfo(f"{log_tag}: Old time left: {self.ticket_dict[self.ongoing_timer_id]['time_left']}.")
+        rospy.loginfo(f"{log_tag}: Old time left: "
+                    f"{self.ticket_dict[self.ongoing_timer_id]['time_left']}.")
         self.add_time_to_ticket(self.ongoing_timer_id)
-        rospy.loginfo(f"{log_tag}: New time left: {self.ticket_dict[self.ongoing_timer_id]['time_left']}.")
+        rospy.loginfo(f"{log_tag}: New time left: "
+                    f"{self.ticket_dict[self.ongoing_timer_id]['time_left']}.")
 
         # Request a new schedule.
         rospy.loginfo(f"{log_tag}: Requesting new schedule.")
@@ -504,39 +617,56 @@ class TicketManager():
                           " ticket list. Might have ended on time.")
             rospy.logwarn(e)
 
-    def update_time_left(self, event):
-        '''Updates ongoing set's time left. Keeps the time up to date for the GUI.'''
-        # TODO: Thread safety. Doing this means there's a possibility that the
-        # function is called from multiple threads.
-        self.update_ongoing_time_left()
+    def update_jobs(self):
+        '''Updates the jobs data structure.
 
-    def update_ongoing_time_left(self):
-        '''Updates the time left on all ongoing tickets.'''
-        # Get the time that has passed since ongoing timer was last started.
-        ongoing_time_elapsed = rospy.Time.now().to_sec() -\
-                                self.ongoing_timer_set_time
-        ongoing_time_left = self.lowest_time_left - ongoing_time_elapsed
+        Called whenever tickets are added, edited, or deleted.
+        '''
+        # Tickets that were added or edited will be in ticket_dict.
+        for ticket_id, ticket in self.ticket_dict.items():
+            job_id = ticket["job_id"]
+            if job_id not in self.jobs:
+                self.jobs[job_id] = {}
+                self.jobs[job_id]["ticket_ids"] = [ticket_id]
+                self.jobs[job_id]["status"] = "Unfinished"
+            elif ticket_id not in self.jobs[job_id]["ticket_ids"]:
+                self.jobs[job_id]["ticket_ids"].append(ticket_id)
 
-        # Subtract the elapsed time from all ongoing tickets' time_left.
-        # TODO: Probable source of the negative values being printed.
-        for ticket_id in self.ongoing.keys():
-            self.ticket_dict[ticket_id]["time_left"] -= ongoing_time_elapsed
-        return ongoing_time_left
+        # If a job was deleted, delete its ID from jobs.
+        # TODO: Currently, single tickets won't be deleted, just entire jobs.
+        for ticket_id, ticket in self.deleted.items():
+            job_id = ticket["job_id"]
+            if job_id in self.jobs:
+                del(self.jobs[job_id])
 
-    def update_ready(self):
-        '''Moves tickets whose parents are done from waiting to ready.'''
-        added_ticket_ids = []
-        for ticket_id in self.waiting.keys():
-            ticket = self.ticket_dict[ticket_id]
-            num_parents = len(ticket["parents"])
-            num_done_parents = 0
-            for parent in ticket["parents"]:
-                if parent in self.done.keys():
-                    num_done_parents += 1
-            if num_done_parents == num_parents:
-                self.ready[ticket_id] = ticket
-                added_ticket_ids.append(ticket_id)
+    def update_job_statuses(self):
+        '''Updates the statuses on the jobs.
+        
+        Does so by looking at the status of the job's final ticket.
+        Jobs are either Unfinished or Finished.
+        '''
+        for _, job_dict in self.jobs.items():
+            # Dictionary of all tickets including done tickets.
+            all_tickets = {**self.ticket_dict, **self.done}
+            job_status = get_job_last_ticket_status(
+                [all_tickets[ticket_id] for ticket_id in job_dict["ticket_ids"]],
+                all_tickets
+            )
 
-        # Remove the newly ready tickets from waiting.
-        for ticket_id in added_ticket_ids:
-            del(self.waiting[ticket_id])
+            job_dict["status"] = job_status
+
+    def update_ticket_statuses(self):
+        '''Updates the statuses of the tickets.
+
+        Finds which set they are in and sets their status accordingly.
+        '''
+        for ticket_id, ticket in self.ticket_dict.items():
+            if ticket_id in self.waiting:
+                ticket["status"] = "Waiting"
+            elif ticket_id in self.ready:
+                ticket["status"] = "Ready"
+            elif ticket_id in self.ongoing:
+                ticket["status"] = "Ongoing"
+
+        for ticket_id, ticket in self.done.items():
+            ticket["status"] = "Done"
