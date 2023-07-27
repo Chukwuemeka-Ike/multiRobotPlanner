@@ -19,7 +19,7 @@ from arm_msgs.msg import Ticket, Tickets
 
 from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list
 
-def create_ticket_list(ticket_dict: dict) -> list:
+def convert_task_dict_to_ticket_list(ticket_dict: dict) -> list:
         '''Creates a list of Ticket messages from ticket_dict.'''
         ticket_list = []
         for ticket_id, ticket in ticket_dict.items():
@@ -33,13 +33,17 @@ def create_ticket_list(ticket_dict: dict) -> list:
             # These only exist once a schedule has been created.
             # Failing shouldn't stop the workflow.
             try:
+                msg.status = ticket["status"]
                 msg.start = ticket["start"]
                 msg.end = ticket["end"]
                 msg.machine_num = ticket["machine_num"]
                 msg.time_left = ticket["time_left"]
+
+                # if len(ticket["parents"]) == 0:
+                #     msg.num_robots = ticket["num_robots"]
             except KeyError as e:
                 pass
-                print(f"Warning: {e}")
+                # print(f"Warning: {e}")
 
             ticket_list.append(msg)
         return ticket_list
@@ -54,24 +58,26 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
     for ticket in tickets:
         tix = {}
         tix["job_id"] = ticket.job_id
+        tix["ticket_id"] = ticket.ticket_id
         tix["machine_type"] = ticket.machine_type
         tix["duration"] = ticket.duration
         tix["parents"] = ticket.parents
 
         # These only exist once a schedule has been created.
         # Failing shouldn't stop the workflow.
-        # TODO: Time left 
         try:
-            tix["time_left"] = ticket.time_left
+            tix["status"] = ticket.status
             tix["start"] = ticket.start
             tix["end"] = ticket.end
             tix["machine_num"] = ticket.machine_num
+            tix["time_left"] = ticket.time_left
 
-            if len(ticket.parents) == 0:
-                tix["num_robots"] = ticket.num_robots
+            # if len(ticket.parents) == 0:
+            #     tix["num_robots"] = ticket.num_robots
         except KeyError as e:
             pass
             # print(f"Warning: {e}")
+
         task_dict[ticket.ticket_id] = tix
     return task_dict
 
@@ -207,8 +213,9 @@ def convert_task_list_to_job_list(task_list: dict):
             # job_tasks = [task_list[id] for id in all_job_tasks]
             job_tasks = []
             for task in all_job_tasks:
-                task_list[task]["ticket_id"] = task
-                task_list[task]["job_id"] = job_id
+                # TODO: Cross-check this doesn't leave any side effects.
+                # task_list[task]["ticket_id"] = task
+                # task_list[task]["job_id"] = job_id
                 job_tasks.append(task_list[task])
                 visited.append(task)
             job_tasks.reverse()

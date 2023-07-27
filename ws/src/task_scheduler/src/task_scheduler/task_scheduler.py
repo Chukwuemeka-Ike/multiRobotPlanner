@@ -18,7 +18,7 @@ from arm_msgs.srv import Schedule, ScheduleResponse
 
 from arm_utils.display_utils import display_solution_stats_cpsat
 from arm_utils.job_utils import get_task_parent_indices
-from arm_utils.conversion_utils import create_ticket_list,\
+from arm_utils.conversion_utils import convert_task_dict_to_ticket_list,\
      convert_task_list_to_job_list, convert_schedule_to_task_list,\
         convert_ticket_list_to_task_dict
 from arm_utils.sched_utils import extract_schedule_cpsat
@@ -120,7 +120,7 @@ class TaskScheduler():
         # Convert the generated schedule back to a dictionary then
         # ticket list, then send it back.
         task_dict = convert_schedule_to_task_list(self.schedule)
-        ticket_list = create_ticket_list(task_dict)
+        ticket_list = convert_task_dict_to_ticket_list(task_dict)
 
         return ScheduleResponse(ticket_list)
 

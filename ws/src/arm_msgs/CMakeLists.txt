@@ -20,7 +20,7 @@ add_message_files(
 )
 
 add_service_files(
-    FILES Schedule.srv TicketList.srv
+    FILES RobotAssignment.srv Schedule.srv TicketList.srv
 )
 
 generate_messages(

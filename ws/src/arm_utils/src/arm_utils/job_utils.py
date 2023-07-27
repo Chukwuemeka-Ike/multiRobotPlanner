@@ -154,7 +154,7 @@ def get_job_last_ticket_status(job: list, task_dict: dict) -> str:
         job: list of tickets where each ticket is a dictionary.
         task_dict: dictionary of all tickets.
     Returns:
-        job_status: string - Unfinished or Done.
+        job_status: string - Unfinished or Finished.
     '''
     # TODO: This will need more status options if we want to make more
     # decisions based on the status.
@@ -171,6 +171,6 @@ def get_job_last_ticket_status(job: list, task_dict: dict) -> str:
     if linear_job[-1] not in task_dict:
         return "Deleted"
     elif task_dict[linear_job[-1]]["status"] == "Done":
-        return "Done"
+        return "Finished"
     else:
         return "Unfinished"
