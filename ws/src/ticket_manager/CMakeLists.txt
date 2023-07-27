@@ -12,6 +12,7 @@ catkin_install_python(
     testing/add_tickets.py
     testing/start_ticket.py
     testing/end_ticket.py
+    testing/delete_job.py
     testing/delete_tickets.py
     testing/ticket_manager_tester_node
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

@@ -13,7 +13,7 @@ from arm_msgs.msg import Ticket, Tickets
 
 
 if __name__ == "__main__":
-    rospy.init_node('ticket_adder')
+    rospy.init_node('ticket_deleter')
     delete_ticket_pub = rospy.Publisher(
         'delete_ticket', Tickets, queue_size=100
     )
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     rate.sleep()
     
     msg = Tickets()
-    ticket_ids = [6,7,8,12,28]
+    ticket_ids = [0,1,2,3,4,5]
     ticket_list = []
 
     for ticket_id in ticket_ids:
