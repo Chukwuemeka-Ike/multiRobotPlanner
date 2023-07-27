@@ -354,7 +354,7 @@ class NewTicketDialog(BasicDialog):
 
 class EditTicketDialog(BasicDialog):
     '''.'''
-    def __init__(self, parent: QWidget, job_info: dict, all_tickets: dict, ongoing: dict) -> None:
+    def __init__(self, parent: QWidget, job_info: dict, all_tickets: dict, ongoing: list) -> None:
         '''.
         
         Args:
@@ -489,7 +489,7 @@ class EditJobDialog(BasicDialog):
 
     def __init__(
             self, parent: QWidget, job_info: dict, all_tickets: dict,
-            ongoing: dict
+            ongoing: list
     ) -> None:
         '''Constructor that creates the UI and sets member variables.
         

@@ -82,15 +82,15 @@ class SupervisorGUI(QMainWindow):
             "end_ticket", Ticket, queue_size=10
         )
         self.delete_job_pub = rospy.Publisher(
-            "delete_job", Tickets, queue_size=10
+            "delete_job", Ticket, queue_size=10
         )
 
         # Ticket list and subsets - waiting, ready, ongoing, done.
         self.all_tickets = {}
-        self.waiting = {}
-        self.ready = {}
-        self.ongoing = {}
-        self.done = {}
+        self.waiting = []
+        self.ready = []
+        self.ongoing = []
+        self.done = []
 
         # List of jobs, where each job is a list of tickets.
         # job_list: [[{}, ...], ...]
@@ -443,16 +443,14 @@ class SupervisorGUI(QMainWindow):
             response = ticket_list(request)
 
             self.all_tickets = convert_ticket_list_to_task_dict(response.all_tickets)
-            self.waiting = convert_ticket_list_to_task_dict(response.waiting)
-            self.ready = convert_ticket_list_to_task_dict(response.ready)
-            self.ongoing = convert_ticket_list_to_task_dict(response.ongoing)
-            self.done = convert_ticket_list_to_task_dict(response.done)
+            self.waiting = response.waiting
+            self.ready = response.ready
+            self.ongoing = response.ongoing
+            self.done = response.done
 
             # Set the minimum ticket ID based on the response.
             if len(self.all_tickets) != 0 :
                 self.min_ticket_id = max(self.all_tickets.keys())+1
-
-            self.add_ticket_status()
 
             # Convert all_tickets to a list of lists, where each sub-list is a job.
             # Good for iterating when refreshing job list.
@@ -462,19 +460,6 @@ class SupervisorGUI(QMainWindow):
             self.job_ticket_ids = get_job_id_ticket_ids(self.job_list)
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
-
-    # TODO: Feels like this belongs in the ticket manager...
-    def add_ticket_status(self):
-        '''Adds a status key to all_tickets based on which subset they are in.'''
-        for ticket_id, ticket in self.all_tickets.items():
-            if ticket_id in self.waiting:
-                ticket["status"] = "Waiting"
-            elif ticket_id in self.ready:
-                ticket["status"] = "Ready"
-            elif ticket_id in self.ongoing:
-                ticket["status"] = "Ongoing"
-            elif ticket_id in self.done:
-                ticket["status"] = "Done"
 
     def update_job_list_layout(self):
         '''Update the list of jobs and their ticket states.'''
