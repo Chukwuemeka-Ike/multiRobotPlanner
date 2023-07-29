@@ -127,10 +127,15 @@ class RobotAssigner():
         # TODO: Make a final decision on whether to accommodate single ticket
         # deletions. For now, check for tickets that have been deleted.
         # If it has been deleted, we remove the whole job assignment.
+        deleted_jobs = []
         for job_id, ticket_assignment in self.assignments.items():
             for ticket_id, _ in ticket_assignment.items():
                 if ticket_id not in self.task_dict:
-                    self.release_assigned_robots(job_id)
+                    deleted_jobs.append(job_id)
+                    break
+
+        for job_id in deleted_jobs:
+            self.release_assigned_robots(job_id)
 
         # Look through the job list for jobs with pre-existing assignments.
         for job in self.job_list:
@@ -165,7 +170,7 @@ class RobotAssigner():
 
     def release_assigned_robots(self, job_id: int):
         '''Releases the robots assigned to job_id.
-        
+
         Args:
             job_id: id of the job whose assignments we are releasing.
         '''

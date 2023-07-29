@@ -22,6 +22,11 @@ def add_tickets(publisher, tickets: dict):
         ticket_msg.machine_type = ticket["machine_type"]
         ticket_msg.duration = ticket["duration"]
         ticket_msg.parents = ticket["parents"]
+        if len(ticket["parents"]) == 0:
+            # try:
+            ticket_msg.num_robots = ticket["num_robots"]
+            # except:
+            #     pass
         ticket_list.append(ticket_msg)
 
     msg.tickets = ticket_list

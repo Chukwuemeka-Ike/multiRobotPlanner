@@ -429,9 +429,9 @@ class TicketManager():
             tix["parents"] = list(ticket.parents)
             tix["ticket_id"] = ticket.ticket_id
 
-            # # TODO: Add num_robots section.
-            # if len(tix["parents"]) > 0:
-            #     tix["num_robots"] = ticket.num_robots
+            # TODO: Add num_robots section.
+            if len(tix["parents"]) == 0:
+                tix["num_robots"] = ticket.num_robots
 
             # Time left in seconds.
             tix["time_left"] = ticket.duration
