@@ -12,6 +12,8 @@ Description:
 import math
 import rospy
 
+from std_msgs.msg import String
+
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
 
@@ -102,7 +104,7 @@ class TicketManager():
 
         # Publisher for announcing whenever the ticket list has changed.
         self.ticket_list_update_pub = rospy.Publisher(
-            "ticket_list_update", Tickets, queue_size=100
+            "ticket_list_update", String, queue_size=100
         )
 
         # Service for ticket lists.
@@ -111,11 +113,11 @@ class TicketManager():
         )
 
         self.time_left_update_interval = 5
-        # self.time_left_update_timer = rospy.Timer(
-        #     rospy.Duration(self.time_left_update_interval),
-        #     self.update_time_left,
-        #     oneshot=False
-        # )
+        self.time_left_update_timer = rospy.Timer(
+            rospy.Duration(self.time_left_update_interval),
+            self.update_time_left,
+            oneshot=False
+        )
 
         # Spin.
         rospy.spin()
@@ -137,7 +139,15 @@ class TicketManager():
         temp_dict = self.convert_ticket_list_to_temp_dict(msg.tickets)
         temp_dict = self.get_received_ticket_job_ids(temp_dict)
         self.add_received_tickets_to_ticket_dict(temp_dict)
+
         self.request_schedule()
+
+        # Update ticket and job statuses.
+        self.update_jobs()
+        self.update_ticket_statuses()
+        self.update_job_statuses()
+
+        self.announce_ticket_list_update()
 
     def edit_ticket_message_callback(self, msg):
         '''Callback when an edit_ticket message is received.
@@ -181,6 +191,13 @@ class TicketManager():
 
         # Request a new schedule with the updated list.
         self.request_schedule()
+
+        # Update ticket and job statuses.
+        self.update_jobs()
+        self.update_ticket_statuses()
+        self.update_job_statuses()
+
+        self.announce_ticket_list_update()
 
     def delete_ticket_message_callback(self, msg):
         '''Callback when a delete_ticket message is received.
@@ -233,6 +250,13 @@ class TicketManager():
         # Request a new schedule with the updated list.
         self.request_schedule()
 
+        # Update ticket and job statuses.
+        self.update_jobs()
+        self.update_ticket_statuses()
+        self.update_job_statuses()
+
+        self.announce_ticket_list_update()
+
     def start_ticket_message_callback(self, msg):
         '''Called when a ticket is set to start by the Operator GUI.
 
@@ -267,9 +291,14 @@ class TicketManager():
 
         rospy.loginfo(f"{log_tag}: Ticket {ticket_id} set to ongoing.")
 
+        self.request_schedule()
+
         # Update ticket and job statuses.
+        self.update_jobs
         self.update_ticket_statuses()
         self.update_job_statuses()
+
+        self.announce_ticket_list_update()
 
         # # Add the ticket to the executed schedule.
         # self.add_started_ticket_to_schedule(ticket_id, self.ticket_dict[ticket_id])
@@ -288,8 +317,11 @@ class TicketManager():
             self.set_ongoing_timer()
 
             # Update ticket and job statuses.
+            self.update_jobs()
             self.update_ticket_statuses()
             self.update_job_statuses()
+
+            self.announce_ticket_list_update()
 
             # Add the done ticket to executed schedule?
             # self.add_done_ticket_to_schedule(msg.ticket_id)
@@ -307,6 +339,7 @@ class TicketManager():
         '''Returns the complete list of tickets and the different subsets.'''
         rospy.logdebug(f"{log_tag}: Returning current ticket information.")
 
+        # Update ticket and job statuses in case anything has changed.
         self.update_jobs()
         self.update_ticket_statuses()
         self.update_job_statuses()
@@ -334,11 +367,12 @@ class TicketManager():
         try:
             request = ScheduleRequest()
             request.tickets = convert_task_dict_to_ticket_list(self.ticket_dict)
+
             # Create ongoing dictionary from list with dictionary
             # comprehension. How cool?? Who knew - dict comprehensions!
-            request.ongoing = convert_task_dict_to_ticket_list(
-                {ticket_id: self.ticket_dict[ticket_id] for ticket_id in self.ongoing}
-            )
+            request.ongoing = convert_task_dict_to_ticket_list({
+                id: self.ticket_dict[id] for id in self.ongoing
+            })
 
             schedule = rospy.ServiceProxy('schedule_service', Schedule)
             response = schedule(request)
@@ -347,10 +381,10 @@ class TicketManager():
             self.on_schedule_update(response.tickets)
 
         except rospy.ServiceException as e:
-            rospy.logerr(f'{log_tag}: Schedule request failed: {e}.')
+            rospy.logerr(f"{log_tag}: Schedule request failed: {e}.")
 
     def on_schedule_update(self, tickets: Tickets):
-        '''Updates the ticket list and timers based on a new schedule.'''
+        '''Updates the ticket list based on a new schedule.'''
         updated_task_dict = convert_ticket_list_to_task_dict(tickets)
 
         for ticket_id, old_ticket in self.ticket_dict.items():
@@ -358,12 +392,8 @@ class TicketManager():
                 old_ticket,
                 updated_task_dict[ticket_id]
             )
+
         self.update_ready()
-        self.update_ongoing_time_left()
-        self.set_ongoing_timer()
-        self.update_jobs()
-        self.update_ticket_statuses()
-        self.update_job_statuses()
 
     def update_tickets_from_schedule(self, old_ticket, new_ticket):
         '''Updates an old ticket based on a new ticket from a schedule.
@@ -381,7 +411,8 @@ class TicketManager():
         '''Creates a temporary dictionary of tickets using the Tickets list.
 
         We need this temporary dictionary before the TM adds job ID and other
-        important information it is responsible for maintaining.
+        important information it is responsible for maintaining. Only used
+        when the ticket list comes from the supervisor GUI.
 
         Args:
             ticket_list: list of Ticket messages to parse. Each ticket from the
@@ -535,6 +566,7 @@ class TicketManager():
         # TODO: Thread safety. Doing this means there's a possibility that the
         # function is called from multiple threads.
         self.update_ongoing_time_left()
+        self.set_ongoing_timer()
 
     def update_ready(self):
         '''Moves tickets whose parents are done from waiting to ready.'''
@@ -554,18 +586,27 @@ class TicketManager():
         for ticket_id in ready_ticket_ids:
             self.waiting.remove(ticket_id)
 
+        # Update job and ticket statuses.
+        self.update_jobs()
+        self.update_ticket_statuses()
+        self.update_job_statuses()
+
     def update_ongoing_time_left(self):
         '''Updates the time left on all ongoing tickets.'''
         # Get the time that has passed since ongoing timer was last started.
         ongoing_time_elapsed = rospy.Time.now().to_sec() -\
                                 self.ongoing_timer_set_time
-        ongoing_time_left = self.lowest_time_left - ongoing_time_elapsed
-
+        
+        # print(f"Ongoing time elapsed: {ongoing_time_elapsed}")
         # Subtract the elapsed time from all ongoing tickets' time_left.
         # TODO: Probable source of the negative values being printed.
         for ticket_id in self.ongoing:
-            self.ticket_dict[ticket_id]["time_left"] -= ongoing_time_elapsed
-        return ongoing_time_left
+            self.ticket_dict[ticket_id]["time_left"] =\
+                  max(self.ticket_dict[ticket_id]["time_left"] -\
+                       ongoing_time_elapsed, 0.0)
+            # print(f"Ticket {ticket_id} time left: "
+            #       f"{self.ticket_dict[ticket_id]['time_left']}")
+        return ongoing_time_elapsed
 
     def set_ongoing_timer(self):
         '''Sets the timer for the shortest time left on an ongoing ticket.'''
@@ -577,6 +618,9 @@ class TicketManager():
                 lowest_time_left = ticket["time_left"]
                 self.ongoing_timer_id = ticket_id
         self.lowest_time_left = lowest_time_left
+
+        # print(f"Lowest time left: {self.lowest_time_left}")
+        # print(f"Ongoing timer ID: {self.ongoing_timer_id}")
 
         # Start a new timer with the lowest time left.
         if self.ongoing_timer is not None:
@@ -594,6 +638,9 @@ class TicketManager():
         Ongoing timer is triggered when the estimated duration for a ticket has
         elapsed, meaning the ticket is taking longer than expected.
         '''
+        # Update ongoing time left.        
+        self.update_ongoing_time_left()
+
         # Add time to triggering ticket.
         rospy.loginfo(f"{log_tag}: Adding time to ticket {self.ongoing_timer_id}.")
         rospy.loginfo(f"{log_tag}: Old time left: "
@@ -605,6 +652,8 @@ class TicketManager():
         # Request a new schedule.
         rospy.loginfo(f"{log_tag}: Requesting new schedule.")
         self.request_schedule()
+
+        self.set_ongoing_timer()
 
     def add_time_to_ticket(self, ticket_id):
         '''Adds 25% of original duration to time left on the given ticket.'''
@@ -670,3 +719,11 @@ class TicketManager():
 
         for ticket_id, ticket in self.done.items():
             ticket["status"] = "Done"
+
+    def announce_ticket_list_update(self):
+        '''Publishes the new ticket list whenever called.
+        
+        Currently used by the robot_assigner.
+        '''
+        msg = String()
+        self.ticket_list_update_pub.publish(msg)

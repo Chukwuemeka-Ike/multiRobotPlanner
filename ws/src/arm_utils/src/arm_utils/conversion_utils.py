@@ -33,14 +33,14 @@ def convert_task_dict_to_ticket_list(ticket_dict: dict) -> list:
             # These only exist once a schedule has been created.
             # Failing shouldn't stop the workflow.
             try:
+                msg.time_left = ticket["time_left"]
                 msg.status = ticket["status"]
                 msg.start = ticket["start"]
                 msg.end = ticket["end"]
                 msg.machine_num = ticket["machine_num"]
-                msg.time_left = ticket["time_left"]
 
-                # if len(ticket["parents"]) == 0:
-                #     msg.num_robots = ticket["num_robots"]
+                if len(ticket["parents"]) == 0:
+                    msg.num_robots = ticket["num_robots"]
             except KeyError as e:
                 pass
                 # print(f"Warning: {e}")
@@ -72,8 +72,8 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
             tix["machine_num"] = ticket.machine_num
             tix["time_left"] = ticket.time_left
 
-            # if len(ticket.parents) == 0:
-            #     tix["num_robots"] = ticket.num_robots
+            if len(ticket.parents) == 0:
+                tix["num_robots"] = ticket.num_robots
         except KeyError as e:
             pass
             # print(f"Warning: {e}")
@@ -101,7 +101,7 @@ def convert_schedule_to_task_list(schedule: pd.DataFrame):
         ticket["start"] = row["start"]
         ticket["end"] = row["end"]
         ticket["duration"] = row["duration"]
-        ticket["time_left"] = row["duration"]
+        ticket["time_left"] = row["time_left"]
 
         # Key is ticket id.
         task_list[row["ticket_id"]] = ticket

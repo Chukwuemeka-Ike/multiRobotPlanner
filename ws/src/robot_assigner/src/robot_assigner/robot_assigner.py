@@ -8,7 +8,8 @@ Description:
 '''
 import rospy
 
-from arm_msgs.msg import Ticket, Tickets
+from std_msgs.msg import String
+from arm_msgs.srv import TicketList, TicketListRequest
 from arm_msgs.srv import RobotAssignment, RobotAssignmentResponse
 
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
@@ -58,8 +59,9 @@ class RobotAssigner():
         self.occupied = {}
 
         # Subscriber for ticket list updates. Ticket Manager is the publisher.
+        # 
         self.ticket_list_update_sub = rospy.Subscriber(
-            'ticket_list_update', Tickets, self.update_robot_assignments
+            'ticket_list_update', String, self.request_ticket_list
         )
 
         # Service for robot assignments. Provides the assignment for a
@@ -84,16 +86,38 @@ class RobotAssigner():
         # and to allow us pick up the next shift.
         rospy.loginfo(f"{log_tag}: Node shutdown.")
 
-    def update_robot_assignments(self, msg):
+    def request_ticket_list(self, _):
+        '''Requests the current ticket list from the ticket_service.
+
+        Called whenever a ticket_list_update message is received.
+        '''
+        rospy.wait_for_service('ticket_service')
+
+        try:
+            # TicketListRequest() is empty.
+            request = TicketListRequest()
+            ticket_list = rospy.ServiceProxy('ticket_service', TicketList)
+            response = ticket_list(request)
+
+            # Convert the ticket list to a job list and task dictionary.
+            self.task_dict = convert_ticket_list_to_task_dict(response.all_tickets)
+            self.job_list = convert_task_list_to_job_list(self.task_dict)
+
+            self.waiting = response.waiting
+            self.ready = response.ready
+            self.ongoing = response.ongoing
+            self.done = response.done
+
+            self.update_robot_assignments()
+        except rospy.ServiceException as e:
+            rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
+
+    def update_robot_assignments(self):
         '''Updates the robot assignments when the ticket list is updated.'''
         # Note that the task dict, job list, and start points only have
         # information about tickets that are still in the ticket manager.
         # Anything that was deleted in the most recent update won't be in
         # these and has to be taken care of.
-
-        # Convert the ticket list to a job list and task dictionary.
-        self.task_dict = convert_ticket_list_to_task_dict(msg.tickets)
-        self.job_list = convert_task_list_to_job_list(self.task_dict)
 
         # Holds the jobs without assignments that will be passed to the
         # new job assignment function.
@@ -255,6 +279,7 @@ class RobotAssigner():
             #       f"Num robots: {job_num_robots}.")
 
             if job_num_robots <= len(self.available):
+                print(f"Assigning to {job_id}")
                 self.assign_robots_to_job(job_id, job_start_points)
             else:
                 # If we can't assign robots to the job, 
