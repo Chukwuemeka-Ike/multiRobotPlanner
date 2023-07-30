@@ -8,5 +8,5 @@ uint32 num_robots
 string status
 uint32 start
 uint32 end
-uint32 machine_num 
+uint32 machine_id 
 float32 time_left

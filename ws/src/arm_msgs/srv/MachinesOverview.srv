@@ -1,0 +1,6 @@
+# No request data
+---
+uint32[] machine_ids
+IntList[] grouped_machine_ids
+uint32[] machine_type_indices
+string[] machine_type_names

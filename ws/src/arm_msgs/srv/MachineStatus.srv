@@ -1,0 +1,4 @@
+uint32 machine_id
+---
+string status
+uint32[] assigned_ids
