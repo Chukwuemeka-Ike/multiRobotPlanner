@@ -23,7 +23,7 @@ def load_schedule(filename: str):
 
     return schedule
 
-def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, machine_type_names: list):
+def extract_schedule_lp(X, S, C, job_list: list, machine_ids: list, machine_type_names: list):
     '''Extracts and formats the schedule solved by the LP solver and job data.
 
     Returns:
@@ -36,7 +36,7 @@ def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, machine_typ
 
     for job_idx, job in enumerate(job_list):
         for task_idx, task in enumerate(job):
-            for machine in all_machines:
+            for machine in machine_ids:
                 if X[job_idx, task_idx, machine].solution_value() > 0.5:
                     # jobs.append(job_idx)
                     jobs.append(task["job_id"])
@@ -56,7 +56,7 @@ def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, machine_typ
     schedule["task_idx"] = tasks
     schedule["ticket_id"] = ticket_ids
     schedule["parents"] = parentses
-    schedule["machine_num"] = machine_nums
+    schedule["machine_id"] = machine_nums
     schedule["machine_type"] = machine_type_nums
     schedule["location"] = locations
     schedule["start"] = starts
@@ -66,7 +66,7 @@ def extract_schedule_lp(X, S, C, job_list: list, all_machines: list, machine_typ
 
     return schedule
 
-def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, machine_type_names: list):
+def extract_schedule_cpsat(solver, X, S, C, job_list: list, machine_ids: list, machine_type_names: list):
     '''Extracts and formats the schedule solved by the CP-SAT solver and job data.
 
     Returns:
@@ -79,7 +79,7 @@ def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, 
 
     for job_idx, job in enumerate(job_list):
         for task_idx, task in enumerate(job):
-            for machine in all_machines:
+            for machine in machine_ids:
                 if solver.Value(X[job_idx, task_idx, machine]) > 0.5:
                     # jobs.append(job_idx)
                     jobs.append(task["job_id"])
@@ -99,7 +99,7 @@ def extract_schedule_cpsat(solver, X, S, C, job_list: list, all_machines: list, 
     schedule["task_idx"] = tasks
     schedule["ticket_id"] = ticket_ids
     schedule["parents"] = parentses
-    schedule["machine_num"] = machine_nums
+    schedule["machine_id"] = machine_nums
     schedule["machine_type"] = machine_type_nums
     schedule["location"] = locations
     schedule["start"] = starts

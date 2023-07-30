@@ -29,16 +29,16 @@ machine_type_numbers = list(range(len(machine_type_names)))
 
 # Create increasing machine numbers based on how many
 # there are of each type. Output looks similar to description.
-machine_num = 0
-Mj, all_machines = [], []
+machine_id = 0
+grouped_machine_ids, machine_ids = [], []
 for i in range(len(machine_type_numbers)):
     machines = []
     for j in range(1, num_machines[i]+1):
-        machines.append(machine_num)
-        all_machines.append(machine_num)
-        machine_num += 1
-    Mj.append(machines)
-# print(f"All machines: {all_machines}")
+        machines.append(machine_id)
+        machine_ids.append(machine_id)
+        machine_id += 1
+    grouped_machine_ids.append(machines)
+# print(f"All machines: {machine_ids}")
 
 
 # *******************************************************************
@@ -53,8 +53,8 @@ machine_type_ws_nums = {
 
 # Idx of machine number of its type. For WS_0_# where # is the number of
 # that particular machine, not the unique ID.
-Mjs = []
-for i in range(len(Mj)):
-    for j in range(len(Mj[i])):
-        Mjs.append(j)
+machine_type_indices = []
+for i in range(len(grouped_machine_ids)):
+    for j in range(len(grouped_machine_ids[i])):
+        machine_type_indices.append(j)
 # *******************************************************************

@@ -15,14 +15,14 @@ from matplotlib.animation import FFMpegWriter
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-from arm_constants.machines import Mjs, machine_type_abvs
+from arm_constants.machines import machine_type_indices, machine_type_abvs
 
 from arm_utils.conversion_utils import convert_schedule_to_task_list
 from arm_utils.job_utils import create_linear_jobs, get_job_subsizes
 from arm_utils.sched_utils import load_schedule
 
 
-def draw_rectangle(job_num: int, machine_type_num: int, machine_num: int, start: int, duration: int, ax: plt.axes):
+def draw_rectangle(job_num: int, machine_type_num: int, machine_id: int, start: int, duration: int, ax: plt.axes):
     '''Draw a rectangle at the x-y location given by the start-job numbers.'''
     colors = ["#2f2f2f","#dc0001","#176d14","#006cdc","#b0b0b0"]
     # Create the rectangle and add it to the axes object.
@@ -39,8 +39,8 @@ def draw_rectangle(job_num: int, machine_type_num: int, machine_num: int, start:
     cx = rx + rectangle.get_width()/2.0
     cy = ry + rectangle.get_height()/2.0
     ax.annotate(
-        f"{machine_type_abvs[machine_type_num]} {str(Mjs[machine_num]+1)}",
-        # machine_num,
+        f"{machine_type_abvs[machine_type_num]} {str(machine_type_indices[machine_id]+1)}",
+        # machine_id,
         (cx, cy),
         color='black', weight='bold',
         fontsize=10, ha='center', va='center'
@@ -77,7 +77,7 @@ def draw_linear_schedule(schedule: pd.DataFrame):
         row = schedule.iloc[i]
         draw_rectangle(
             row["job_id"], row["machine_type"],
-            row["machine_num"],
+            row["machine_id"],
             row["start"], row["duration"], 
             ax
         )
@@ -113,7 +113,7 @@ def draw_tree_schedule(schedule: pd.DataFrame, ax: plt.Axes):
                 ticket = task_list[ticket_id]
                 draw_rectangle(
                     j, ticket["machine_type"],
-                    ticket["machine_num"],
+                    ticket["machine_id"],
                     ticket["start"], ticket["duration"], 
                     ax
                 )
@@ -157,7 +157,7 @@ def draw_tree_schedule(schedule: pd.DataFrame, ax: plt.Axes):
 #                 ticket = task_list[ticket_id]
 #                 draw_rectangle(
 #                     j, ticket["machine_type"],
-#                     ticket["machine_num"],
+#                     ticket["machine_id"],
 #                     ticket["start"], ticket["duration"], 
 #                     ax
 #                 )
@@ -227,7 +227,7 @@ def draw_evolving_schedule(search_dir: str, saveFilename: str="animatedSched.mp4
                         ticket = task_list[ticket_id]
                         draw_rectangle(
                             j, ticket["machine_type"],
-                            ticket["machine_num"],
+                            ticket["machine_id"],
                             ticket["start"], ticket["time_left"], 
                             ax
                         )

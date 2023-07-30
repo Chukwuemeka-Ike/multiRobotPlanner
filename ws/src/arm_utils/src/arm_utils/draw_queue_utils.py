@@ -12,7 +12,7 @@ import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
 
-from constants.machines import machine_type_names, machine_type_numbers, Mj
+from constants.machines import machine_type_names, machine_type_numbers, grouped_machine_ids
 
 
 fontSize = 9
@@ -127,7 +127,7 @@ def draw_queues(queueSchedule: pd.DataFrame):
         # Draw the queued tickets.
         for idx, row in queueSchedule.iterrows():
             draw_env(num_queues)
-            for machine_type_num, machine_type in enumerate(Mj):
+            for machine_type_num, machine_type in enumerate(grouped_machine_ids):
                 for machine in machine_type:
                     draw_queue_rectangle(machine, machine_type_num, ax)
 

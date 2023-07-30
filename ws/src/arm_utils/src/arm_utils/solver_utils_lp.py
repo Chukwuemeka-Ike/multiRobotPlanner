@@ -16,7 +16,7 @@ def intersection(lst1, lst2):
     '''Returns the common items between two lists.'''
     return list(set(lst1) & set(lst2))
 
-def create_opt_variables(solver, job_list: list, all_machines: list, Mj: list):
+def create_opt_variables(solver, job_list: list, machine_ids: list, grouped_machine_ids: list):
     '''Creates all the optimization variables for the MILP problem.
 
     Returns:
@@ -43,7 +43,7 @@ def create_opt_variables(solver, job_list: list, all_machines: list, Mj: list):
 
     for job in range(num_jobs):
         for task in range(len(job_list[job])):
-            for machine in all_machines:
+            for machine in machine_ids:
                 # Binary variable that is 1 if (job, task) is assigned to machine.
                 X[job, task, machine] = solver.IntVar(0, 1, f'X{job}{task}{machine}')
 
@@ -63,8 +63,8 @@ def create_opt_variables(solver, job_list: list, all_machines: list, Mj: list):
             for task_b in range(len(job_list[job_b])):
                 for task_a in range(len(job_list[job_a])):
                     M_intersection = intersection(
-                        Mj[job_list[job_b][task_b]["machine_type"]],
-                        Mj[job_list[job_a][task_a]["machine_type"]]
+                        grouped_machine_ids[job_list[job_b][task_b]["machine_type"]],
+                        grouped_machine_ids[job_list[job_a][task_a]["machine_type"]]
                     )
                     for machine in M_intersection:
                         # Binary variable - 1 if (job_a, task_a) precedes
@@ -77,8 +77,8 @@ def create_opt_variables(solver, job_list: list, all_machines: list, Mj: list):
         combos = combinations(range(len(job)), 2)
         for combo in combos:
             M_intersection = intersection(
-                Mj[job[combo[0]]["machine_type"]],
-                Mj[job[combo[1]]["machine_type"]]
+                grouped_machine_ids[job[combo[0]]["machine_type"]],
+                grouped_machine_ids[job[combo[1]]["machine_type"]]
             )
             for machine in M_intersection:
                 # Binary variable - 1 if (job_idx, combo[0]) precedes
@@ -92,7 +92,7 @@ def create_opt_variables(solver, job_list: list, all_machines: list, Mj: list):
 
     return X, Y, Z, S, C, S_job, C_job, C_max
 
-def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
+def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, grouped_machine_ids):
     '''Defines all the optimization constraints.'''
     # Large number for slack variables. This value has to be larger than the
     # maximum horizon + a buffer, or the program will be infeasible.
@@ -103,22 +103,22 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
         for task_idx, task in enumerate(job):
             # Each operation can only be assigned to one machine.
             solver.Add( 
-                sum(X[job_idx, task_idx, machine] for machine in Mj[task["machine_type"]]) == 1
+                sum(X[job_idx, task_idx, machine] for machine in grouped_machine_ids[task["machine_type"]]) == 1
             )
 
             # Within a job, each task must start after the all parent tasks end.
             for parent in parent_ids[job_idx][task_idx]:
                 solver.Add(
-                    sum(S[job_idx, task_idx, machine] for machine in Mj[task["machine_type"]]) >=
-                    sum(C[job_idx, parent, machine] for machine in Mj[job[parent]["machine_type"]])
+                    sum(S[job_idx, task_idx, machine] for machine in grouped_machine_ids[task["machine_type"]]) >=
+                    sum(C[job_idx, parent, machine] for machine in grouped_machine_ids[job[parent]["machine_type"]])
                 )
 
     for job_idx, job in enumerate(job_list):
         combos = combinations(range(len(job)), 2)
         for combo in combos:
             M_intersection = intersection(
-                Mj[job[combo[0]]["machine_type"]],
-                Mj[job[combo[1]]["machine_type"]]
+                grouped_machine_ids[job[combo[0]]["machine_type"]],
+                grouped_machine_ids[job[combo[1]]["machine_type"]]
             )
             # No two tasks within the same job can overlap on the same machine.
             for machine in M_intersection:
@@ -137,7 +137,7 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
     for job_idx, job in enumerate(job_list):
         for task_idx, task in enumerate(job):
             # Set constraints for all machines that match the task requirement.
-            for machine in Mj[task["machine_type"]]:
+            for machine in grouped_machine_ids[task["machine_type"]]:
                 # The start and end time must equal zero if the task is not
                 # assigned to that machine.
                 solver.Add(
@@ -166,8 +166,8 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
                 for task_a in range(len(job_list[job_a])):
                     # Check if the task-task pair have overlapping machines.
                     M_intersection = intersection(
-                        Mj[job_list[job_b][task_b]["machine_type"]],
-                        Mj[job_list[job_a][task_a]["machine_type"]]
+                        grouped_machine_ids[job_list[job_b][task_b]["machine_type"]],
+                        grouped_machine_ids[job_list[job_a][task_a]["machine_type"]]
                     )   
                     # print(M_intersection)
                     for machine in M_intersection:
@@ -189,12 +189,12 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
             # Job's start must be before the first task's start time.
             solver.Add(
                 S_job[job_idx] <= 
-                    sum(S[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["machine_type"]])
+                    sum(S[job_idx, task_idx, machine] for machine in grouped_machine_ids[job[task_idx]["machine_type"]])
             )
             # Job's completion must be after the last task's completion time.
             solver.Add(
                 C_job[job_idx] >= 
-                    sum(C[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["machine_type"]])
+                    sum(C[job_idx, task_idx, machine] for machine in grouped_machine_ids[job[task_idx]["machine_type"]])
             )
         
         # The overall makespan must be after the last job's completion.
@@ -202,7 +202,7 @@ def define_constraints(solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, par
             C_max >= C_job[job_idx]
         )
 
-# (solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj):
+# (solver, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, grouped_machine_ids):
 def respect_ongoing_constraints(solver, X, S, job_list: list, ongoing: dict):
     '''Adds constraints to ensure ongoing tasks are assigned to the
     same machines and start at time zero.
@@ -210,17 +210,17 @@ def respect_ongoing_constraints(solver, X, S, job_list: list, ongoing: dict):
     for ticket_id, ticket in ongoing.items():
         # Get the ticket location in the job list and its assigned machine.
         job_idx, task_idx = get_task_idx_in_job(ticket_id, job_list)
-        machine_num = ticket["machine_num"]
+        machine_id = ticket["machine_id"]
 
         # Set the 
         solver.Add(
-            X[job_idx, task_idx, machine_num] == 1
+            X[job_idx, task_idx, machine_id] == 1
         )
         solver.Add(
-            S[job_idx, task_idx, machine_num] == 0
+            S[job_idx, task_idx, machine_id] == 0
         )
 
-def create_idle_time_objective(solver, S, C, C_max, job_list, parent_ids, Mj, optimum):
+def create_idle_time_objective(solver, S, C, C_max, job_list, parent_ids, grouped_machine_ids, optimum):
     '''Sets the schedule's total idle time as the objective.'''
     # Add constraint for makespan based on previously found optimum.
     solver.Add(C_max <= optimum)
@@ -232,7 +232,7 @@ def create_idle_time_objective(solver, S, C, C_max, job_list, parent_ids, Mj, op
             # Idle time between each task's start and its parents' completion.
             for parent in parent_ids[job_idx][task_idx]:
                 idle_times.append(
-                    sum(S[job_idx, task_idx, machine] for machine in Mj[job[task_idx]["machine_type"]])
-                    - sum(C[job_idx, parent, machine] for machine in Mj[job[parent]["machine_type"]])
+                    sum(S[job_idx, task_idx, machine] for machine in grouped_machine_ids[job[task_idx]["machine_type"]])
+                    - sum(C[job_idx, parent, machine] for machine in grouped_machine_ids[job[parent]["machine_type"]])
                 )
     solver.Minimize(solver.Sum(idle_times))
