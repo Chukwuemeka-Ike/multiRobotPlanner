@@ -49,3 +49,10 @@ class FixedWidthLineEdit(QLineEdit):
         super().__init__()
         if width is not None:
             self.setFixedWidth(width)
+
+class FixedWidthPushButton(QPushButton):
+    '''Creates a fixed width push button.'''
+    def __init__(self, width=None):
+        super().__init__()
+        if width is not None:
+            self.setFixedWidth(width)
