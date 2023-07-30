@@ -11,7 +11,6 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QDoubleValidator, QPixmap
 from PyQt5.QtWidgets import *
 
-from arm_constants.machines import *
 from gui_common.gui_elements import FixedWidthLineEdit, FixedWidthLabel
 
 
@@ -82,11 +81,12 @@ class BasicConfirmDialog(BasicDialog):
 
 class ImportTicketsDialog(BasicDialog):
     '''Class for importing multiple tickets at once.'''
-    def __init__(self, parent: QWidget, min_ticket_number: int) -> None:
+    def __init__(self, parent: QWidget, min_ticket_number: int, machine_type_names: list) -> None:
         super().__init__(parent)
         self.setWindowTitle("Bulk Add Tickets")
 
         self.minTicketNumber = min_ticket_number
+        self.machine_type_names = machine_type_names
 
         # This particular dialog uses a QGridLayout where the others
         # all use a QVBoxLayout, so delete and create a new one.
@@ -151,7 +151,7 @@ class ImportTicketsDialog(BasicDialog):
         duration_edit.setValidator(self.double_validator)
 
         machine_type_combo = QComboBox()
-        machine_type_combo.addItems(machine_type_names)
+        machine_type_combo.addItems(self.machine_type_names)
         machine_type_combo.setFixedWidth(self.square_width)
 
         # Create a layout to hold the input fields and remove button.
@@ -210,7 +210,7 @@ class ImportTicketsDialog(BasicDialog):
                 else:
                     duration = float(duration)
                 machine_name = layout.itemAt(3).widget().currentText()
-                machine_type_num = machine_type_names.index(machine_name)
+                machine_type_num = self.machine_type_names.index(machine_name)
 
                 # Append the ticket row if it is valid.
                 entered_tickets.append([ticket_id, parents_list, duration, machine_type_num])
@@ -229,7 +229,7 @@ class ImportTicketsDialog(BasicDialog):
 
 class NewTicketDialog(BasicDialog):
     '''Class for entering a single new ticket.'''
-    def __init__(self, parent: QWidget, min_ticket_number: int, job_info: dict) -> None:
+    def __init__(self, parent: QWidget, min_ticket_number: int, job_info: dict, machine_type_names: list) -> None:
         '''.
         
         Args:
@@ -238,8 +238,9 @@ class NewTicketDialog(BasicDialog):
         super().__init__(parent)
         self.setWindowTitle("New Ticket")
 
-        self.minTicketNumber = min_ticket_number
         self.job_ticket_ids = job_info
+        self.minTicketNumber = min_ticket_number
+        self.machine_type_names = machine_type_names
 
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
@@ -274,7 +275,7 @@ class NewTicketDialog(BasicDialog):
         self.duration.setValidator(self.double_validator)
 
         self.machineTypeComboBox = QComboBox()
-        self.machineTypeComboBox.addItems(machine_type_names)
+        self.machineTypeComboBox.addItems(self.machine_type_names)
 
         self.formLayout = QFormLayout()
         self.formLayout.addRow("Job ID", self.jobIDComboBox)
@@ -339,7 +340,7 @@ class NewTicketDialog(BasicDialog):
                 parents.append(int(self.parentsComboBox2.currentText()))
             duration = float(self.duration.text())
             machine_name = self.machineTypeComboBox.currentText()
-            machine_type_num = machine_type_names.index(machine_name)
+            machine_type_num = self.machine_type_names.index(machine_name)
 
             self.dataEntered.emit([ticket_id, parents, duration, machine_type_num])
             message = "Added ticket successfully."
@@ -354,7 +355,7 @@ class NewTicketDialog(BasicDialog):
 
 class EditTicketDialog(BasicDialog):
     '''.'''
-    def __init__(self, parent: QWidget, job_info: dict, all_tickets: dict, ongoing: list) -> None:
+    def __init__(self, parent: QWidget, job_info: dict, all_tickets: dict, ongoing: list, machine_type_names: list) -> None:
         '''.
         
         Args:
@@ -364,8 +365,9 @@ class EditTicketDialog(BasicDialog):
         self.setWindowTitle("Edit Ticket")
 
         self.job_ticket_ids = job_info
-        self.ongoing = ongoing
         self.all_tickets = all_tickets
+        self.ongoing = ongoing
+        self.machine_type_names = machine_type_names
         
         self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
@@ -392,7 +394,7 @@ class EditTicketDialog(BasicDialog):
         self.duration.setValidator(self.double_validator)
 
         self.machineTypeComboBox = QComboBox()
-        self.machineTypeComboBox.addItems(machine_type_names)
+        self.machineTypeComboBox.addItems(self.machine_type_names)
 
         self.formLayout = QFormLayout()
         self.formLayout.addRow("Job ID", self.jobIDComboBox)
@@ -450,7 +452,7 @@ class EditTicketDialog(BasicDialog):
             ticket_id = int(self.ticketIDBox.currentText())
             duration = float(self.duration.text())
             machine_name = self.machineTypeComboBox.currentText()
-            machine_type_num = machine_type_names.index(machine_name)
+            machine_type_num = self.machine_type_names.index(machine_name)
             
             # If the ticket is ongoing, double check with the user that they
             # still want to edit it.
@@ -489,7 +491,7 @@ class EditJobDialog(BasicDialog):
 
     def __init__(
             self, parent: QWidget, job_info: dict, all_tickets: dict,
-            ongoing: list
+            ongoing: list, machine_type_names: list
     ) -> None:
         '''Constructor that creates the UI and sets member variables.
         
@@ -502,6 +504,7 @@ class EditJobDialog(BasicDialog):
         self.job_ticket_ids = job_info
         self.all_tickets = all_tickets
         self.ongoing = ongoing
+        self.machine_type_names = machine_type_names
 
         self.mainLayout = QGridLayout()
         self.setLayout(self.mainLayout)
@@ -616,7 +619,7 @@ class EditJobDialog(BasicDialog):
             ticketLayout.addWidget(durationEdit)
 
             machineType = QComboBox()
-            machineType.addItems(machine_type_names)
+            machineType.addItems(self.machine_type_names)
             machineType.setFixedWidth(self.square_width)
 
             machine_type_num = self.all_tickets[ticket_id]["machine_type"]
@@ -710,7 +713,7 @@ class EditJobDialog(BasicDialog):
                 else:
                     duration = float(duration)
                 machine_name = ticket_layout.itemAt(3).widget().currentText()
-                machine_type_num = machine_type_names.index(machine_name)
+                machine_type_num = self.machine_type_names.index(machine_name)
 
                 # Append the ticket row if it is valid.
                 edited_tickets.append([ticket_id, parents_list, duration, machine_type_num])
@@ -747,7 +750,7 @@ class EditJobDialog(BasicDialog):
 
         # Check if machine type was edited.
         machine_name = row_layout.itemAt(3).widget().currentText()
-        machine_type_num = machine_type_names.index(machine_name)
+        machine_type_num = self.machine_type_names.index(machine_name)
 
         if machine_type_num != self.all_tickets[ticket_id]["machine_type"]:
             print("Machine type")
