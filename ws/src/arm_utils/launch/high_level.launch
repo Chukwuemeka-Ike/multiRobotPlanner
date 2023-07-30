@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="task_scheduler" pkg="task_scheduler" type="task_scheduler_node" output="screen">
+    </node>
+    
+    <node name="ticket_manager" pkg="ticket_manager" type="ticket_manager_node" output="screen">
+    </node>
+
+    <node name="robot_assigner" pkg="robot_assigner" type="robot_assigner_node" output="screen">
+    </node>
+
+    <rosparam command="load" file="$(find machine_manager)/config/machine_params.yaml"/>
+    <node name="machine_manager" pkg="machine_manager" type="machine_manager_node" output="screen"/>
+</launch>

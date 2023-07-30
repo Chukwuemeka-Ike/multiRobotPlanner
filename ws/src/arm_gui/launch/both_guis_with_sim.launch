@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="gui_rviz" default="world_one_robot"/>
+    <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/>
+    <node name="supervisor_gui" pkg="arm_gui" type="supervisor_gui_node" output="screen"/>
+
+    <node name="operator_gui" pkg="arm_gui" type="operator_gui_node" output="screen"/>
+    <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
+
+    <include file="$(find arm_gui)/launch/world_sim_one_robot.launch">
+    </include>
+</launch>
