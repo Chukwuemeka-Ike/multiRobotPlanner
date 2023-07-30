@@ -59,7 +59,6 @@ class RobotAssigner():
         self.occupied = {}
 
         # Subscriber for ticket list updates. Ticket Manager is the publisher.
-        # 
         self.ticket_list_update_sub = rospy.Subscriber(
             'ticket_list_update', String, self.request_ticket_list
         )
@@ -161,12 +160,12 @@ class RobotAssigner():
         # Attempt to assign robots to the new and unstarted jobs.
         self.new_job_robot_assignments(unassigned_jobs)
 
-        # Print assignments and sets.
-        for job_id, assignments in self.assignments.items():
-            print(f"Job ID: {job_id}: {assignments}")
-        print(f"Available: {self.available}")
-        print(f"Occupied: {self.occupied}")
-        print()
+        # # Print assignments and sets.
+        # for job_id, assignments in self.assignments.items():
+        #     print(f"Job ID: {job_id}: {assignments}")
+        # print(f"Available: {self.available}")
+        # print(f"Occupied: {self.occupied}")
+        # print()
 
     def release_assigned_robots(self, job_id: int):
         '''Releases the robots assigned to job_id.
@@ -284,7 +283,7 @@ class RobotAssigner():
             #       f"Num robots: {job_num_robots}.")
 
             if job_num_robots <= len(self.available):
-                print(f"Assigning to {job_id}")
+                # print(f"Assigning to {job_id}")
                 self.assign_robots_to_job(job_id, job_start_points)
             else:
                 # If we can't assign robots to the job, 

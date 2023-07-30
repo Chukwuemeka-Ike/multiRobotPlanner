@@ -15,9 +15,16 @@ Description:
 '''
 import pandas as pd
 
-from arm_msgs.msg import Ticket, Tickets
+from arm_msgs.msg import IntList, Ticket, Tickets
 
 from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list
+
+def convert_list_of_int_lists_to_list_of_lists(list_of_int_lists: list):
+    '''.'''
+    list_of_lists = []
+    for group in list_of_int_lists:
+        list_of_lists.append(list(group.int_list))
+    return list_of_lists
 
 def convert_task_dict_to_ticket_list(ticket_dict: dict) -> list:
         '''Creates a list of Ticket messages from ticket_dict.'''
@@ -34,10 +41,10 @@ def convert_task_dict_to_ticket_list(ticket_dict: dict) -> list:
             # Failing shouldn't stop the workflow.
             try:
                 msg.time_left = ticket["time_left"]
-                msg.status = ticket["status"]
                 msg.start = ticket["start"]
                 msg.end = ticket["end"]
-                msg.machine_num = ticket["machine_num"]
+                msg.machine_id = ticket["machine_id"]
+                msg.status = ticket["status"]
 
                 if len(ticket["parents"]) == 0:
                     msg.num_robots = ticket["num_robots"]
@@ -66,15 +73,15 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
         # These only exist once a schedule has been created.
         # Failing shouldn't stop the workflow.
         try:
-            tix["status"] = ticket.status
+            tix["time_left"] = ticket.time_left
             tix["start"] = ticket.start
             tix["end"] = ticket.end
-            tix["machine_num"] = ticket.machine_num
-            tix["time_left"] = ticket.time_left
+            tix["machine_id"] = ticket.machine_id
+            tix["status"] = ticket.status
 
             if len(ticket.parents) == 0:
                 tix["num_robots"] = ticket.num_robots
-        except KeyError as e:
+        except AttributeError as e:
             pass
             # print(f"Warning: {e}")
 
@@ -95,7 +102,7 @@ def convert_schedule_to_task_list(schedule: pd.DataFrame):
         ticket["job_id"] = row["job_id"]
         # ticket["task_idx"] = row["task_idx"]
         ticket["parents"] = row["parents"]
-        ticket["machine_num"] = row["machine_num"]
+        ticket["machine_id"] = row["machine_id"]
         ticket["machine_type"] = row["machine_type"]
         ticket["location"] = row["location"]
         ticket["start"] = row["start"]
@@ -119,7 +126,7 @@ def convert_task_list_to_schedule(task_dict: dict, machine_type_names: list) -> 
 
     schedule = pd.DataFrame(
             columns=[
-                "job_id", "ticket_id", "parents", "machine_num",
+                "job_id", "ticket_id", "parents", "machine_id",
                 "machine_type", "location", "start", "end", "duration",
                 "time_left"
             ]
@@ -134,7 +141,7 @@ def convert_task_list_to_schedule(task_dict: dict, machine_type_names: list) -> 
         try:
             job_id = ticket["job_id"]
             parents = ticket["parents"]
-            machine_num = ticket["machine_num"]
+            machine_id = ticket["machine_id"]
             machine_type = ticket["machine_type"]
             location = machine_type_names[ticket["machine_type"]]
             start = ticket["start"]
@@ -147,7 +154,7 @@ def convert_task_list_to_schedule(task_dict: dict, machine_type_names: list) -> 
         jobs.append(job_id)
         ticket_ids.append(ticket_id)
         parentses.append(parents)
-        machine_nums.append(machine_num)
+        machine_nums.append(machine_id)
         machine_type_nums.append(machine_type)
         locations.append(location)
         starts.append(start)
@@ -158,7 +165,7 @@ def convert_task_list_to_schedule(task_dict: dict, machine_type_names: list) -> 
     schedule["job_id"] = jobs
     schedule["ticket_id"] = ticket_ids
     schedule["parents"] = parentses
-    schedule["machine_num"] = machine_nums
+    schedule["machine_id"] = machine_nums
     schedule["machine_type"] = machine_type_nums
     schedule["location"] = locations
     schedule["start"] = starts
