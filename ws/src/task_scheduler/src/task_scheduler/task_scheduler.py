@@ -12,15 +12,14 @@ Description:
 import rospy
 from ortools.sat.python import cp_model
 
-from arm_constants.machines import all_machines, machine_type_names, Mj
-
-from arm_msgs.srv import Schedule, ScheduleResponse
+from arm_msgs.srv import MachinesOverview, MachinesOverviewRequest,\
+    Schedule, ScheduleResponse
 
 from arm_utils.display_utils import display_solution_stats_cpsat
 from arm_utils.job_utils import get_task_parent_indices
 from arm_utils.conversion_utils import convert_task_dict_to_ticket_list,\
-     convert_task_list_to_job_list, convert_schedule_to_task_list,\
-        convert_ticket_list_to_task_dict
+    convert_task_list_to_job_list, convert_schedule_to_task_list,\
+    convert_ticket_list_to_task_dict, convert_list_of_int_lists_to_list_of_lists
 from arm_utils.sched_utils import extract_schedule_cpsat
 from arm_utils.solver_utils_cpsat import create_opt_variables, define_constraints, respect_ongoing_constraints
 
@@ -66,10 +65,10 @@ class TaskScheduler():
 
         # Create optimization variables, and define the constraints.
         X, Y, Z, S, C, S_job, C_job, C_max = create_opt_variables(
-            model, job_list, all_machines, Mj
+            model, job_list, self.machine_ids, self.grouped_machine_ids
         )
         define_constraints(
-            model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, Mj
+            model, X, Y, Z, S, C, S_job, C_job, C_max, job_list, parent_ids, self.grouped_machine_ids
         )
         respect_ongoing_constraints(
             model, X, S, job_list, ongoing
@@ -92,8 +91,8 @@ class TaskScheduler():
             # Extract the schedule.
             self.schedule = extract_schedule_cpsat(
                 solver, X, S, C, job_list,
-                all_machines,
-                machine_type_names
+                self.machine_ids,
+                self.machine_type_names
             )
             self.schedule.to_csv(f"schedule{self.schedule_num}.csv")
             self.schedule_times.append(rospy.Time.now().to_sec())
@@ -114,6 +113,9 @@ class TaskScheduler():
         ticket_dict = convert_ticket_list_to_task_dict(request.tickets)
         ongoing = convert_ticket_list_to_task_dict(request.ongoing)
 
+        # Request machine information before trying to schedule.
+        self.request_machine_overview()
+
         # Generate the schedule.
         self.generate_schedule(ticket_dict, ongoing)
 
@@ -121,8 +123,31 @@ class TaskScheduler():
         # ticket list, then send it back.
         task_dict = convert_schedule_to_task_list(self.schedule)
         ticket_list = convert_task_dict_to_ticket_list(task_dict)
+        # print(self.schedule)
+        # print(ticket_list)
 
         return ScheduleResponse(ticket_list)
+
+    def request_machine_overview(self):
+        '''.'''
+        rospy.wait_for_service('machine_overview_service')
+        try:
+            # MachinesOverviewRequest() is empty.
+            request = MachinesOverviewRequest()
+            machines_overview = rospy.ServiceProxy('machine_overview_service', MachinesOverview)
+            response = machines_overview(request)
+            self.machine_ids = response.machine_ids
+            grouped_machine_ids = response.grouped_machine_ids
+            self.grouped_machine_ids = \
+                convert_list_of_int_lists_to_list_of_lists(grouped_machine_ids)
+            self.machine_type_names = response.machine_type_names
+
+            # print(f"IDs: {self.machine_ids}")
+            # print(f"Grouped IDs: {self.grouped_machine_ids}")
+            # print(f"Names: {self.machine_type_names}")
+
+        except rospy.ServiceException as e:
+            rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
     def shutdown_task_scheduler(self):
         '''Gracefully shutdown the task scheduler.'''
