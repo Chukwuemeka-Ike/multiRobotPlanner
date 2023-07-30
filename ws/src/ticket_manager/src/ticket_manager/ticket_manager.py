@@ -12,7 +12,7 @@ Description:
 import math
 import rospy
 
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt32
 
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
@@ -86,7 +86,7 @@ class TicketManager():
         # )
         # Delete job uses a Ticket, but only the job_id matters.
         self.delete_job_sub = rospy.Subscriber(
-            "delete_job", Ticket, self.delete_job_message_callback
+            "delete_job", UInt32, self.delete_job_message_callback
         )
 
         # Subscribers for starting and ending tasks.
@@ -236,7 +236,7 @@ class TicketManager():
         
         The message just contains the job ID we want to delete.
         '''
-        job_id = msg.job_id
+        job_id = msg.data
 
         deleted_ticket_ids = []
         for ticket_id in self.jobs[job_id]["ticket_ids"]:
@@ -402,10 +402,12 @@ class TicketManager():
         Time left is also updated because of integer requirements of the
         CP-SAT solver.
         '''
+        # print(old_ticket)
+        # print(new_ticket)
         old_ticket["start"] = new_ticket["start"]
         old_ticket["end"] = new_ticket["end"]
         old_ticket["time_left"] = new_ticket["time_left"]
-        old_ticket["machine_num"] = new_ticket["machine_num"]
+        old_ticket["machine_id"] = new_ticket["machine_id"]
 
     def convert_ticket_list_to_temp_dict(self, ticket_list) -> dict:
         '''Creates a temporary dictionary of tickets using the Tickets list.
@@ -557,7 +559,7 @@ class TicketManager():
         msg.parents = self.ticket_dict[ticket_id]["parents"]
         msg.start = self.ticket_dict[ticket_id]["start"]
         msg.end = self.ticket_dict[ticket_id]["end"]
-        msg.machine_num = self.ticket_dict[ticket_id]["machine_num"]
+        msg.machine_id = self.ticket_dict[ticket_id]["machine_id"]
         self.ticket_started_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Starting ticket {ticket_id}.")
 
