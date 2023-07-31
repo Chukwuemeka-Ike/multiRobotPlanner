@@ -238,6 +238,11 @@ class TicketManager():
         '''
         job_id = msg.data
 
+        if job_id not in self.jobs:
+            rospy.logwarn(f"{log_tag}: Attempted to edit a non-existent "
+                              "job. Ignoring")
+            return
+
         deleted_ticket_ids = []
         for ticket_id in self.jobs[job_id]["ticket_ids"]:
             self.delete_ticket(ticket_id)
