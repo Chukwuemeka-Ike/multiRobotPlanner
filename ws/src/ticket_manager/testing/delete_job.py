@@ -10,23 +10,23 @@ Description:
 import rospy
 import sys
 
-from arm_msgs.msg import Ticket
+from std_msgs.msg import UInt32
 
 
 if __name__ == "__main__":
     rospy.init_node('job_deleter')
     delete_job_pub = rospy.Publisher(
-        'delete_job', Ticket, queue_size=100
+        'delete_job', UInt32, queue_size=100
     )
     # Wait 1 second, or the message won't publish.
     rate = rospy.Rate(1)
     rate.sleep()
     
-    msg = Ticket()
+    msg = UInt32()
     if len(sys.argv) > 1:
-        msg.job_id = int(sys.argv[1])
+        msg.data = int(sys.argv[1])
     else:
-        msg.job_id = 1
+        msg.data = 1
     delete_job_pub.publish(msg)
 
     # Shutdown the node
