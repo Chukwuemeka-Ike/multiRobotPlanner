@@ -310,6 +310,9 @@ class TicketManager():
 
     def end_ticket_message_callback(self, msg):
         '''Callback when a done signal is received.'''
+        # If the ticket is not ongoing. Ignore.
+        if msg.ticket_id not in self.ongoing:
+            return
         try:
             # Update the ongoing time left for all ongoing tix.
             self.update_ongoing_time_left()
