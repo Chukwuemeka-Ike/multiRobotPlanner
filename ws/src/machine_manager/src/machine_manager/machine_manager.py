@@ -85,7 +85,7 @@ class MachineManager():
         # that particular machine, not the unique ID.
         self.machine_type_indices = []
         for i in range(len(self.grouped_machine_ids)):
-            for j in range(len(self.grouped_machine_ids[i])):
+            for j in range(1,len(self.grouped_machine_ids[i])+1):
                 self.machine_type_indices.append(j)
 
         # Dictionary to hold the status of each machine.
@@ -161,7 +161,8 @@ class MachineManager():
             self.machine_ids,
             grouped_machine_ids,
             self.machine_type_indices,
-            self.machine_type_names
+            self.machine_type_names,
+            self.machine_type_abvs
         )
 
     def send_machine_status(self, request):

@@ -88,9 +88,13 @@ class SupervisorGUI(QMainWindow):
             "delete_job", UInt32, queue_size=10
         )
 
-        # Machine type names.
+        # Machine overview information.
         # self.machine_type_names = machine_type_names
+        self.machine_ids = []
         self.machine_type_names = []
+        self.grouped_machine_ids = []
+        self.machine_type_indices = []
+        self.machine_type_abvs = []
 
         # Ticket list and subsets - waiting, ready, ongoing, done.
         self.all_tickets = {}
@@ -289,15 +293,20 @@ class SupervisorGUI(QMainWindow):
         self.scheduleCanvas = FigureCanvas(figure)
         self.ax = figure.add_subplot(111)
 
-        # Draw the placeholder schedule.
-        self._drawSchedule(schedule)
+        # # Draw the placeholder schedule.
+        # self._drawSchedule(schedule)
 
     def _drawSchedule(self, schedule):
         '''.'''
         # Clear the old figure.
         self.ax.clear()
 
-        draw_tree_schedule(schedule, self.ax)
+        draw_tree_schedule(
+            schedule,
+            self.ax,
+            self.machine_type_indices,
+            self.machine_type_abvs
+        )
 
         # Refresh the canvas.
         self.scheduleCanvas.draw()
@@ -487,6 +496,8 @@ class SupervisorGUI(QMainWindow):
             self.grouped_machine_ids = \
                 convert_list_of_int_lists_to_list_of_lists(grouped_machine_ids)
             self.machine_type_names = response.machine_type_names
+            self.machine_type_indices = response.machine_type_indices
+            self.machine_type_abvs = response.machine_type_abvs
 
             # print(f"IDs: {self.machine_ids}")
             # print(f"Grouped IDs: {self.grouped_machine_ids}")
@@ -578,3 +589,6 @@ class SupervisorGUI(QMainWindow):
         # Check if schedule
         if schedule is not None and schedule["end"].max() != 0:
             self._drawSchedule(schedule)
+        else:
+            # Clear the old figure.
+            self.ax.clear()
