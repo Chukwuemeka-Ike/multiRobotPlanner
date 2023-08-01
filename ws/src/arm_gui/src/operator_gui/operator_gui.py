@@ -224,6 +224,7 @@ class OperatorGUI(QMainWindow):
         # Enable the ticket and buttons layouts.
         self.enable_layout(self.currentTicketLayout)
         self.enable_layout(self.buttonsLayout)
+        self.endButton.setEnabled(False)
 
     def release_machine_id(self):
         '''Releases the machine ID from the Operator GUI.
@@ -347,6 +348,8 @@ class OperatorGUI(QMainWindow):
         # Disable the release machine button and the ID dropdown.
         self.ticketIDComboBox.setEnabled(False)
         self.machineIDReleaseButton.setEnabled(False)
+        self.startButton.setEnabled(False)
+        self.endButton.setEnabled(True)
         
     def end_ticket(self):
         '''Ends the selected ticket and publishes its ID.'''
@@ -358,6 +361,8 @@ class OperatorGUI(QMainWindow):
         # Enable the release machine button and the ID dropdown.
         self.ticketIDComboBox.setEnabled(True)
         self.machineIDReleaseButton.setEnabled(True)
+        self.startButton.setEnabled(True)
+        self.endButton.setEnabled(False)
 
         # Empty the ticket combo box, then add the IDs after requesting
         # a new ticket list and machine assignments.
