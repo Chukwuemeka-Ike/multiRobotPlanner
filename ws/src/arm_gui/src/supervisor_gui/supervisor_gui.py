@@ -129,9 +129,10 @@ class SupervisorGUI(QMainWindow):
         self.create_ui()
         self.create_status_bar()
 
-        # Request the task list once to populate the necessary variables.
+        # Request info once to populate the necessary variables.
         self.update_gui()
 
+        # Show the window.
         self.show()
 
         # Set the update interval for the GUI in milliseconds.

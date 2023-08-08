@@ -10,13 +10,12 @@ Description:
 import os
 import rospy
 import rospkg
-import sys
 import threading
 
 from geometry_msgs.msg import Twist, PoseStamped
 from std_msgs.msg import UInt32
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 
@@ -58,15 +57,6 @@ class OperatorGUI(QMainWindow):
             "gui_rviz_path", os.path.join(rviz_folder, "config.rviz")
         )
 
-        self.ticketID = 4
-
-        # Set the central widget and window layout.
-        self.centralWidget = QWidget(self)
-        self.setCentralWidget(self.centralWidget)
-
-        self.overallLayout = QVBoxLayout(self.centralWidget)
-        self.centralWidget.setLayout(self.overallLayout)
-
         # Publishers for binding/releasing a machine to/from the GUI instance.
         self.bind_machine_pub = rospy.Publisher(
             "bind_machine", UInt32, queue_size=10
@@ -74,7 +64,8 @@ class OperatorGUI(QMainWindow):
         self.release_machine_pub = rospy.Publisher(
             "release_machine", UInt32, queue_size=10
         )
-        # Publisher for starting a ticket.
+
+        # Publishers for starting and ending a ticket.
         self.start_ticket_pub = rospy.Publisher(
             "start_ticket", Ticket, queue_size=10
         )# Publisher for ending a ticket when done.
@@ -82,6 +73,12 @@ class OperatorGUI(QMainWindow):
             "end_ticket", Ticket, queue_size=10
         )
 
+        # Publisher for calling robots to the station.
+        self.call_robots_pub = rospy.Publisher(
+            "move_base_simple/goal", PoseStamped, queue_size=10
+        )
+
+        # *********************************************************************
         # Swarm Version 1 Code.
         # Control setup.
         self.get_control_params()
@@ -97,16 +94,70 @@ class OperatorGUI(QMainWindow):
 
         # Subscribe to the input command topic.
         rospy.Subscriber(self.input_command_topic, Twist, self._offsetCallback)
+        # *********************************************************************
 
         self.unbound_machines = []
         self.unbound_machine_names = []
 
-        # Create the display and status bar.
-        self._createDisplay()
-        self._createStatusBar()
+        # Current ticket ID.
+        self.ticketID = None
+
+        # Set the central widget and window layout.
+        self.centralWidget = QWidget(self)
+        self.setCentralWidget(self.centralWidget)
+        self.overallLayout = QVBoxLayout(self.centralWidget)
+        self.centralWidget.setLayout(self.overallLayout)
+
+        # Resize, and center the window.
+        self.resize(600, 900)
+        self.center_window()
+
+        # Create the ui and status bar.
+        self.create_ui()
+        self.create_status_bar()
+
+        # Request info once to populate the necessary variables.
+        self.update_gui()
 
         # Show the window.
         self.show()
+
+        # Set the update interval for the GUI in milliseconds.
+        self.update_interval = 1000
+        self.updateTimer = QTimer()
+        self.updateTimer.timeout.connect(self.update_gui)
+        self.updateTimer.setInterval(self.update_interval)
+        self.updateTimer.start()
+
+    def center_window(self):
+        '''.'''
+        # Get the screen geometry.
+        screenGeometry = QDesktopWidget().screenGeometry()
+
+        # Calculate the center position for the window.
+        x = (screenGeometry.width() - self.width()) // 2
+        y = (screenGeometry.height() - self.height()) // 2
+
+        # Move the window to the center position.
+        self.move(x, y)
+
+    def show(self):
+        '''Override the original show function.
+        
+        If the initial window size is larger than the screen,
+        maximize the window instead.
+        '''
+        screenGeometry = QDesktopWidget().screenGeometry()
+        if screenGeometry.width() <= self.width() or \
+            screenGeometry.height() <= self.height():
+            self.showMaximized()
+        else:
+            # Call the base class method.
+            super().show()
+
+    def update_gui(self):
+        '''Operations to keep the GUI updated. Triggered by a QTimer.'''
+        # TODO.
 
     def shutdown_gui(self):
         '''Gracefully shutdown the GUI elements. Particularly RViz.'''
@@ -129,65 +180,71 @@ class OperatorGUI(QMainWindow):
         self.resize_swarm_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
         self.tf_changer_topic = rospy.get_param('tf_changer_topic')
 
-    def _createDisplay(self):
-        '''Create the basic display.'''
-        
-        self.create_machine_layout()
-        self._createTicketLayout()
-        self._createButtonsLayout()
+    def create_ui(self):
+        '''Create the basic UI.'''
 
-        # Create the RViz widget.
+        # Create the machine, ticket, and control layouts and RViz widget.
+        self.create_machine_layout()
+        self.create_ticket_layout()
+        self.create_control_layout()
         self.create_map_widget()
 
-        self.overallLayout.addLayout(self.machineIDLayout)
-        self.overallLayout.addLayout(self.currentTicketLayout)
-        self.overallLayout.addLayout(self.buttonsLayout)
+        self.overallLayout.addLayout(self.machineLayout)
+        self.overallLayout.addLayout(self.ticketLayout)
+        self.overallLayout.addLayout(self.controlLayout)
         self.overallLayout.addWidget(self.mapWidget)
 
         # Disable the ticket and buttons layouts.
-        self.disable_layout(self.currentTicketLayout)
-        self.disable_layout(self.buttonsLayout)
+        self.disable_layout(self.ticketLayout)
+        self.disable_layout(self.controlLayout)
 
-    def _createStatusBar(self):
+    def create_status_bar(self):
         '''Create a simple status bar.'''
         status = QStatusBar(self.centralWidget)
         status.showMessage("Operator GUI")
         self.setStatusBar(status)
 
     def create_machine_layout(self):
-        '''.'''
+        '''Machine layout allows the operator set which machine they're on.'''
         self.request_unbound_machines()
 
-        componentSizes = self.width()/5
-        self.machineIDLayout = QHBoxLayout()
+        self.machineLayout = QHBoxLayout()
         machineIDLabel = QLabel("Machine ID")
         machineIDLabel.setAlignment(Qt.AlignCenter)
 
         self.machineIDComboBox = QComboBox()
-        self.machineIDComboBox.addItem("Select Machine ID")
-        self.machineIDComboBox.addItems(self.unbound_machine_names)
-        self.machineIDComboBox.currentIndexChanged.connect(self.select_machine_id)
+        self.update_unbound_machines()
+        self.machineIDComboBox.currentIndexChanged.connect(
+            self.on_machine_dropdown_changed
+        )
 
         self.machineIDSelectButton = QPushButton("Set Machine")
         self.machineIDSelectButton.setEnabled(False)
         self.machineIDSelectButton.clicked.connect(self.bind_machine_id)
-        
+
         self.machineIDReleaseButton = QPushButton("Release Machine")
         self.machineIDReleaseButton.setStyleSheet("background-color : red")
         self.machineIDReleaseButton.setEnabled(False)
         self.machineIDReleaseButton.clicked.connect(self.release_machine_id)
 
-        self.machineIDLayout.addWidget(machineIDLabel)
-        self.machineIDLayout.addWidget(self.machineIDComboBox)
-        self.machineIDLayout.addWidget(self.machineIDSelectButton)
-        self.machineIDLayout.addWidget(self.machineIDReleaseButton)
+        self.machineLayout.addWidget(machineIDLabel)
+        self.machineLayout.addWidget(self.machineIDComboBox)
+        self.machineLayout.addWidget(self.machineIDSelectButton)
+        self.machineLayout.addWidget(self.machineIDReleaseButton)
 
-    def select_machine_id(self):
-        '''.'''
+    def on_machine_dropdown_changed(self):
+        '''Updates the machine ID button when the dropdown is updated.'''
         if self.machineIDComboBox.currentText() == "Select Machine ID":
             self.machineIDSelectButton.setEnabled(False)
         else:
             self.machineIDSelectButton.setEnabled(True)
+
+    def update_unbound_machines(self):
+        '''Updates the unbound machine dropdown.'''
+        self.request_unbound_machines()
+        self.machineIDComboBox.clear()
+        self.machineIDComboBox.addItem("Select Machine ID")
+        self.machineIDComboBox.addItems(self.unbound_machine_names)
 
     def bind_machine_id(self):
         '''Binds the Operator GUI to the selected machine ID.
@@ -205,26 +262,18 @@ class OperatorGUI(QMainWindow):
         msg.data = machine_id
         self.bind_machine_pub.publish(msg)
 
-        # Disable the select button and combo box, and enable the release button.
+        # Disable select button and combo box, and enable release button.
         self.machineIDComboBox.setEnabled(False)
         self.machineIDSelectButton.setEnabled(False)
         self.machineIDReleaseButton.setEnabled(True)
 
-        # Populate the ticket combo box with the IDs that are assigned to the
-        # machine and ready.
-        self.request_machine_assigned_tickets()
-        self.request_ticket_list()
-        self.ready_assigned_tickets = [
-            id for id in self.assigned_tickets if id in self.ready
-        ]
-        self.ticketIDComboBox.addItems([
-            str(id) for id in self.ready_assigned_tickets
-        ])
-
-        # Enable the ticket and buttons layouts.
-        self.enable_layout(self.currentTicketLayout)
-        self.enable_layout(self.buttonsLayout)
+        # Enable the ticket and control layouts.
+        self.enable_layout(self.ticketLayout)
+        self.startButton.setEnabled(False)
         self.endButton.setEnabled(False)
+        # self.enable_layout(self.controlLayout)
+
+        self.update_ticket_dropdown()
 
     def release_machine_id(self):
         '''Releases the machine ID from the Operator GUI.
@@ -242,18 +291,19 @@ class OperatorGUI(QMainWindow):
         msg.data = machine_id
         self.release_machine_pub.publish(msg)
 
-        # Enable the select button and combo box, and disable the release button.
+        # Enable select button and combo box, and disable release button.
+        self.update_unbound_machines()
         self.machineIDComboBox.setEnabled(True)
-        self.machineIDSelectButton.setEnabled(True)
+        self.machineIDSelectButton.setEnabled(False)
         self.machineIDReleaseButton.setEnabled(False)
+
+        # Disable the ticket and buttons layouts.
+        self.disable_layout(self.ticketLayout)
+        self.disable_layout(self.controlLayout)
 
         # Empty the ticket combo box and the assigned ticket list.
         self.ready_assigned_tickets = []
         self.ticketIDComboBox.clear()
-
-        # Disable the ticket and buttons layouts.
-        self.disable_layout(self.currentTicketLayout)
-        self.disable_layout(self.buttonsLayout)
 
     def request_unbound_machines(self):
         '''Requests the machines that are not already bound to a GUI.'''
@@ -279,13 +329,18 @@ class OperatorGUI(QMainWindow):
                     self.machineIDComboBox.currentText()
                 )
             ]
-            machine_status = rospy.ServiceProxy('machine_status_service', MachineStatus)
+            machine_status = rospy.ServiceProxy(
+                'machine_status_service',
+                MachineStatus
+            )
             response = machine_status(request)
 
             self.assigned_tickets = response.assigned_ids
             self.machine_status = response.status
         except rospy.ServiceException as e:
-            rospy.logerr(f'{log_tag}: Machine assigned tickets request failed: {e}.')
+            rospy.logerr(f"{log_tag}: Machine assigned tickets "
+                         f"request failed: {e}."
+            )
 
     def request_ticket_list(self):
         '''Request the current ticket list from the ticket_service.'''
@@ -304,14 +359,17 @@ class OperatorGUI(QMainWindow):
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
-    def _createTicketLayout(self):
-        '''.'''
-        self.currentTicketLayout = QHBoxLayout()
+    def create_ticket_layout(self):
+        '''Layout for selecting, starting, and ending a ticket.'''
+        self.ticketLayout = QHBoxLayout()
         ticketLabel = QLabel("Current Ticket")
         ticketLabel.setAlignment(Qt.AlignCenter)
 
         self.ticketIDComboBox = QComboBox()
-        self.ticketIDComboBox.currentIndexChanged.connect(self.on_ticket_id_changed)
+        self.update_ticket_dropdown()
+        self.ticketIDComboBox.currentIndexChanged.connect(
+            self.on_ticket_dropdown_changed
+        )
 
         self.idButton = QPushButton("Details")
         self.idButton.clicked.connect(self._displayJobCharacteristics)
@@ -323,14 +381,46 @@ class OperatorGUI(QMainWindow):
         self.endButton.setStyleSheet("background-color : green")
         self.endButton.clicked.connect(self.end_ticket)
 
-        self.currentTicketLayout.addWidget(ticketLabel)
-        self.currentTicketLayout.addWidget(self.ticketIDComboBox)
-        self.currentTicketLayout.addWidget(self.idButton)
-        self.currentTicketLayout.addWidget(self.startButton)
-        self.currentTicketLayout.addWidget(self.endButton)
+        self.ticketLayout.addWidget(ticketLabel)
+        self.ticketLayout.addWidget(self.ticketIDComboBox)
+        self.ticketLayout.addWidget(self.idButton)
+        self.ticketLayout.addWidget(self.startButton)
+        self.ticketLayout.addWidget(self.endButton)
 
-    def on_ticket_id_changed(self):
-        '''.'''
+    def on_ticket_dropdown_changed(self):
+        '''Updates the ticket buttons when the dropdown is updated.'''
+        if self.machineIDComboBox.currentText() == "Select Ticket ID":
+            self.startButton.setEnabled(False)
+        else:
+            self.startButton.setEnabled(True)
+
+    def update_ticket_dropdown(self):
+        '''Updates the ticket ID dropdown.'''
+        # Empty the ticket combo box, then add the IDs after requesting
+        # a new ticket list and machine assignments.
+        self.ticketIDComboBox.clear()
+        self.ticketIDComboBox.addItem("Select Ticket ID")
+        
+        if self.ticketIDComboBox.currentText() == "Select Ticket ID" or\
+            self.machineIDComboBox.currentText() == "Select Machine ID":
+            return
+
+        self.request_machine_assigned_tickets()
+        self.request_ticket_list()
+        self.ready_assigned_tickets = [
+            id for id in self.assigned_tickets if id in self.ready
+        ]
+        self.ticketIDComboBox.addItems([
+            str(id) for id in self.ready_assigned_tickets
+        ])
+
+        # Set.
+        if self.ticketID != None:
+            self.ticketIDComboBox.setCurrentIndex(
+                self.ready_assigned_tickets.index(self.ticketID)
+            )
+        else:
+            self.ticketIDComboBox.setCurrentIndex(0)
 
     def _displayJobCharacteristics(self):
         '''.'''
@@ -350,6 +440,7 @@ class OperatorGUI(QMainWindow):
         self.machineIDReleaseButton.setEnabled(False)
         self.startButton.setEnabled(False)
         self.endButton.setEnabled(True)
+        self.enable_layout(self.controlLayout)
         
     def end_ticket(self):
         '''Ends the selected ticket and publishes its ID.'''
@@ -363,37 +454,27 @@ class OperatorGUI(QMainWindow):
         self.machineIDReleaseButton.setEnabled(True)
         self.startButton.setEnabled(True)
         self.endButton.setEnabled(False)
+        self.disable_layout(self.controlLayout)
+        
+        self.update_ticket_dropdown()
 
-        # Empty the ticket combo box, then add the IDs after requesting
-        # a new ticket list and machine assignments.
-        self.request_machine_assigned_tickets()
-        self.request_ticket_list()
-
-        self.ready_assigned_tickets = [
-            id for id in self.assigned_tickets if id in self.ready
-        ]
-        self.ticketIDComboBox.clear()
-        self.ticketIDComboBox.addItems([
-            str(id) for id in self.ready_assigned_tickets
-        ])
-
-    def _createButtonsLayout(self):
+    def create_control_layout(self):
         '''.'''
-        self.buttonsLayout = QHBoxLayout()
-        self._createPerimeterLayout()
+        self.controlLayout = QHBoxLayout()
+        self.create_task_layout()
         self._createControlLayout()
 
-        self.buttonsLayout.addLayout(self.perimeterLayout)
-        self.buttonsLayout.addLayout(self.controlLayout)
+        self.controlLayout.addLayout(self.taskLayout)
+        self.controlLayout.addLayout(self.robotControlLayout)
 
-    def _createPerimeterLayout(self):
+    def create_task_layout(self):
         '''.'''
-        self.perimeterLayout = QVBoxLayout()
-        self.perimeterLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
+        self.taskLayout = QVBoxLayout()
+        self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
 
     def _createControlLayout(self):
         '''.'''
-        self.controlLayout = QVBoxLayout()
+        self.robotControlLayout = QVBoxLayout()
 
         structureSizeLayout = QHBoxLayout()
         self.shrinkButton = QPushButton("-")
@@ -459,13 +540,13 @@ class OperatorGUI(QMainWindow):
             self.buttons.append(button)
 
         # Add all the layouts to the control layout.
-        self.controlLayout.addLayout(structureSizeLayout)
-        self.controlLayout.addLayout(saveLoadLayout)
-        self.controlLayout.addLayout(syncRotateLayout)
-        self.controlLayout.addLayout(swarmLayout)
-        self.controlLayout.addLayout(robotLabelLayout)
-        self.controlLayout.addLayout(robotButtonLayout)
-        self.controlLayout.addLayout(robotFrameButtonLayout)
+        self.robotControlLayout.addLayout(structureSizeLayout)
+        self.robotControlLayout.addLayout(saveLoadLayout)
+        self.robotControlLayout.addLayout(syncRotateLayout)
+        self.robotControlLayout.addLayout(swarmLayout)
+        self.robotControlLayout.addLayout(robotLabelLayout)
+        self.robotControlLayout.addLayout(robotButtonLayout)
+        self.robotControlLayout.addLayout(robotFrameButtonLayout)
 
     def _toggleRotation(self):
         '''.'''
@@ -565,25 +646,25 @@ class OperatorGUI(QMainWindow):
                 #p_in_base = self.tf.transformPose("/base_link", poseMsg)
                 self.tf_changer.publish(poseMsg)
 
-    # def sync_robot_motion_pressed(self):
-    #     '''.'''
-    #     self.synced_control_enabled = True
-    #     for i in range(len(self.buttons)):
-    #         if(not self.buttons[i].enabled):
-    #             self.synced_control_enabled=False
-    #             break
+    def sync_robot_motion_pressed(self):
+        '''.'''
+        self.synced_control_enabled = True
+        for i in range(len(self.buttons)):
+            if(not self.buttons[i].enabled):
+                self.synced_control_enabled=False
+                break
                 
-    #     #if(self.rob1en and self.rob2en and self.rob3en): self.synced_control_enabled=True
-    #     self.synced_control_enabled = not(self.synced_control_enabled)
+        #if(self.rob1en and self.rob2en and self.rob3en): self.synced_control_enabled=True
+        self.synced_control_enabled = not(self.synced_control_enabled)
         
-    #     if(self.synced_control_enabled):
-    #         for i in range(len(self.buttons)):
-    #             self.buttons[i].enabled=True
-    #             self.buttons[i].button.setStyleSheet('QPushButton {background-color: orange; color: white;}')
-    #     else:
-    #         for i in range(len(self.buttons)):
-    #             self.buttons[i].enabled=False
-    #             self.buttons[i].button.setStyleSheet('QPushButton {background-color: white; color: black;}')
+        if(self.synced_control_enabled):
+            for i in range(len(self.buttons)):
+                self.buttons[i].enabled=True
+                self.buttons[i].button.setStyleSheet('QPushButton {background-color: orange; color: white;}')
+        else:
+            for i in range(len(self.buttons)):
+                self.buttons[i].enabled=False
+                self.buttons[i].button.setStyleSheet('QPushButton {background-color: white; color: black;}')
 
     def _expandStructure(self):
         '''Expand the swarm's structure by a scaling factor.'''
@@ -606,7 +687,6 @@ class OperatorGUI(QMainWindow):
                 poseMsg.pose.orientation.z = float(quaternions[2])
                 #p_in_base = self.tf.transformPose("/base_link", poseMsg)
                 self.tf_changer.publish(poseMsg)
-
 
     def _shrinkStructure(self):
         '''Shrink the swarm's structure by a scaling factor.'''
@@ -680,10 +760,3 @@ class OperatorGUI(QMainWindow):
                     poseMsg.pose.orientation.z = float(quaternions[2])
                     #p_in_base = self.tf.transformPose("/base_link", poseMsg)
                     self.tf_changer.publish(poseMsg)
-
-    
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ww = OperatorGUI()
-    sys.exit(app.exec())
