@@ -29,7 +29,7 @@ from arm_msgs.srv import MachineStatus, MachineStatusRequest,\
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict
 
 from gui_common.gui_elements import ControlToggleButton, RobotButton, FixedWidthLabel
-from gui_common.dialogs import TicketInfoDialog
+from gui_common.dialogs import BasicConfirmDialog, TicketInfoDialog
 from gui_common.map_viz import create_map_widget
 
 
@@ -90,7 +90,9 @@ class OperatorGUI(QMainWindow):
         self.rotation_disabled = False
         self.translation_disabled = False
         self.tf = TransformListener()
-        self.tf_changer = rospy.Publisher(self.tf_changer_topic, PoseStamped, queue_size=10)
+        self.tf_changer = rospy.Publisher(
+            self.tf_changer_topic, PoseStamped, queue_size=10
+        )
 
         # Subscribe to the input command topic.
         rospy.Subscriber(self.input_command_topic, Twist, self._offsetCallback)
@@ -101,6 +103,9 @@ class OperatorGUI(QMainWindow):
 
         # Current ticket ID.
         self.ticketID = None
+        self.machine_id = None
+        self.machine_name = ""
+        self.gui_is_bound = False
 
         # Set the central widget and window layout.
         self.centralWidget = QWidget(self)
@@ -130,7 +135,7 @@ class OperatorGUI(QMainWindow):
         self.updateTimer.start()
 
     def center_window(self):
-        '''.'''
+        '''Center the window on the screen.'''
         # Get the screen geometry.
         screenGeometry = QDesktopWidget().screenGeometry()
 
@@ -143,7 +148,7 @@ class OperatorGUI(QMainWindow):
 
     def show(self):
         '''Override the original show function.
-        
+
         If the initial window size is larger than the screen,
         maximize the window instead.
         '''
@@ -158,10 +163,44 @@ class OperatorGUI(QMainWindow):
     def update_gui(self):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         # TODO.
+        self.update_machine_dropdown()
 
     def shutdown_gui(self):
         '''Gracefully shutdown the GUI elements. Particularly RViz.'''
         # self.manager
+        rospy.loginfo(f"{log_tag}: Node shutdown.")
+
+        # If end button is enabled, task is still ongoing. End it and release
+        # the machine.
+        if self.endButton.isEnabled():
+            self.release_machine_id()
+            self.end_ticket()
+        # If release button is enabled, a machine is still bound. Release it.
+        elif self.machineIDReleaseButton.isEnabled():
+            self.release_machine_id()
+
+    def closeEvent(self, event):
+        '''.'''
+        if self.endButton.isEnabled():
+            message = "A task is still ongoing. Please finish it before closing the GUI."
+            QMessageBox.information(self, "Task in Progress", message)
+            event.ignore()
+        elif self.machineIDReleaseButton.isEnabled():
+            message = "A machine is still bound to this operator GUI." +\
+                "\nClosing will release the machine.\n\nClose the GUI?"
+            # QMessageBox.information(self, "Task in Progress", message)
+            popup_dialog = BasicConfirmDialog(
+                self,
+                "Release Bound Machine?",
+                message
+            )
+            result = popup_dialog.exec_()
+            if result == QDialog.Accepted:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
 
     def get_control_params(self):
         '''.'''
@@ -194,7 +233,7 @@ class OperatorGUI(QMainWindow):
         self.overallLayout.addLayout(self.controlLayout)
         self.overallLayout.addWidget(self.mapWidget)
 
-        # Disable the ticket and buttons layouts.
+        # Disable the ticket and control layouts.
         self.disable_layout(self.ticketLayout)
         self.disable_layout(self.controlLayout)
 
@@ -213,7 +252,7 @@ class OperatorGUI(QMainWindow):
         machineIDLabel.setAlignment(Qt.AlignCenter)
 
         self.machineIDComboBox = QComboBox()
-        self.update_unbound_machines()
+        self.update_machine_dropdown()
         self.machineIDComboBox.currentIndexChanged.connect(
             self.on_machine_dropdown_changed
         )
@@ -233,18 +272,42 @@ class OperatorGUI(QMainWindow):
         self.machineLayout.addWidget(self.machineIDReleaseButton)
 
     def on_machine_dropdown_changed(self):
-        '''Updates the machine ID button when the dropdown is updated.'''
-        if self.machineIDComboBox.currentText() == "Select Machine ID":
+        '''Updates machine ID, name, and button when dropdown is updated.'''
+        if self.machineIDComboBox.currentText() == "Select Machine ID" or\
+            self.machineIDComboBox.currentText() == "":
             self.machineIDSelectButton.setEnabled(False)
         else:
             self.machineIDSelectButton.setEnabled(True)
 
-    def update_unbound_machines(self):
+        if self.machineIDComboBox.currentText() in self.unbound_machine_names:
+            self.machine_id = self.unbound_machines[
+                    self.unbound_machine_names.index(
+                        self.machineIDComboBox.currentText()
+            )]
+            self.machine_name = self.machineIDComboBox.currentText()
+
+    def update_machine_dropdown(self):
         '''Updates the unbound machine dropdown.'''
         self.request_unbound_machines()
+
         self.machineIDComboBox.clear()
         self.machineIDComboBox.addItem("Select Machine ID")
         self.machineIDComboBox.addItems(self.unbound_machine_names)
+
+        # Set the chosen machine ID. 
+        # If our previous selection is in unbound, set it to that.
+        # If the GUI is bound, the machine ID is not in
+        # unbound, so add that name and set it manually.
+        if self.machine_id in self.unbound_machines:
+            self.machineIDComboBox.setCurrentIndex(
+                self.unbound_machines.index(self.machine_id)+1
+            )
+        elif self.gui_is_bound == True:
+            self.machineIDComboBox.addItem(self.machine_name)
+            self.machineIDComboBox.setCurrentIndex(
+                self.machineIDComboBox.count()-1
+            )
+            self.machineIDSelectButton.setEnabled(False)
 
     def bind_machine_id(self):
         '''Binds the Operator GUI to the selected machine ID.
@@ -254,26 +317,25 @@ class OperatorGUI(QMainWindow):
         '''
         # Publish the message.
         msg = UInt32()
-        machine_id = self.unbound_machines[
-            self.unbound_machine_names.index(
-                self.machineIDComboBox.currentText()
-            )
-        ]
-        msg.data = machine_id
+        msg.data = self.machine_id
         self.bind_machine_pub.publish(msg)
+
+        # Set the .
+        self.gui_is_bound = True
+        # print(f"Binding {self.machine_name} with id {self.machine_id}.")
 
         # Disable select button and combo box, and enable release button.
         self.machineIDComboBox.setEnabled(False)
         self.machineIDSelectButton.setEnabled(False)
         self.machineIDReleaseButton.setEnabled(True)
 
-        # Enable the ticket and control layouts.
+        self.update_ticket_dropdown()
+
+        # Enable the ticket layout, but disable the start and end buttons.
         self.enable_layout(self.ticketLayout)
+        self.detailsButton.setEnabled(False)
         self.startButton.setEnabled(False)
         self.endButton.setEnabled(False)
-        # self.enable_layout(self.controlLayout)
-
-        self.update_ticket_dropdown()
 
     def release_machine_id(self):
         '''Releases the machine ID from the Operator GUI.
@@ -283,27 +345,26 @@ class OperatorGUI(QMainWindow):
         '''
         # Publish the message.
         msg = UInt32()
-        machine_id = self.unbound_machines[
-            self.unbound_machine_names.index(
-                self.machineIDComboBox.currentText()
-            )
-        ]
-        msg.data = machine_id
+        msg.data = self.machine_id
         self.release_machine_pub.publish(msg)
 
+        # Set the .
+        self.gui_is_bound = False
+        # print(f"Releasing {self.machine_name} with id {self.machine_id}.")
+
         # Enable select button and combo box, and disable release button.
-        self.update_unbound_machines()
+        self.update_machine_dropdown()
         self.machineIDComboBox.setEnabled(True)
         self.machineIDSelectButton.setEnabled(False)
         self.machineIDReleaseButton.setEnabled(False)
 
+        # Empty the ticket combo box and the assigned ticket list.
+        self.ready_assigned_tickets = []
+        self.update_ticket_dropdown()
+
         # Disable the ticket and buttons layouts.
         self.disable_layout(self.ticketLayout)
         self.disable_layout(self.controlLayout)
-
-        # Empty the ticket combo box and the assigned ticket list.
-        self.ready_assigned_tickets = []
-        self.ticketIDComboBox.clear()
 
     def request_unbound_machines(self):
         '''Requests the machines that are not already bound to a GUI.'''
@@ -324,11 +385,7 @@ class OperatorGUI(QMainWindow):
         '''Requests the tickets assigned to the selected machine ID.'''
         try:
             request = MachineStatusRequest()
-            request.machine_id = self.unbound_machines[
-                self.unbound_machine_names.index(
-                    self.machineIDComboBox.currentText()
-                )
-            ]
+            request.machine_id = self.machine_id
             machine_status = rospy.ServiceProxy(
                 'machine_status_service',
                 MachineStatus
@@ -371,8 +428,8 @@ class OperatorGUI(QMainWindow):
             self.on_ticket_dropdown_changed
         )
 
-        self.idButton = QPushButton("Details")
-        self.idButton.clicked.connect(self._displayJobCharacteristics)
+        self.detailsButton = QPushButton("Details")
+        self.detailsButton.clicked.connect(self.display_ticket_details)
 
         self.startButton = QPushButton("Start")
         self.startButton.clicked.connect(self.start_ticket)
@@ -383,16 +440,23 @@ class OperatorGUI(QMainWindow):
 
         self.ticketLayout.addWidget(ticketLabel)
         self.ticketLayout.addWidget(self.ticketIDComboBox)
-        self.ticketLayout.addWidget(self.idButton)
+        self.ticketLayout.addWidget(self.detailsButton)
         self.ticketLayout.addWidget(self.startButton)
         self.ticketLayout.addWidget(self.endButton)
 
     def on_ticket_dropdown_changed(self):
         '''Updates the ticket buttons when the dropdown is updated.'''
-        if self.machineIDComboBox.currentText() == "Select Ticket ID":
+        if self.ticketIDComboBox.currentText() == "Select Ticket ID" or\
+            self.ticketIDComboBox.currentText() == "":
+            self.ticketID = None
             self.startButton.setEnabled(False)
+            self.detailsButton.setEnabled(False)
         else:
+            self.ticketID = int(
+                self.ticketIDComboBox.currentText()
+            )
             self.startButton.setEnabled(True)
+            self.detailsButton.setEnabled(True)
 
     def update_ticket_dropdown(self):
         '''Updates the ticket ID dropdown.'''
@@ -400,13 +464,15 @@ class OperatorGUI(QMainWindow):
         # a new ticket list and machine assignments.
         self.ticketIDComboBox.clear()
         self.ticketIDComboBox.addItem("Select Ticket ID")
-        
-        if self.ticketIDComboBox.currentText() == "Select Ticket ID" or\
-            self.machineIDComboBox.currentText() == "Select Machine ID":
+
+        # First time this function is called, no machine has been
+        # selected, so exit after adding the top text.
+        if self.machineIDComboBox.currentText() == "Select Machine ID":
             return
 
         self.request_machine_assigned_tickets()
         self.request_ticket_list()
+
         self.ready_assigned_tickets = [
             id for id in self.assigned_tickets if id in self.ready
         ]
@@ -414,7 +480,7 @@ class OperatorGUI(QMainWindow):
             str(id) for id in self.ready_assigned_tickets
         ])
 
-        # Set.
+        # Set the chosen ticket ID. 
         if self.ticketID != None:
             self.ticketIDComboBox.setCurrentIndex(
                 self.ready_assigned_tickets.index(self.ticketID)
@@ -422,7 +488,7 @@ class OperatorGUI(QMainWindow):
         else:
             self.ticketIDComboBox.setCurrentIndex(0)
 
-    def _displayJobCharacteristics(self):
+    def display_ticket_details(self):
         '''.'''
         ticketInfoDialog = TicketInfoDialog(self)
         ticketInfoDialog.setModal(True)
@@ -462,7 +528,7 @@ class OperatorGUI(QMainWindow):
         '''.'''
         self.controlLayout = QHBoxLayout()
         self.create_task_layout()
-        self._createControlLayout()
+        self.create_robot_control_layout()
 
         self.controlLayout.addLayout(self.taskLayout)
         self.controlLayout.addLayout(self.robotControlLayout)
@@ -472,7 +538,7 @@ class OperatorGUI(QMainWindow):
         self.taskLayout = QVBoxLayout()
         self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
 
-    def _createControlLayout(self):
+    def create_robot_control_layout(self):
         '''.'''
         self.robotControlLayout = QVBoxLayout()
 
