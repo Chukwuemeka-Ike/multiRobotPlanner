@@ -101,8 +101,12 @@ class OperatorGUI(QMainWindow):
         self.unbound_machines = []
         self.unbound_machine_names = []
 
+        self.assigned_tickets = []
+        self.ready_assigned_tickets = []
+
         # Current ticket ID.
-        self.ticketID = None
+        self.ticket_id = None
+        self.is_ongoing = False
         self.machine_id = None
         self.machine_name = ""
         self.gui_is_bound = False
@@ -164,6 +168,7 @@ class OperatorGUI(QMainWindow):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         # TODO.
         self.update_machine_dropdown()
+        self.update_ticket_dropdown()
 
     def shutdown_gui(self):
         '''Gracefully shutdown the GUI elements. Particularly RViz.'''
@@ -287,7 +292,7 @@ class OperatorGUI(QMainWindow):
             self.machine_name = self.machineIDComboBox.currentText()
 
     def update_machine_dropdown(self):
-        '''Updates the unbound machine dropdown.'''
+        '''Updates the machine ID dropdown.'''
         self.request_unbound_machines()
 
         self.machineIDComboBox.clear()
@@ -359,7 +364,6 @@ class OperatorGUI(QMainWindow):
         self.machineIDReleaseButton.setEnabled(False)
 
         # Empty the ticket combo box and the assigned ticket list.
-        self.ready_assigned_tickets = []
         self.update_ticket_dropdown()
 
         # Disable the ticket and buttons layouts.
@@ -392,8 +396,13 @@ class OperatorGUI(QMainWindow):
             )
             response = machine_status(request)
 
+            # self.assigned_tickets = []
+            # self.ready_assigned_tickets = []
+
             self.assigned_tickets = response.assigned_ids
+            self.ready_assigned_tickets = response.ready_assigned_ids
             self.machine_status = response.status
+            # print(f"Ready assigned tickets: {self.ready_assigned_tickets}")
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Machine assigned tickets "
                          f"request failed: {e}."
@@ -447,16 +456,18 @@ class OperatorGUI(QMainWindow):
     def on_ticket_dropdown_changed(self):
         '''Updates the ticket buttons when the dropdown is updated.'''
         if self.ticketIDComboBox.currentText() == "Select Ticket ID" or\
-            self.ticketIDComboBox.currentText() == "":
-            self.ticketID = None
+                self.ticketIDComboBox.currentText() == "":
             self.startButton.setEnabled(False)
             self.detailsButton.setEnabled(False)
         else:
-            self.ticketID = int(
-                self.ticketIDComboBox.currentText()
-            )
             self.startButton.setEnabled(True)
             self.detailsButton.setEnabled(True)
+
+            if int(self.ticketIDComboBox.currentText()) in\
+                    self.ready_assigned_tickets:
+                self.ticket_id = int(
+                    self.ticketIDComboBox.currentText()
+                )
 
     def update_ticket_dropdown(self):
         '''Updates the ticket ID dropdown.'''
@@ -467,26 +478,32 @@ class OperatorGUI(QMainWindow):
 
         # First time this function is called, no machine has been
         # selected, so exit after adding the top text.
-        if self.machineIDComboBox.currentText() == "Select Machine ID":
+        if self.machineIDComboBox.currentText() == "Select Machine ID" or\
+                self.machineIDComboBox.currentText() == "":
             return
 
         self.request_machine_assigned_tickets()
-        self.request_ticket_list()
+        # self.request_ticket_list()
 
-        self.ready_assigned_tickets = [
-            id for id in self.assigned_tickets if id in self.ready
-        ]
+        # Add the ready assigned tickets.
         self.ticketIDComboBox.addItems([
             str(id) for id in self.ready_assigned_tickets
         ])
 
-        # Set the chosen ticket ID. 
-        if self.ticketID != None:
+        # Set the chosen ticket ID.
+        # If previous selection is in ready, set it to that.
+        # If the ticket is ongoing, the ID is not in ready, so
+        # add it and set it manually.
+        if self.ticket_id in self.ready_assigned_tickets:
             self.ticketIDComboBox.setCurrentIndex(
-                self.ready_assigned_tickets.index(self.ticketID)
+                self.ready_assigned_tickets.index(self.ticket_id)+1
             )
-        else:
-            self.ticketIDComboBox.setCurrentIndex(0)
+        elif self.is_ongoing == True:
+            self.ticketIDComboBox.addItem(str(self.ticket_id))
+            self.ticketIDComboBox.setCurrentIndex(
+                self.ticketIDComboBox.count()-1
+            )
+            self.startButton.setEnabled(False)
 
     def display_ticket_details(self):
         '''.'''
@@ -498,8 +515,10 @@ class OperatorGUI(QMainWindow):
         '''Starts the selected ticket and publishes its ID.'''
         # Publish the message.
         msg = Ticket()
-        msg.ticket_id = int(self.ticketIDComboBox.currentText())
+        msg.ticket_id = self.ticket_id
         self.start_ticket_pub.publish(msg)
+
+        self.is_ongoing = True
 
         # Disable the release machine button and the ID dropdown.
         self.ticketIDComboBox.setEnabled(False)
@@ -512,8 +531,10 @@ class OperatorGUI(QMainWindow):
         '''Ends the selected ticket and publishes its ID.'''
         # Publish the message.
         msg = Ticket()
-        msg.ticket_id = int(self.ticketIDComboBox.currentText())
+        msg.ticket_id = self.ticket_id
         self.end_ticket_pub.publish(msg)
+
+        self.is_ongoing = False
 
         # Enable the release machine button and the ID dropdown.
         self.ticketIDComboBox.setEnabled(True)
