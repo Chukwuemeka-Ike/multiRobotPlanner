@@ -103,6 +103,7 @@ class OperatorGUI(QMainWindow):
 
         self.assigned_tickets = []
         self.ready_assigned_tickets = []
+        self.machine_location = []
 
         # Current ticket ID.
         self.ticket_id = None
@@ -396,12 +397,10 @@ class OperatorGUI(QMainWindow):
             )
             response = machine_status(request)
 
-            # self.assigned_tickets = []
-            # self.ready_assigned_tickets = []
-
             self.assigned_tickets = response.assigned_ids
             self.ready_assigned_tickets = response.ready_assigned_ids
             self.machine_status = response.status
+            self.machine_location = response.machine_location
             # print(f"Ready assigned tickets: {self.ready_assigned_tickets}")
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Machine assigned tickets "
@@ -557,7 +556,47 @@ class OperatorGUI(QMainWindow):
     def create_task_layout(self):
         '''.'''
         self.taskLayout = QVBoxLayout()
+
+        self.callRobotsButton = QPushButton("Call for Robots")
+        self.callRobotsButton.clicked.connect(self.call_robots)
+
+        self.taskMotionGroupBox = QGroupBox("Task Motion")
+        self.taskMotionGroupBox.setCheckable(False)
+        self.taskMotionLayout = QHBoxLayout()
+
+        self.startMotionButton = QPushButton("Start Motion")
+        self.startMotionButton.clicked.connect(self.start_task_motion)
+        self.pauseMotionButton = QPushButton("Pause Motion")
+        self.pauseMotionButton.clicked.connect(self.pause_task_motion)
+
+        self.taskMotionLayout.addWidget(self.startMotionButton)
+        self.taskMotionLayout.addWidget(self.pauseMotionButton)
+
+        self.taskMotionGroupBox.setLayout(self.taskMotionLayout)
+
+        self.taskLayout.addWidget(self.callRobotsButton)
+        self.taskLayout.addWidget(self.taskMotionGroupBox)
         self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
+        self.taskLayout.addStretch()
+
+    def call_robots(self):
+        '''Calls the robots to the station when pressed.'''
+        msg = PoseStamped()
+
+        # Get the machine's location.
+        msg.pose.position.x = self.machine_location[0]
+        msg.pose.position.y = self.machine_location[1]
+        # msg.pose.orientation. = self.machine_location[1]
+
+        print(msg)
+
+        # self.call_robots_pub.publish(msg)
+
+    def start_task_motion(self):
+        '''.'''
+
+    def pause_task_motion(self):
+        '''.'''
 
     def create_robot_control_layout(self):
         '''.'''
