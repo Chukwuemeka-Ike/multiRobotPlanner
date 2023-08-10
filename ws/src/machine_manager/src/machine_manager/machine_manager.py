@@ -39,6 +39,7 @@ class MachineManager():
         self.machine_type_abvs = rospy.get_param('machine_type_abvs')
         # Number of each machine type.
         self.machine_type_nums = rospy.get_param('machine_type_nums')
+        self.machine_location_list = rospy.get_param('machine_locations')
 
         # # Hardcoded values for testing.
         # self.machine_type_names = [
@@ -57,6 +58,7 @@ class MachineManager():
         # print(f"Names: {self.machine_type_names}")
         # print(f"Abvs: {self.machine_type_abvs}")
         # print(f"Nums: {self.machine_type_nums}")
+        # print(f"Locations: {self.machine_location_list}")
 
         # Create machine IDs based on how many there are of each type.
         # Grouped machine IDs is a list of lists where each list is the set
@@ -81,8 +83,8 @@ class MachineManager():
             "Inspection": "WS_4_",
         }
 
-        # Idx of machine number of its type. For WS_0_# where # is the number of
-        # that particular machine, not the unique ID.
+        # Idx of machine number of its type. For WS_0_# where # is the number
+        # of that particular machine, not the unique ID.
         self.machine_type_indices = []
         for i in range(len(self.grouped_machine_ids)):
             for j in range(1,len(self.grouped_machine_ids[i])+1):
@@ -97,6 +99,12 @@ class MachineManager():
         self.assigned_tickets = {id: [] for id in self.machine_ids}
         self.ready_assigned_tickets = {id: [] for id in self.machine_ids}
         self.tickets = {}
+
+        self.machine_locations = {
+            idx: self.machine_location_list[idx] for idx in\
+                range(len(self.machine_location_list))
+        }
+        print(f"Locations: {self.machine_locations}")
 
         # List to hold machines with no GUI bound to them.
         # Gives the machines that a new operator GUI can choose from.
@@ -175,7 +183,8 @@ class MachineManager():
         return MachineStatusResponse(
             self.machine_states[machine_id],
             self.assigned_tickets[machine_id],
-            self.ready_assigned_tickets[machine_id]
+            self.ready_assigned_tickets[machine_id],
+            self.machine_locations[machine_id]
         )
 
     def send_unbound_machines(self, request):
