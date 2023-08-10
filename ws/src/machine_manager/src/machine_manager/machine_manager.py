@@ -107,6 +107,7 @@ class MachineManager():
         # print(f"machine_type_indices: {self.machine_type_indices}")
         # print(f"Machine states: {self.machine_states}")
         # print(f"Assigned: {self.assigned_tickets}")
+        # print(f"Ready assigned: {self.ready_assigned_tickets}")
         # print(f"Unbound machines: {self.unbound_machines}")
         # print(f"")
 
@@ -169,6 +170,8 @@ class MachineManager():
     def send_machine_status(self, request):
         '''Sends the status and ticket IDs assigned to a specific machine.'''
         machine_id = request.machine_id
+        # print(f"Ready tickets assigned to {machine_id}: "
+        #       f"{self.ready_assigned_tickets[machine_id]}")
         return MachineStatusResponse(
             self.machine_states[machine_id],
             self.assigned_tickets[machine_id],
@@ -227,6 +230,7 @@ class MachineManager():
         '''
         # Empty out both dictionaries.
         self.assigned_tickets = {id: [] for id in self.machine_ids}
+        self.ready_assigned_tickets = {id: [] for id in self.machine_ids}
         self.tickets = {}
 
         # Go through the tickets and set their assignments.
@@ -238,8 +242,9 @@ class MachineManager():
             if ticket_id in self.ready:
                 self.ready_assigned_tickets[machine_id].append(ticket_id)
 
-        print(self.assigned_tickets)
-        print(self.tickets)
+        # print(self.assigned_tickets)
+        # print(self.ready_assigned_tickets)
+        # print(self.tickets)
 
     def start_ticket_message_callback(self, msg):
         '''Sets the machine assigned to that ticket to "busy".'''
