@@ -95,6 +95,7 @@ class MachineManager():
         # Dictionary to hold each machine's assigned tickets.
         # {machine_id: [], ...}.
         self.assigned_tickets = {id: [] for id in self.machine_ids}
+        self.ready_assigned_tickets = {id: [] for id in self.machine_ids}
         self.tickets = {}
 
         # List to hold machines with no GUI bound to them.
@@ -170,7 +171,8 @@ class MachineManager():
         machine_id = request.machine_id
         return MachineStatusResponse(
             self.machine_states[machine_id],
-            self.assigned_tickets[machine_id]
+            self.assigned_tickets[machine_id],
+            self.ready_assigned_tickets[machine_id]
         )
 
     def send_unbound_machines(self, request):
@@ -232,6 +234,9 @@ class MachineManager():
             machine_id = ticket["machine_id"]
             self.assigned_tickets[machine_id].append(ticket_id)
             self.tickets[ticket_id] = machine_id
+            # If the ticket is ready, add it to a ready dictionary.
+            if ticket_id in self.ready:
+                self.ready_assigned_tickets[machine_id].append(ticket_id)
 
         print(self.assigned_tickets)
         print(self.tickets)
