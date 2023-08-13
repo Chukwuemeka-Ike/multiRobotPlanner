@@ -11,9 +11,10 @@ import os
 import rospy
 import rospkg
 import threading
+import time
 
 from geometry_msgs.msg import Twist, PoseStamped
-from std_msgs.msg import UInt32
+from std_msgs.msg import Int32, UInt32
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
@@ -28,7 +29,7 @@ from arm_msgs.srv import MachineStatus, MachineStatusRequest,\
 
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict
 
-from gui_common.gui_elements import ControlToggleButton, RobotButton, FixedWidthLabel
+from gui_common.gui_elements import ControlToggleButton, RobotButton, FixedWidthLabel, LEDIndicator
 from gui_common.dialogs import BasicConfirmDialog, TicketInfoDialog
 from gui_common.map_viz import create_map_widget
 
@@ -37,6 +38,37 @@ log_tag = "Operator GUI"
 
 callback_lock = threading.Lock()
 structureButtonFontSize = 20
+
+
+class LEDManager:
+    def __init__(self,nodenames,led_objects):
+        self.nodenames = nodenames
+        self.led_objects = led_objects
+        self.active_bots = []
+        self.robot_enable_status_topic = rospy.get_param('robot_enable_status_topic') 
+        self.publisher = rospy.Publisher(self.robot_enable_status_topic, Int32, queue_size=10)
+        self.send_value = 0
+        for i in range(len(led_objects)):
+            self.active_bots.append(False)
+            
+    def poll_node_names(self):
+        #nodenames is loaded from yaml file and should be a list of lists for each robot of desired nodes
+        #print(self.nodenames)
+        for i in range(len(self.led_objects)):
+            if(self.active_bots[i]!=self.led_objects[i].active):
+                if(self.led_objects[i].active==True):
+                    out=pow(2,i)
+                    self.send_value+=out
+                    self.active_bots[i]=True
+                else:
+                    out=pow(2,i)
+                    self.send_value-=out
+                    self.active_bots[i]=False
+
+                output=Int32()
+                output.data=int(self.send_value)
+                self.publisher.publish(output)
+        time.sleep(0.01)
 
 
 class OperatorGUI(QMainWindow):
@@ -85,6 +117,7 @@ class OperatorGUI(QMainWindow):
 
         self.buttons = []
         self.labels = []
+        self.leds = []
 
         self.synced_control_enabled = False
         self.rotation_disabled = False
@@ -95,7 +128,7 @@ class OperatorGUI(QMainWindow):
         )
 
         # Subscribe to the input command topic.
-        rospy.Subscriber(self.input_command_topic, Twist, self._offsetCallback)
+        rospy.Subscriber(self.input_command_topic, Twist, self.offset_callback)
         # *********************************************************************
 
         self.unbound_machines = []
@@ -168,6 +201,7 @@ class OperatorGUI(QMainWindow):
     def update_gui(self):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         # TODO.
+        self.status_manager.poll_node_names()
         self.update_machine_dropdown()
         self.update_ticket_dropdown()
 
@@ -605,11 +639,11 @@ class OperatorGUI(QMainWindow):
         structureSizeLayout = QHBoxLayout()
         self.shrinkButton = QPushButton("-")
         self.shrinkButton.setFont(QFont('Times', structureButtonFontSize))
-        self.shrinkButton.pressed.connect(self._shrinkStructure)
+        self.shrinkButton.pressed.connect(self.shrink_structure)
 
         self.expandButton = QPushButton("+")
         self.expandButton.setFont(QFont('Times', structureButtonFontSize))
-        self.expandButton.pressed.connect(self._expandStructure)
+        self.expandButton.pressed.connect(self.expand_structure)
 
         adjustStructure = QLabel("<h2>Adjust Structure Size</h2>")
         adjustStructure.setAlignment(Qt.AlignCenter)
@@ -620,19 +654,19 @@ class OperatorGUI(QMainWindow):
 
         saveLoadLayout = QHBoxLayout()
         self.saveStructureButton = QPushButton("Save Structure")
-        self.saveStructureButton.pressed.connect(self._saveStructure)
+        self.saveStructureButton.pressed.connect(self.save_structure)
         self.loadStructureButton = QPushButton("Load Structure")
-        self.loadStructureButton.pressed.connect(self._loadStructure)
+        self.loadStructureButton.pressed.connect(self.load_structure)
         saveLoadLayout.addWidget(self.saveStructureButton)
         saveLoadLayout.addWidget(self.loadStructureButton)
 
         # Sync frame and rotation disable buttons.
         syncRotateLayout = QHBoxLayout()
         self.syncFramesButton = ControlToggleButton("Sync Frames")
-        self.syncFramesButton.pressed.connect(self._syncFrames)
+        self.syncFramesButton.pressed.connect(self.sync_frames)
         syncRotateLayout.addWidget(self.syncFramesButton)
         self.disableRotationButton = ControlToggleButton("Disable Rotation")
-        self.disableRotationButton.pressed.connect(self._toggleRotation)
+        self.disableRotationButton.pressed.connect(self.toggle_rotation)
         syncRotateLayout.addWidget(self.disableRotationButton)
         
         # Swarm control buttons.
@@ -650,8 +684,14 @@ class OperatorGUI(QMainWindow):
         robotLabelLayout = QHBoxLayout()
         robotButtonLayout = QHBoxLayout()
         robotFrameButtonLayout = QHBoxLayout()
+        robotLEDLayout = QHBoxLayout()
 
         for robot in range(self.number_of_bots):
+            led = LEDIndicator(robot)
+            led.led_change(False)
+            robotLEDLayout.addWidget(led)
+            self.leds.append(led)
+
             label = QLabel(self.robot_types[robot])
             label.setAlignment(Qt.AlignCenter)
             robotLabelLayout.addWidget(label)
@@ -665,6 +705,8 @@ class OperatorGUI(QMainWindow):
             robotFrameButtonLayout.addWidget(button.button)
             self.buttons.append(button)
 
+        self.status_manager = LEDManager(self.nodenames, self.leds)
+
         # Add all the layouts to the control layout.
         self.robotControlLayout.addLayout(structureSizeLayout)
         self.robotControlLayout.addLayout(saveLoadLayout)
@@ -673,8 +715,9 @@ class OperatorGUI(QMainWindow):
         self.robotControlLayout.addLayout(robotLabelLayout)
         self.robotControlLayout.addLayout(robotButtonLayout)
         self.robotControlLayout.addLayout(robotFrameButtonLayout)
+        self.robotControlLayout.addLayout(robotLEDLayout)
 
-    def _toggleRotation(self):
+    def toggle_rotation(self):
         '''.'''
         self.rotation_disabled = not(self.rotation_disabled)
 
@@ -728,7 +771,7 @@ class OperatorGUI(QMainWindow):
                 if sub_layout:
                     self.disable_layout(sub_layout)
 
-    def _offsetCallback(self, msg):
+    def offset_callback(self, msg):
         '''Alters the received input command, then publishes to enabled bots.'''
         with callback_lock:
             if(self.rotation_disabled):
@@ -750,10 +793,11 @@ class OperatorGUI(QMainWindow):
                 msg.linear.z = msg.linear.z*1.0
 
             for i in range(len(self.buttons)):
-                if(self.buttons[i].enabled):
+                if(self.buttons[i].button.enabled):
+                    print(f"Button {i} publishing.")
                     self.buttons[i].publisher.publish(msg)
       
-    def _syncFrames(self):
+    def sync_frames(self):
         '''.'''
         for i in range(self.number_of_bots):
             if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(self.real_robot_tfs[i]):
@@ -776,7 +820,7 @@ class OperatorGUI(QMainWindow):
         '''.'''
         self.synced_control_enabled = True
         for i in range(len(self.buttons)):
-            if(not self.buttons[i].enabled):
+            if(not self.buttons[i].button.enabled):
                 self.synced_control_enabled=False
                 break
                 
@@ -785,14 +829,14 @@ class OperatorGUI(QMainWindow):
         
         if(self.synced_control_enabled):
             for i in range(len(self.buttons)):
-                self.buttons[i].enabled=True
+                self.buttons[i].button.enabled=True
                 self.buttons[i].button.setStyleSheet('QPushButton {background-color: orange; color: white;}')
         else:
             for i in range(len(self.buttons)):
-                self.buttons[i].enabled=False
+                self.buttons[i].button.enabled=False
                 self.buttons[i].button.setStyleSheet('QPushButton {background-color: white; color: black;}')
 
-    def _expandStructure(self):
+    def expand_structure(self):
         '''Expand the swarm's structure by a scaling factor.'''
         for i in range(self.number_of_bots):
             if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(self.robot_tfs[i]):
@@ -814,7 +858,7 @@ class OperatorGUI(QMainWindow):
                 #p_in_base = self.tf.transformPose("/base_link", poseMsg)
                 self.tf_changer.publish(poseMsg)
 
-    def _shrinkStructure(self):
+    def shrink_structure(self):
         '''Shrink the swarm's structure by a scaling factor.'''
         for i in range(self.number_of_bots):
             if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(self.robot_tfs[i]):
@@ -835,7 +879,7 @@ class OperatorGUI(QMainWindow):
                 self.tf_changer.publish(poseMsg)
 
 # TODO: Cross-check structure mechanisms. Do they make sense?
-    def _saveStructure(self):
+    def save_structure(self):
         '''Save the current structure to a file.'''
         name, done1 = QInputDialog.getText(
              self, 'Save Structure', 'Enter desired save name:')
@@ -854,7 +898,7 @@ class OperatorGUI(QMainWindow):
                     f.write(str(quaternion)+"\n")
             f.close()
 
-    def _loadStructure(self):
+    def load_structure(self):
         '''Load a structure from a file.'''
         name, done1 = QInputDialog.getText(
              self, 'Load Structure', 'Enter desired file name:')

@@ -1,12 +1,13 @@
-number_of_robots: 4
+number_of_robots: 2
+
+# When expanding/shrinking the formation structre with "+" and "-" buttons, specifies the change ratio
+resize_scaling_factor: 0.05
 
 ## Subscriber Topics
 # Topic that subscribes to a Twist msg (Deadman switch muxed Space mouse velocity command)
 input_command_topic: 'deadman_switch_spacenav_twist'
 
-
 ## Publisher Topics
-
 # Publishes PoseStamped message for each robot to expand/shrink/load the swarm structure
 tf_changer_topic: "tf_changer"
 
@@ -17,7 +18,6 @@ closed_loop_swarm_command_topic: "desired_swarm_vel"
 # If "Move Swarm Frame" button is pressed, allows to virtually adjust the desired pose of the whole swarm 
 # (?, or just the swarm frame) without actually moving the robots with the spacemouse input
 open_loop_swarm_command_topic: "just_swarm_vel"
-
 
 # If an individual robot's "<name>" button is pressed, commands the individual robot 
 # with actually moving the robot with the spacemouse input
@@ -38,7 +38,6 @@ open_loop_command_topics:
 # The LED button that enables or disables the robot from the swarm structure
 robot_enable_status_topic: "robot_enable_status"
 
-
 ## TF names
 # Virtual (desired) swarm frame name
 swarm_tf_frame: "swarm_frame"
@@ -57,9 +56,6 @@ real_robot_tf_frames:
   - "d2_tf_base_link"
   - "d3_tf_base_link"
   - "d4_tf_base_link"
-
-# When expanding/shrinking the formation structre with "+" and "-" buttons, specifies the change ratio
-resize_scaling_factor: 0.05
 
 # Sets the name of each robot on the GUI 
 robot_type_information:

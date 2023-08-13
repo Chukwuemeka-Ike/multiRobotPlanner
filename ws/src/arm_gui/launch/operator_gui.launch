@@ -1,6 +1,25 @@
 <?xml version="1.0"?>
 <launch>
 
+    <arg name="gui_rviz" default="world_one_robot"/>
+    <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/>
     <node name="operator_gui" pkg="arm_gui" type="operator_gui_node" output="screen"/>
     <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
+
+    <node name="swarm_safe_vel_calculator" pkg="swarm_control" type="swarm_control.py">
+        <rosparam file="$(find swarm2_launch)/config/main_swarm_control.yaml"/>
+    </node>
+
+    <!-- Utility node to publish where the swarm_frame is at as a odom message -->
+    <node type="tf_to_odom_node.py" name="tf_to_odom_node" pkg="topic_tf_transformers">
+        <rosparam param="odom_topic_name_out" subst_value="True">swarm_frame/odom</rosparam>
+        <rosparam param="tf_a_frame_name"       subst_value="True">map</rosparam>
+        <rosparam param="tf_b_frame_name"       subst_value="True">swarm_frame</rosparam>
+        <rosparam param="pub_rate"              subst_value="True">100.0</rosparam>
+    </node>
+
+    <!-- Closed Loop Velocity Controller for when a desired location is specified for the swarm -->
+    <node name="swarm_cl_vel_controller" pkg="vel_controller" type="vel_controller_swarm.py">
+        <rosparam file="$(find swarm2_launch)/config/main_swarm_cl_vel_controller_sim.yaml"/>
+    </node>
 </launch>
