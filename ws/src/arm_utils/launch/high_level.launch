@@ -6,9 +6,9 @@
     <node name="ticket_manager" pkg="ticket_manager" type="ticket_manager_node" output="screen">
     </node>
 
-    <node name="robot_assigner" pkg="robot_assigner" type="robot_assigner_node" output="screen">
-    </node>
+    <!-- <include file="$(find robot_assigner)/launch/robot_assigner.launch">
+    </include> -->
 
-    <rosparam command="load" file="$(find machine_manager)/config/machine_params.yaml"/>
-    <node name="machine_manager" pkg="machine_manager" type="machine_manager_node" output="screen"/>
+    <include file="$(find machine_manager)/launch/machine_manager.launch">
+    </include>
 </launch>

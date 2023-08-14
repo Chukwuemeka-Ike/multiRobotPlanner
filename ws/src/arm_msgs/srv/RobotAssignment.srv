@@ -1,3 +1,0 @@
-uint32 ticket_id
----
-uint32[] assigned_robots

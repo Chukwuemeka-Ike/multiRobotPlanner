@@ -1,0 +1,61 @@
+num_robots: 2
+
+# Frame topics for each robot. Controlling these controls the TF frame
+# and not the physical robot.
+robot_frame_command_topic: "just_robot_vel_"
+robot_frame_command_topics:
+  - "just_robot_vel_1"
+  - "just_robot_vel_2"
+  - "just_robot_vel_3"
+  - "just_robot_vel_4"
+  - "just_robot_vel_5"
+  - "just_robot_vel_6"
+
+# Command topics for each robot. Controlling these controls the phyiscal robot.
+robot_command_topic: "/d/cmd_vel"
+robot_command_topics:
+  - "/d1/cmd_vel"
+  - "/d2/cmd_vel"
+  - "/d3/cmd_vel"
+  - "/d4/cmd_vel"
+  - "/d4/cmd_vel"
+
+# Virtual (desired) robot (control point) frame names.
+virtual_robot_frame: "tf_robot_"
+virtual_robot_frames:
+  - "tf_robot_1"
+  - "tf_robot_2"
+  - "tf_robot_3"
+  - "tf_robot_4"
+  - "tf_robot_5"
+  - "tf_robot_6"
+
+# Actual robot (control point) frame names.
+# Needed to be able to use the syncing desired robot frames function
+real_robot_frame: "d_tf_base_link"
+real_robot_frames:
+  - "d1_tf_base_link"
+  - "d2_tf_base_link"
+  - "d3_tf_base_link"
+  - "d4_tf_base_link"
+  - "d5_tf_base_link"
+  - "d6_tf_base_link"
+
+# Name of each robot.
+robot_name: "D_"
+robot_names:
+  - "D_1"
+  - "D_2"
+  - "D_3"
+  - "D_4"
+  - "D_5"
+  - "D_6"
+
+# Robot node names.
+robot_node_names:
+  - ["/uwb_front_oarbot_silver","/uwb_back_oarbot_silver","/sensor_fusion_oarbot_silver","/oarbot_silver_ctrl"]
+  - ["/uwb_front_oarbot_blue","/uwb_back_oarbot_blue","/sensor_fusion_oarbot_blue","/oarbot_blue_ctrl"]
+  - []
+  - []
+  - []
+  - []

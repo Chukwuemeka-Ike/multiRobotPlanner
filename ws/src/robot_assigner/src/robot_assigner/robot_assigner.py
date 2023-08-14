@@ -9,8 +9,9 @@ Description:
 import rospy
 
 from std_msgs.msg import String
-from arm_msgs.srv import TicketList, TicketListRequest
-from arm_msgs.srv import RobotAssignment, RobotAssignmentResponse
+from arm_msgs.msg import StringList
+from arm_msgs.srv import RobotAssignments, RobotAssignmentsRequest,\
+    RobotAssignmentsResponse, TicketList, TicketListRequest
 
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
     convert_task_list_to_job_list
@@ -36,6 +37,46 @@ class RobotAssigner():
         rospy.on_shutdown(self.shutdown_robot_assigner)
         rospy.loginfo(f"{log_tag}: Node started.")
 
+        # Get the number of robots.
+        self.num_robots = rospy.get_param("num_robots")
+
+        # Robot pool - the set of available and occupied robots.
+        # Both are just lists of IDs
+        self.available = list(range(1, self.num_robots+1))
+        self.occupied = {}
+
+        self.robot_frame_command_topic = rospy.get_param("robot_frame_command_topic")
+        self.robot_command_topic = rospy.get_param("robot_command_topic")
+        self.virtual_robot_frame = rospy.get_param("virtual_robot_frame")
+        self.real_robot_frame = rospy.get_param("real_robot_frame")
+        self.robot_name = rospy.get_param("robot_name")
+        self.robot_node_names = rospy.get_param("robot_node_names")
+
+        # Create lists of the right length for each parameter.
+        self.robot_names = [
+            self.robot_name + str(i) for i in self.available
+        ]
+        self.robot_frame_command_topics = [
+            self.robot_frame_command_topic + str(i) for i in self.available
+        ]
+        self.robot_command_topics = [
+            self.robot_command_topic.replace("/d", f"/d{i}") for i in self.available
+        ]
+        self.virtual_robot_frames = [
+            self.virtual_robot_frame + str(i) for i in self.available
+        ]
+        self.real_robot_frames = [
+            self.real_robot_frame.replace("d_", f"d{i}_") for i in self.available
+        ]
+
+        print(self.available)
+        print(self.robot_names)
+        print(self.robot_frame_command_topics)
+        print(self.robot_command_topics)
+        print(self.virtual_robot_frames)
+        print(self.real_robot_frames)
+        print(self.robot_node_names)
+
         # Main data structures for the node.
         # Assignments is a dictionary with job IDs as keys and dictionaries
         # of the jobs' task-robot assignments as values.
@@ -53,11 +94,6 @@ class RobotAssigner():
         self.task_dict = {}
         self.job_list = []
 
-        # Robot pool - the set of available and occupied robots.
-        # Both are just lists of IDs
-        self.available = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-        self.occupied = {}
-
         # Subscriber for ticket list updates. Ticket Manager is the publisher.
         self.ticket_list_update_sub = rospy.Subscriber(
             'ticket_list_update', String, self.request_ticket_list
@@ -65,11 +101,13 @@ class RobotAssigner():
 
         # Service for robot assignments. Provides the assignment for a
         # specified task.
-        self.robot_assignment_service = rospy.Service(
-            'robot_assignment_service',
-            RobotAssignment,
-            self.send_robot_assignment
+        self.robot_assignments_service = rospy.Service(
+            'robot_assignments_service',
+            RobotAssignments,
+            self.send_robot_assignments
         )
+
+        self.request_ticket_list(None)
 
         rospy.spin()
 
@@ -84,6 +122,63 @@ class RobotAssigner():
         # TODO: Save the current assignments in case of incorrect shutdowns
         # and to allow us pick up the next shift.
         rospy.loginfo(f"{log_tag}: Node shutdown.")
+
+    def send_robot_assignments(self, request: RobotAssignmentsRequest):
+        '''Sends info about the robots assigned to a requested ticket ID.
+
+        If the job_id isn't in assignments, there are no assigned robots, and
+        we return empty lists
+        '''
+        ticket_id = request.ticket_id
+        job_id = self.task_dict[ticket_id]["job_id"]
+
+        # Check if the job has any assignments.
+        if job_id in self.assignments:
+            assigned_ids = self.assignments[job_id][ticket_id]
+            assigned_ids.sort()
+        else:
+            assigned_ids = []
+
+        num_assigned_robots = len(assigned_ids)
+
+        # Robot IDs start at 1, so subtract 1 to get the index.
+        indices = [id-1 for id in assigned_ids]
+        names = []
+        frame_command_topics = []
+        command_topics = []
+        virtual_robot_frames = []
+        real_robot_frames = []
+        node_names = []
+
+        for idx in indices:
+            names.append(self.robot_names[idx])
+            frame_command_topics.append(self.robot_frame_command_topics[idx])
+            command_topics.append(self.robot_command_topics[idx])
+            virtual_robot_frames.append(self.virtual_robot_frames[idx])
+            real_robot_frames.append(self.real_robot_frames[idx])
+
+            nodes = StringList()
+            nodes.string_list = self.robot_node_names[idx]
+            node_names.append(nodes)
+
+        print(num_assigned_robots)
+        print(names)
+        print(frame_command_topics)
+        print(command_topics)
+        print(virtual_robot_frames)
+        print(real_robot_frames)
+        print(node_names)
+
+        return RobotAssignmentsResponse(
+            num_assigned_robots,
+            assigned_ids,
+            names,
+            frame_command_topics,
+            command_topics,
+            virtual_robot_frames,
+            real_robot_frames,
+            node_names,
+        )
 
     def request_ticket_list(self, _):
         '''Requests the current ticket list from the ticket_service.
@@ -160,12 +255,12 @@ class RobotAssigner():
         # Attempt to assign robots to the new and unstarted jobs.
         self.new_job_robot_assignments(unassigned_jobs)
 
-        # # Print assignments and sets.
-        # for job_id, assignments in self.assignments.items():
-        #     print(f"Job ID: {job_id}: {assignments}")
-        # print(f"Available: {self.available}")
-        # print(f"Occupied: {self.occupied}")
-        # print()
+        # Print assignments and sets.
+        for job_id, assignments in self.assignments.items():
+            print(f"Job ID: {job_id}: {assignments}")
+        print(f"Available: {self.available}")
+        print(f"Occupied: {self.occupied}")
+        print()
 
     def release_assigned_robots(self, job_id: int):
         '''Releases the robots assigned to job_id.
@@ -365,13 +460,6 @@ class RobotAssigner():
         self.assignments[job_id] = job_assignments
         self.job_assigned_ids[job_id] = assigned_ids
 
-    def send_robot_assignment(self, request):
-        '''Sends the assigned robot IDs for the ticket ID specified.'''
-        ticket_id = request.ticket_id
-        job_id = self.task_dict[ticket_id]["job_id"]
-        assignments = self.assignments[job_id][ticket_id]
-        return RobotAssignmentResponse(assignments)
-    
     def on_robot_dropout(self, msg):
         '''Remove the robot from assignments and attempt to assign a new one.'''
         remove_id = msg.robot_id

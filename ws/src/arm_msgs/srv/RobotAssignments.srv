@@ -1,0 +1,10 @@
+uint32 ticket_id
+---
+uint32 num_assigned_robots
+uint32[] robot_ids
+string[] robot_names
+string[] robot_frame_command_topics
+string[] robot_command_topics
+string[] virtual_robot_frames
+string[] real_robot_frames
+StringList[] robot_node_names

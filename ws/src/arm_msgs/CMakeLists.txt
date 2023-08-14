@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 set(MSG_FILES 
-    IntList.msg Ticket.msg Tickets.msg
+    IntList.msg StringList.msg Ticket.msg Tickets.msg
 )
 
 add_message_files(
@@ -23,7 +23,7 @@ add_service_files(
     FILES
     MachinesOverview.srv
     MachineStatus.srv
-    RobotAssignment.srv
+    RobotAssignments.srv
     Schedule.srv
     TicketList.srv
     UnboundMachines.srv
