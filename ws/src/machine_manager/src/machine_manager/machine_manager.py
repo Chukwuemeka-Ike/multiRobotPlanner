@@ -41,25 +41,6 @@ class MachineManager():
         self.machine_type_nums = rospy.get_param('machine_type_nums')
         self.machine_location_list = rospy.get_param('machine_locations')
 
-        # # Hardcoded values for testing.
-        # self.machine_type_names = [
-        #     "Loading",
-        #     "Mega",
-        #     "Vinyl",
-        #     "Hem",
-        #     "Tack",
-        #     "Weld",
-        #     "Grommet",
-        #     "Inspection",
-        # ]
-        # self.machine_type_abvs = ["L", "MS", "V", "H", "T", "RF", "G", "I"]
-        # self.machine_type_nums = [2, 2, 2, 4, 2, 4, 4, 1]
-
-        # print(f"Names: {self.machine_type_names}")
-        # print(f"Abvs: {self.machine_type_abvs}")
-        # print(f"Nums: {self.machine_type_nums}")
-        # print(f"Locations: {self.machine_location_list}")
-
         # Create machine IDs based on how many there are of each type.
         # Grouped machine IDs is a list of lists where each list is the set
         # of unique IDs associated with that machine type.
@@ -72,7 +53,6 @@ class MachineManager():
                 self.machine_ids.append(machine_id)
                 machine_id += 1
             self.grouped_machine_ids.append(machines)
-        # print(f"All machines: {self.machine_ids}")
 
         # Variables for high level visualization. This is the old set.
         machine_type_ws_nums = {
@@ -104,20 +84,10 @@ class MachineManager():
             idx: self.machine_location_list[idx] for idx in\
                 range(len(self.machine_location_list))
         }
-        print(f"Locations: {self.machine_locations}")
 
         # List to hold machines with no GUI bound to them.
         # Gives the machines that a new operator GUI can choose from.
         self.unbound_machines = self.machine_ids.copy()
-
-        # print(f"Grouped machine IDs: {self.grouped_machine_ids}")
-        # print(f"All machines: {self.machine_ids}")
-        # print(f"machine_type_indices: {self.machine_type_indices}")
-        # print(f"Machine states: {self.machine_states}")
-        # print(f"Assigned: {self.assigned_tickets}")
-        # print(f"Ready assigned: {self.ready_assigned_tickets}")
-        # print(f"Unbound machines: {self.unbound_machines}")
-        # print(f"")
 
         # Subscriber for ticket list updates. Ticket Manager is the publisher.
         self.ticket_list_update_sub = rospy.Subscriber(
@@ -157,7 +127,7 @@ class MachineManager():
         '''Gracefully shutdown the machine manager.'''
         rospy.loginfo(f"{log_tag}: Node shutdown.")
 
-    def send_machine_overview(self, request):
+    def send_machine_overview(self, _):
         '''Sends the list of existing machines.'''
         rospy.logdebug(f"{log_tag}: Returning machine list.")
         grouped_machine_ids = []
@@ -178,8 +148,6 @@ class MachineManager():
     def send_machine_status(self, request):
         '''Sends the status and ticket IDs assigned to a specific machine.'''
         machine_id = request.machine_id
-        # print(f"Ready tickets assigned to {machine_id}: "
-        #       f"{self.ready_assigned_tickets[machine_id]}")
         return MachineStatusResponse(
             self.machine_states[machine_id],
             self.assigned_tickets[machine_id],
@@ -250,10 +218,6 @@ class MachineManager():
             # If the ticket is ready, add it to a ready dictionary.
             if ticket_id in self.ready:
                 self.ready_assigned_tickets[machine_id].append(ticket_id)
-
-        # print(self.assigned_tickets)
-        # print(self.ready_assigned_tickets)
-        # print(self.tickets)
 
     def start_ticket_message_callback(self, msg):
         '''Sets the machine assigned to that ticket to "busy".'''

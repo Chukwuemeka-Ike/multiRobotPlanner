@@ -69,14 +69,6 @@ class RobotAssigner():
             self.real_robot_frame.replace("d_", f"d{i}_") for i in self.available
         ]
 
-        print(self.available)
-        print(self.robot_names)
-        print(self.robot_frame_command_topics)
-        print(self.robot_command_topics)
-        print(self.virtual_robot_frames)
-        print(self.real_robot_frames)
-        print(self.robot_node_names)
-
         # Main data structures for the node.
         # Assignments is a dictionary with job IDs as keys and dictionaries
         # of the jobs' task-robot assignments as values.
@@ -160,14 +152,6 @@ class RobotAssigner():
             nodes = StringList()
             nodes.string_list = self.robot_node_names[idx]
             node_names.append(nodes)
-
-        print(num_assigned_robots)
-        print(names)
-        print(frame_command_topics)
-        print(command_topics)
-        print(virtual_robot_frames)
-        print(real_robot_frames)
-        print(node_names)
 
         return RobotAssignmentsResponse(
             num_assigned_robots,

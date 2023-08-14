@@ -6,8 +6,8 @@
     <node name="ticket_manager" pkg="ticket_manager" type="ticket_manager_node" output="screen">
     </node>
 
-    <!-- <include file="$(find robot_assigner)/launch/robot_assigner.launch">
-    </include> -->
+    <include file="$(find robot_assigner)/launch/robot_assigner.launch">
+    </include>
 
     <include file="$(find machine_manager)/launch/machine_manager.launch">
     </include>

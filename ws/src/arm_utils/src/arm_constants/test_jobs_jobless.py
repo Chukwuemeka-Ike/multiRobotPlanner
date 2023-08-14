@@ -6,7 +6,7 @@ anchor_complete_ticket_list = {
     4: {"ticket_id": 4, "machine_type": 4, "actual_duration": 45, "duration": 50, "parents": [3]},
     5: {"ticket_id": 5, "machine_type": 7, "actual_duration": 40.6, "duration": 44.2, "parents": [4]},
     
-    6: {"ticket_id": 6, "machine_type": 0, "actual_duration": 5, "duration": 5, "parents": [], "num_robots": 3},
+    6: {"ticket_id": 6, "machine_type": 0, "actual_duration": 5, "duration": 5, "parents": [], "num_robots": 2},
     7: {"ticket_id": 7, "machine_type": 1, "actual_duration": 65.9, "duration": 50, "parents": [6]},
     8: {"ticket_id": 8, "machine_type": 2, "actual_duration": 42.5, "duration": 48, "parents": [7]},
     9: {"ticket_id": 9, "machine_type": 3, "actual_duration": 26.9, "duration": 35, "parents": [8]},

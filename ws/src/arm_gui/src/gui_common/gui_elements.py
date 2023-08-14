@@ -26,12 +26,8 @@ class ControlToggleButton(QPushButton):
 
 class RobotButton():
     '''.'''
-    def __init__(self, button_name, command_mode, button_topic) -> None:
-        if(command_mode):
-            self.buttonName = button_name + "\n Motion Enable"
-        else:
-            self.buttonName = button_name + " Frame\n Motion Enable"
-        # self.motion_frame = "world"
+    def __init__(self, button_name, button_topic) -> None:
+        self.buttonName = button_name + "\n Motion Enable"
         self.button = ControlToggleButton(self.buttonName)
         self.publisher = rospy.Publisher(button_topic, Twist, queue_size=0)
 
