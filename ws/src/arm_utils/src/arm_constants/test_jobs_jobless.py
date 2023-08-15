@@ -13,7 +13,7 @@ anchor_complete_ticket_list = {
     10: {"ticket_id": 10, "machine_type": 4, "actual_duration": 34, "duration": 40.4, "parents": [9]},
     11: {"ticket_id": 11, "machine_type": 7, "actual_duration": 24.6, "duration": 40, "parents": [10]},
     
-    12: {"ticket_id": 12, "machine_type": 0, "actual_duration": 5, "duration": 5, "parents": [], "num_robots": 5},
+    12: {"ticket_id": 12, "machine_type": 0, "actual_duration": 5, "duration": 5, "parents": [], "num_robots": 2},
     13: {"ticket_id": 13, "machine_type": 1, "actual_duration": 205.3, "duration": 180, "parents": [12]},
     14: {"ticket_id": 14, "machine_type": 2, "actual_duration": 67.8, "duration": 78, "parents": [13]},
     15: {"ticket_id": 15, "machine_type": 3, "actual_duration": 57.5, "duration": 55, "parents": [14]},
