@@ -54,6 +54,7 @@ class BasicDialog(QDialog):
         self.center_on_parent()
         super().showEvent(event)
 
+
 class BasicConfirmDialog(BasicDialog):
     '''Confirmation sub-dialog for ensuring the user wants to do something.'''
     def __init__(self, parent: QWidget, window_title: str, confirm_text: str):
@@ -78,6 +79,7 @@ class BasicConfirmDialog(BasicDialog):
         self.mainLayout.addWidget(self.buttons)
 
         self.show()
+
 
 class ImportTicketsDialog(BasicDialog):
     '''Class for importing multiple tickets at once.'''
@@ -485,6 +487,7 @@ class EditTicketDialog(BasicDialog):
         result = popup_dialog.exec_()
         return result
 
+
 class EditJobDialog(BasicDialog):
     '''Dialog for editing an entire job at a time.'''
     deleteJobID = pyqtSignal(int)
@@ -674,7 +677,6 @@ class EditJobDialog(BasicDialog):
 
     def openPopupDialog(self, job_id):
         '''Open the popup confirming job deletion.'''
-        # popup_dialog = ConfirmJobDeletionDialog(self, job_id)
         popup_dialog = BasicConfirmDialog(
             self,
             "Confirm Job Deletion",
@@ -798,57 +800,42 @@ class EditJobDialog(BasicDialog):
 
         return True
 
-# TODO: Delete this after the next commit.
-class ConfirmJobDeletionDialog(BasicDialog):
-    '''Quick.'''
-    def __init__(self, parent: QWidget, job_id: int):
+
+class TicketDetailsDialog(BasicDialog):
+    '''Dialog for displaying details about a ticket.'''
+    def __init__(
+        self, parent: QWidget, ticket_details: dict, machine_type_name: str
+    ) -> None:
         super().__init__(parent)
+        self.setWindowTitle("Ticket Details")
+        self.ticket_details = ticket_details
 
-        self.setWindowTitle("Confirm Job Delete")
-        self.setGeometry(0, 0, 200, 100)
-
-        self.mainLayout = QVBoxLayout()
-        self.setLayout(self.mainLayout)
-
-        self.label = FixedWidthLabel(f"Are you sure you want to delete job {job_id}?")
-
-        self.buttons = QDialogButtonBox()
-        applyButton = self.buttons.addButton("Yes", QDialogButtonBox.AcceptRole)
-        cancelButton = self.buttons.addButton("No", QDialogButtonBox.RejectRole)
-
-        applyButton.clicked.connect(self.accept)
-        cancelButton.clicked.connect(self.close)
-
-        self.mainLayout.addWidget(self.label)
-        self.mainLayout.addWidget(self.buttons)
-
-        self.show()
-
-
-class TicketInfoDialog(QDialog):
-    '''.'''
-    def __init__(self, parent: QWidget) -> None:
-        super().__init__(parent=parent)
-        self.setWindowTitle("Ticket Info")
-        
         self.mainLayout = QHBoxLayout()
 
-        self.ticketInfoLayout = QVBoxLayout()
-        self.ticketInfoLayout.addWidget(QLabel(f"Job ID: {1}"))
-        self.ticketInfoLayout.addWidget(QLabel(f"Ticket ID: {4}"))
-        self.ticketInfoLayout.addWidget(QLabel(f"Parents: [{2},{3}]"))
-        self.ticketInfoLayout.addWidget(QLabel(f"Machine Type: RF Weld"))
-        self.ticketInfoLayout.addStretch()
+        # Layout for the ticket information.
+        self.ticketDetailsLayout = QVBoxLayout()
+        self.ticketDetailsLayout.addWidget(
+            QLabel(f"Job ID: {self.ticket_details['job_id']}")
+        )
+        self.ticketDetailsLayout.addWidget(
+            QLabel(f"Ticket ID: {self.ticket_details['ticket_id']}")
+        )
+        self.ticketDetailsLayout.addWidget(
+            QLabel(f"Parents: {self.ticket_details['parents']}")
+        )
+        self.ticketDetailsLayout.addWidget(
+            QLabel(f"Machine: {machine_type_name}")
+        )
+        self.ticketDetailsLayout.addStretch()
 
+        # Widget for the job's drawing.
         self.jobDrawing = QLabel(self)
-        # icon=QIcon()
-        # icon.addPixmap(QPixmap(self.plus))
         dd = QPixmap("./dd.jpg")
         dd.scaled(dd.width()//5, dd.height()//5)
         self.jobDrawing.setPixmap(dd)
-        # self.jobDrawing.resize(dd.width(), dd.height())
 
-        self.mainLayout.addLayout(self.ticketInfoLayout)
+        self.mainLayout.addLayout(self.ticketDetailsLayout)
         self.mainLayout.addWidget(self.jobDrawing)
         self.setLayout(self.mainLayout)
+        self.resize(500, 350)
         self.show()
