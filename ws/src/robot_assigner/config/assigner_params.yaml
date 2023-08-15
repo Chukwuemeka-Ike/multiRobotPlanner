@@ -1,3 +1,4 @@
+# Number of robots available.
 num_robots: 4
 
 # Frame topics for each robot. Controlling these controls the TF frame
@@ -14,7 +15,7 @@ virtual_robot_frame: "tf_robot_"
 # Needed to be able to use the syncing desired robot frames function
 real_robot_frame: "d_tf_base_link"
 
-# Name of each robot.
+# Name of each robot. Used in the GUI.
 robot_name: "D_"
 
 # Robot node names.
