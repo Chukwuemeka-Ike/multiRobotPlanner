@@ -5,7 +5,7 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
-    The Supervisor GUI class that runs using PyQt5.
+    Supervisor GUI class designed using PyQt5.
 '''
 import json
 import os
@@ -35,8 +35,8 @@ from arm_utils.job_utils import get_job_id_ticket_ids
 from arm_utils.sched_utils import *
 
 from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketDialog, EditJobDialog
-from gui_common.gui_elements import FixedWidthLabel
-from gui_common import map_viz
+from gui_common.gui_elements import FixedWidthLabel, MapWidget
+from gui_common.gui_utils import clear_layout
 
 
 # *****************************************************************************
@@ -183,7 +183,7 @@ class SupervisorGUI(QMainWindow):
         '''Create the basic UI.'''
 
         # Create the matplotlib canvas for the schedule and the RViz widget.
-        self.create_map_widget()
+        self.mapWidget = MapWidget(self.rviz_path)
         self.create_schedule_canvas()
 
         # Tabs for going between map and schedule, job list, and full schedule.
@@ -277,15 +277,6 @@ class SupervisorGUI(QMainWindow):
 
         # # Update the job list and add the elements to the layout.
         # self.update_job_list_layout()
-
-    def create_map_widget(self):
-        '''Create the map widget for rviz visualization.'''
-        self.mapWidget, top_button, side_button = map_viz.create_map_widget(
-            self.rviz_path
-        )
-        top_button.clicked.connect(self._onTopButtonClick)
-        side_button.clicked.connect(self._onSideButtonClick)
-        self.mapManager = self.mapWidget.frame.getManager()
 
     def create_schedule_canvas(self):
         '''Creates the canvas we will draw the schedule on.'''
@@ -435,23 +426,6 @@ class SupervisorGUI(QMainWindow):
                       f"{deleted_ticket_ids}."
         )
 
-    def _onTopButtonClick(self):
-        '''.'''
-        self._switchToView("Top View")
-
-    def _onSideButtonClick(self):
-        '''.'''
-        self._switchToView("Side View")
-
-    def _switchToView(self, view_name):
-        '''Looks for view_name in the saved views in the config.'''
-        view_man = self.mapManager.getViewManager()
-        for i in range(view_man.getNumViews()):
-            if view_man.getViewAt(i).getName() == view_name:
-                view_man.setCurrentFrom(view_man.getViewAt(i))
-                return
-        print(f"Could not find view named {view_name}")
-
     def request_ticket_list(self):
         '''Request the current ticket list from the ticket_service.'''
         # TODO: Waiting for service blocks the GUI from startup the way it's
@@ -512,7 +486,7 @@ class SupervisorGUI(QMainWindow):
         # TODO: Fix the inconsistent labelWidth btw titleLayout and jobLayouts.
 
         # Clear the layout first.
-        self.clear_layout(self.jobListLayout)
+        clear_layout(self.jobListLayout)
         labelWidth = self.tabs.width()//8 # Currently 7 columns.
         # print(f"Update width: {labelWidth}")
         titleLayout = QHBoxLayout()
@@ -565,21 +539,6 @@ class SupervisorGUI(QMainWindow):
             jobLayout.addLayout(ticketListLayout)
             self.jobListLayout.addLayout(jobLayout)
         self.jobListLayout.addStretch()
-
-    def clear_layout(self, layout):
-        '''Clears the specified layout.
-
-        Need to do so recursively to clean everything properly.
-        '''
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-            elif isinstance(item, QLayout):
-                self.clear_layout(item)
-            else:
-                layout.removeItem(item)
 
     def update_schedule_display(self):
         '''Update the schedule shown to the user.'''
