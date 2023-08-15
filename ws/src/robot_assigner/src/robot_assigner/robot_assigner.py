@@ -5,10 +5,12 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
+    Robot Assigner class definition.
 '''
 import rospy
 
 from std_msgs.msg import String
+
 from arm_msgs.msg import StringList
 from arm_msgs.srv import RobotAssignments, RobotAssignmentsRequest,\
     RobotAssignmentsResponse, TicketList, TicketListRequest
@@ -40,11 +42,12 @@ class RobotAssigner():
         # Get the number of robots.
         self.num_robots = rospy.get_param("num_robots")
 
-        # Robot pool - the set of available and occupied robots.
-        # Both are just lists of IDs
+        # Robot pool - the sets of available and occupied robots.
+        # Available is [IDs], and occupied is {id: job_id}.
         self.available = list(range(1, self.num_robots+1))
         self.occupied = {}
 
+        # Get the per-robot parameters from assigner_params.yaml.
         self.robot_frame_command_topic = rospy.get_param("robot_frame_command_topic")
         self.robot_command_topic = rospy.get_param("robot_command_topic")
         self.virtual_robot_frame = rospy.get_param("virtual_robot_frame")
@@ -52,7 +55,8 @@ class RobotAssigner():
         self.robot_name = rospy.get_param("robot_name")
         self.robot_node_names = rospy.get_param("robot_node_names")
 
-        # Create lists of the right length for each parameter.
+        # Create lists for each parameter.
+        # The number of robots determines the length of each list.
         self.robot_names = [
             self.robot_name + str(i) for i in self.available
         ]
@@ -69,7 +73,6 @@ class RobotAssigner():
             self.real_robot_frame.replace("d_", f"d{i}_") for i in self.available
         ]
 
-        # Main data structures for the node.
         # Assignments is a dictionary with job IDs as keys and dictionaries
         # of the jobs' task-robot assignments as values.
         # {1: {1: [1,2], 2: [3], 3: [4,5,6], 4: [1,2,3], 5: [1,2,3,4,5,6]}}.
@@ -78,9 +81,6 @@ class RobotAssigner():
         # Set of jobs with assigned robots. Dictionary of job IDs with list of
         # assigned IDs. Makes it easier to free robot IDs.
         self.job_assigned_ids = {}
-
-        # # Starting points for each job.
-        # self.start_points = {}
 
         # Task dict and job list.
         self.task_dict = {}
@@ -99,6 +99,7 @@ class RobotAssigner():
             self.send_robot_assignments
         )
 
+        # Request the ticket list on startup.
         self.request_ticket_list(None)
 
         rospy.spin()
@@ -107,7 +108,7 @@ class RobotAssigner():
         '''.'''
         # Try to load saved assignments if they exist.
         # Get the available robot IDs.
-        # Cross-check them against the saved assignments
+        # Cross-check them against the saved assignments.
 
     def shutdown_robot_assigner(self):
         '''Gracefully shutdown ticket manager.'''
@@ -127,13 +128,15 @@ class RobotAssigner():
         # Check if the job has any assignments.
         if job_id in self.assignments:
             assigned_ids = self.assignments[job_id][ticket_id]
+            # Sort so the Operator GUI shows them in numeric order.
             assigned_ids.sort()
         else:
             assigned_ids = []
 
         num_assigned_robots = len(assigned_ids)
 
-        # Robot IDs start at 1, so subtract 1 to get the index.
+        # Robot IDs start at 1, so subtract 1 to get the indices for
+        # accessing their info from the robot info lists.
         indices = [id-1 for id in assigned_ids]
         names = []
         frame_command_topics = []
