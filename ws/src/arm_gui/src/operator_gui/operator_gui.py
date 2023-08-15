@@ -5,34 +5,32 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
-    Constructs and shows the Supervisor GUI using PyQt5.
+    Operator GUI class designed using PyQt5.
 '''
 import os
 import rospy
 import rospkg
 import threading
-import time
 
 from geometry_msgs.msg import Twist, PoseStamped
-from std_msgs.msg import Int32, UInt32
+from std_msgs.msg import UInt32
+from tf import TransformListener
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 
-from tf import TransformListener
-
-from arm_msgs.msg import Ticket, Tickets
+from arm_msgs.msg import Ticket
 from arm_msgs.srv import MachineStatus, MachineStatusRequest,\
-    RobotAssignments, RobotAssignmentsRequest,\
-    TicketList, TicketListRequest,\
-    UnboundMachines, UnboundMachinesRequest
-
+        RobotAssignments, RobotAssignmentsRequest,\
+        TicketList, TicketListRequest,\
+        UnboundMachines, UnboundMachinesRequest
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict
 
-from gui_common.gui_elements import ControlToggleButton, RobotButton, FixedWidthLabel, LEDIndicator
-from gui_common.dialogs import BasicConfirmDialog, TicketInfoDialog
-from gui_common.map_viz import create_map_widget
+from gui_common.dialogs import BasicConfirmDialog, TicketDetailsDialog
+from gui_common.gui_elements import ToggleButton, FixedWidthLabel,\
+        LEDIndicator, LEDManager, MapWidget, RobotButton
+from gui_common.gui_utils import clear_layout, disable_layout, enable_layout
 
 
 log_tag = "Operator GUI"
@@ -41,39 +39,9 @@ callback_lock = threading.Lock()
 structureButtonFontSize = 20
 
 
-class LEDManager:
-    def __init__(self,node_names,led_objects):
-        self.node_names = node_names
-        self.led_objects = led_objects
-        self.active_bots = []
-        self.robot_enable_status_topic = rospy.get_param('robot_enable_status_topic') 
-        self.publisher = rospy.Publisher(self.robot_enable_status_topic, Int32, queue_size=10)
-        self.send_value = 0
-        for i in range(len(led_objects)):
-            self.active_bots.append(False)
-            
-    def poll_node_names(self):
-        #node_names is loaded from yaml file and should be a list of lists for each robot of desired nodes
-        #print(self.node_names)
-        for i in range(len(self.led_objects)):
-            if(self.active_bots[i]!=self.led_objects[i].active):
-                if(self.led_objects[i].active==True):
-                    out=pow(2,i)
-                    self.send_value+=out
-                    self.active_bots[i]=True
-                else:
-                    out=pow(2,i)
-                    self.send_value-=out
-                    self.active_bots[i]=False
-
-                output=Int32()
-                output.data=int(self.send_value)
-                self.publisher.publish(output)
-        time.sleep(0.01)
-
-
 class OperatorGUI(QMainWindow):
     '''Operator GUI class.'''
+
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Operator GUI")
@@ -204,12 +172,17 @@ class OperatorGUI(QMainWindow):
     def update_gui(self):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         # TODO.
+        self.request_ticket_list()
         self.status_manager.poll_node_names()
         self.update_machine_dropdown()
         self.update_ticket_dropdown()
 
     def shutdown_gui(self):
-        '''Gracefully shutdown the GUI elements. Particularly RViz.'''
+        '''Gracefully shutdown the GUI elements.
+        
+        Particularly, we need to make sure the task is ended and the machine
+        is released.
+        '''
         # self.manager
         rospy.loginfo(f"{log_tag}: Node shutdown.")
 
@@ -225,7 +198,8 @@ class OperatorGUI(QMainWindow):
     def closeEvent(self, event):
         '''.'''
         if self.endButton.isEnabled():
-            message = "A task is still ongoing. Please finish it before closing the GUI."
+            message = "A task is still ongoing. Please finish it before" +\
+                " closing the GUI."
             QMessageBox.information(self, "Task in Progress", message)
             event.ignore()
         elif self.machineIDReleaseButton.isEnabled():
@@ -246,7 +220,9 @@ class OperatorGUI(QMainWindow):
             event.accept()
 
     def get_control_params(self):
-        '''.'''
+        '''Get the ROS parameters for controlling robots when on a task.'''
+        # These parameters are empty on startup and get updated whenever a task
+        # is started 
         self.num_robots = 0
         self.node_names = []
         self.robot_command_topics = []
@@ -254,14 +230,6 @@ class OperatorGUI(QMainWindow):
         self.robot_names = []
         self.real_robot_frames = []
         self.virtual_robot_frames = []
-
-        # self.num_robots = rospy.get_param('number_of_robots')
-        # self.node_names = rospy.get_param('robot_node_names')
-        # self.robot_command_topics = rospy.get_param('open_loop_command_topics')
-        # self.robot_frame_command_topics = rospy.get_param('closed_loop_command_topics')
-        # self.robot_names = rospy.get_param('robot_type_information')
-        # self.real_robot_frames = rospy.get_param('real_robot_tf_frames')
-        # self.virtual_robot_frames = rospy.get_param('robot_tf_frames')
 
         self.resize_swarm_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
         self.input_command_topic = rospy.get_param('input_command_topic')
@@ -278,7 +246,7 @@ class OperatorGUI(QMainWindow):
         self.create_machine_layout()
         self.create_ticket_layout()
         self.create_control_layout()
-        self.create_map_widget()
+        self.mapWidget = MapWidget(self.rviz_path)
 
         self.overallLayout.addLayout(self.machineLayout)
         self.overallLayout.addLayout(self.ticketLayout)
@@ -286,8 +254,8 @@ class OperatorGUI(QMainWindow):
         self.overallLayout.addWidget(self.mapWidget)
 
         # Disable the ticket and control layouts.
-        self.disable_layout(self.ticketLayout)
-        self.disable_layout(self.controlLayout)
+        disable_layout(self.ticketLayout)
+        disable_layout(self.controlLayout)
 
     def create_status_bar(self):
         '''Create a simple status bar.'''
@@ -325,18 +293,31 @@ class OperatorGUI(QMainWindow):
 
     def on_machine_dropdown_changed(self):
         '''Updates machine ID, name, and button when dropdown is updated.'''
+        # Check the current dropdown text. If it's empty or no machine is
+        # selected, disable the machine select button. If something is
+        # selected, enable them.
         if self.machineIDComboBox.currentText() == "Select Machine ID" or\
             self.machineIDComboBox.currentText() == "":
             self.machineIDSelectButton.setEnabled(False)
-        else:
+        elif self.gui_is_bound == False:
             self.machineIDSelectButton.setEnabled(True)
 
+        # If the current selection is in unbound machines, set the
+        # machine id and name to that. Otherwise, if nothing is selected,
+        # set both to None.
         if self.machineIDComboBox.currentText() in self.unbound_machine_names:
             self.machine_id = self.unbound_machines[
                     self.unbound_machine_names.index(
                         self.machineIDComboBox.currentText()
             )]
             self.machine_name = self.machineIDComboBox.currentText()
+        # User selected the default choice and the dropdown has more
+        # than 1 entry. Without this, the dropdown doesn't let the user select
+        # default once they've chosen any other option.
+        elif self.machineIDComboBox.currentText() == "Select Machine ID" and\
+                self.machineIDComboBox.count() > 1:
+            self.machine_id = None
+            self.machine_name = None
 
     def update_machine_dropdown(self):
         '''Updates the machine ID dropdown.'''
@@ -359,7 +340,7 @@ class OperatorGUI(QMainWindow):
             self.machineIDComboBox.setCurrentIndex(
                 self.machineIDComboBox.count()-1
             )
-            self.machineIDSelectButton.setEnabled(False)
+            # self.machineIDSelectButton.setEnabled(False)
 
     def bind_machine_id(self):
         '''Binds the Operator GUI to the selected machine ID.
@@ -383,11 +364,9 @@ class OperatorGUI(QMainWindow):
 
         self.update_ticket_dropdown()
 
-        # Enable the ticket layout, but disable the start and end buttons.
-        self.enable_layout(self.ticketLayout)
-        self.detailsButton.setEnabled(False)
-        self.startButton.setEnabled(False)
-        self.endButton.setEnabled(False)
+        # Enable the ticket label and dropdown.
+        self.ticketIDLabel.setEnabled(True)
+        self.ticketIDComboBox.setEnabled(True)
 
     def release_machine_id(self):
         '''Releases the machine ID from the Operator GUI.
@@ -414,8 +393,8 @@ class OperatorGUI(QMainWindow):
         self.update_ticket_dropdown()
 
         # Disable the ticket and buttons layouts.
-        self.disable_layout(self.ticketLayout)
-        self.disable_layout(self.controlLayout)
+        disable_layout(self.ticketLayout)
+        disable_layout(self.controlLayout)
 
     def request_unbound_machines(self):
         '''Requests the machines that are not already bound to a GUI.'''
@@ -499,8 +478,8 @@ class OperatorGUI(QMainWindow):
     def create_ticket_layout(self):
         '''Layout for selecting, starting, and ending a ticket.'''
         self.ticketLayout = QHBoxLayout()
-        ticketLabel = QLabel("Current Ticket")
-        ticketLabel.setAlignment(Qt.AlignCenter)
+        self.ticketIDLabel = QLabel("Current Ticket")
+        self.ticketIDLabel.setAlignment(Qt.AlignCenter)
 
         self.ticketIDComboBox = QComboBox()
         self.update_ticket_dropdown()
@@ -518,7 +497,7 @@ class OperatorGUI(QMainWindow):
         self.endButton.setStyleSheet("background-color : green")
         self.endButton.clicked.connect(self.end_ticket)
 
-        self.ticketLayout.addWidget(ticketLabel)
+        self.ticketLayout.addWidget(self.ticketIDLabel)
         self.ticketLayout.addWidget(self.ticketIDComboBox)
         self.ticketLayout.addWidget(self.detailsButton)
         self.ticketLayout.addWidget(self.startButton)
@@ -526,19 +505,29 @@ class OperatorGUI(QMainWindow):
 
     def on_ticket_dropdown_changed(self):
         '''Updates the ticket buttons when the dropdown is updated.'''
+        # Check the current dropdown text. If empty or no ticket is selected,
+        # disable the ticket start detail and start buttons. If something is
+        # selected, enable them.
         if self.ticketIDComboBox.currentText() == "Select Ticket ID" or\
                 self.ticketIDComboBox.currentText() == "":
             self.startButton.setEnabled(False)
             self.detailsButton.setEnabled(False)
+            selected_ticket = False
         else:
             self.startButton.setEnabled(True)
             self.detailsButton.setEnabled(True)
+            selected_ticket = True
 
-            if int(self.ticketIDComboBox.currentText()) in\
+        if self.ticketIDComboBox.currentText() == "Select Ticket ID" and\
+                self.ticketIDComboBox.count() > 1:
+            self.ticket_id = None
+        elif selected_ticket == True and\
+                int(self.ticketIDComboBox.currentText()) in\
                     self.ready_assigned_tickets:
-                self.ticket_id = int(
-                    self.ticketIDComboBox.currentText()
-                )
+            self.ticket_id = int(
+                self.ticketIDComboBox.currentText()
+            )
+
 
     def update_ticket_dropdown(self):
         '''Updates the ticket ID dropdown.'''
@@ -547,14 +536,11 @@ class OperatorGUI(QMainWindow):
         self.ticketIDComboBox.clear()
         self.ticketIDComboBox.addItem("Select Ticket ID")
 
-        # First time this function is called, no machine has been
-        # selected, so exit after adding the top text.
-        if self.machineIDComboBox.currentText() == "Select Machine ID" or\
-                self.machineIDComboBox.currentText() == "":
+        # If no machine is selected, exit after adding the top text.
+        if self.gui_is_bound == False:
             return
 
         self.request_machine_assigned_tickets()
-        # self.request_ticket_list()
 
         # Add the ready assigned tickets.
         self.ticketIDComboBox.addItems([
@@ -577,10 +563,10 @@ class OperatorGUI(QMainWindow):
             self.startButton.setEnabled(False)
 
     def display_ticket_details(self):
-        '''.'''
-        ticketInfoDialog = TicketInfoDialog(self)
-        ticketInfoDialog.setModal(True)
-        ticketInfoDialog.show()
+        '''Displays the ticket details.'''
+        TicketDetailsDialog(
+            self, self.all_tickets[self.ticket_id], self.machine_name
+        )
 
     def start_ticket(self):
         '''Starts the selected ticket and publishes its ID.'''
@@ -615,7 +601,7 @@ class OperatorGUI(QMainWindow):
         self.endButton.setEnabled(True)
 
         if self.num_robots != 0:
-            self.enable_layout(self.controlLayout)
+            enable_layout(self.controlLayout)
             self.update_robot_control_layout()
         
     def end_ticket(self):
@@ -627,20 +613,17 @@ class OperatorGUI(QMainWindow):
 
         self.is_ongoing = False
 
+        # Clear the robot control layout.
+        self.clear_robot_control_layout()
+
         # Enable the release machine button and the ID dropdown.
         self.ticketIDComboBox.setEnabled(True)
         self.machineIDReleaseButton.setEnabled(True)
         self.startButton.setEnabled(True)
         self.endButton.setEnabled(False)
-        self.disable_layout(self.controlLayout)
+        disable_layout(self.controlLayout)
         
         self.update_ticket_dropdown()
-
-        # Clear the robot layouts.
-        self.clear_layout(self.robotLabelLayout)
-        self.clear_layout(self.robotButtonLayout)
-        self.clear_layout(self.robotFrameButtonLayout)
-        self.clear_layout(self.robotLEDLayout)
 
     def create_control_layout(self):
         '''.'''
@@ -726,13 +709,13 @@ class OperatorGUI(QMainWindow):
 
         # Sync frame and rotation disable buttons.
         syncRotateLayout = QHBoxLayout()
-        self.syncFramesButton = ControlToggleButton("Sync Frames")
+        self.syncFramesButton = ToggleButton("Sync Frames")
         self.syncFramesButton.pressed.connect(self.sync_frames)
         syncRotateLayout.addWidget(self.syncFramesButton)
-        self.disableRotationButton = ControlToggleButton("Disable Rotation")
+        self.disableRotationButton = ToggleButton("Disable Rotation")
         self.disableRotationButton.pressed.connect(self.toggle_rotation)
         syncRotateLayout.addWidget(self.disableRotationButton)
-        
+
         # Swarm control buttons.
         swarmLayout = QHBoxLayout()
 
@@ -740,8 +723,8 @@ class OperatorGUI(QMainWindow):
         self.moveSwarmFrameButton = RobotButton("Swarm Frame", self.swarm_frame_command_topic)
         self.swarm_buttons.append(self.moveSwarmButton)
         self.swarm_buttons.append(self.moveSwarmFrameButton)
-        swarmLayout.addWidget(self.moveSwarmButton.button)
-        swarmLayout.addWidget(self.moveSwarmFrameButton.button)
+        swarmLayout.addWidget(self.moveSwarmButton)
+        swarmLayout.addWidget(self.moveSwarmFrameButton)
 
         # Individual robot control buttons and labels.
         self.robotLabelLayout = QHBoxLayout()
@@ -761,6 +744,27 @@ class OperatorGUI(QMainWindow):
         self.robotControlLayout.addLayout(self.robotFrameButtonLayout)
         self.robotControlLayout.addLayout(self.robotLEDLayout)
         self.robotControlLayout.addStretch()
+
+    def clear_robot_control_layout(self):
+        '''Clears the robot-specific control layout and parameters.'''
+        # Empty the parameters to ensure the GUI doesn't maintain control
+        # of robots it shouldn't.
+        self.num_robots = 0
+        self.node_names = []
+        self.robot_command_topics = []
+        self.robot_frame_command_topics = []
+        self.robot_names = []
+        self.real_robot_frames = []
+        self.virtual_robot_frames = []
+
+        # Clear the 4 layouts.
+        clear_layout(self.robotLabelLayout)
+        clear_layout(self.robotButtonLayout)
+        clear_layout(self.robotFrameButtonLayout)
+        clear_layout(self.robotLEDLayout)
+
+        # Update the layouts. With empty parameters, this empties buttons.
+        self.update_robot_control_layout()
 
     def update_robot_control_layout(self):
         '''Updates the robot control layout.
@@ -783,12 +787,17 @@ class OperatorGUI(QMainWindow):
             self.robotLabelLayout.addWidget(label)
             self.labels.append(label)
 
-            button = RobotButton(self.robot_names[robot], self.robot_command_topics[robot])
-            self.robotButtonLayout.addWidget(button.button)
+            button = RobotButton(
+                self.robot_names[robot], self.robot_command_topics[robot]
+            )
+            self.robotButtonLayout.addWidget(button)
             self.buttons.append(button)
 
-            button = RobotButton(self.robot_names[robot] + " Frame", self.robot_frame_command_topics[robot])
-            self.robotFrameButtonLayout.addWidget(button.button)
+            button = RobotButton(
+                self.robot_names[robot] + " Frame",
+                self.robot_frame_command_topics[robot]
+            )
+            self.robotFrameButtonLayout.addWidget(button)
             self.buttons.append(button)
 
         self.status_manager = LEDManager(self.node_names, self.leds)
@@ -797,71 +806,6 @@ class OperatorGUI(QMainWindow):
         '''.'''
         self.rotation_disabled = not(self.rotation_disabled)
 
-    def create_map_widget(self):
-        '''.'''
-        self.mapWidget, top_button, side_button = create_map_widget(self.rviz_path)
-        top_button.clicked.connect(self._onTopButtonClick)
-        side_button.clicked.connect(self._onSideButtonClick)
-        self.manager = self.mapWidget.frame.getManager()
-
-    def _onTopButtonClick(self):
-        '''.'''
-        self._switchToView("Top View")
-
-    def _onSideButtonClick(self):
-        '''.'''
-        self._switchToView("Side View")
-
-    def _switchToView(self, view_name: str):
-        '''Looks for view_name in the saved views in the config.'''
-        view_man = self.manager.getViewManager()
-        for i in range(view_man.getNumViews()):
-            if view_man.getViewAt(i).getName() == view_name:
-                view_man.setCurrentFrom(view_man.getViewAt(i))
-                return
-        print("Could not find view named {view_name}")
-
-    def enable_layout(self, layout):
-        '''Enables all the widgets in the given layout.'''
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if isinstance(item, QWidgetItem):
-                widget = item.widget()
-                if widget:
-                    widget.setEnabled(True)
-            elif isinstance(item, QLayoutItem):
-                sub_layout = item.layout()
-                if sub_layout:
-                    self.enable_layout(sub_layout)
-
-    def disable_layout(self, layout):
-        '''Disables all the widgets in the given layout.'''
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if isinstance(item, QWidgetItem):
-                widget = item.widget()
-                if widget:
-                    widget.setEnabled(False)
-            elif isinstance(item, QLayoutItem):
-                sub_layout = item.layout()
-                if sub_layout:
-                    self.disable_layout(sub_layout)
-
-    def clear_layout(self, layout):
-        '''Clears the specified layout.
-
-        Need to do so recursively to clean everything properly.
-        '''
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-            elif isinstance(item, QLayout):
-                self.clear_layout(item)
-            else:
-                layout.removeItem(item)
-
     def offset_callback(self, msg):
         '''Alters the received input command, then publishes to enabled bots.'''
         with callback_lock:
@@ -869,27 +813,17 @@ class OperatorGUI(QMainWindow):
                 msg.angular.x = msg.angular.x*0.
                 msg.angular.y = msg.angular.y*0.
                 msg.angular.z = msg.angular.z*0.
-            else:
-                msg.angular.x = msg.angular.x*1.0
-                msg.angular.y = msg.angular.y*1.0
-                msg.angular.z = msg.angular.z*1.0
-
             if(self.translation_disabled):
                 msg.linear.x = msg.linear.x*0.
                 msg.linear.y = msg.linear.y*0.
                 msg.linear.z = msg.linear.z*0.
-            else:
-                msg.linear.x = msg.linear.x*1.0
-                msg.linear.y = msg.linear.y*1.0
-                msg.linear.z = msg.linear.z*1.0
 
             for i in range(len(self.swarm_buttons)):
-                if(self.swarm_buttons[i].button.enabled):
-                    print(f"Button {i} publishing.")
+                if(self.swarm_buttons[i].enabled):
                     self.swarm_buttons[i].publisher.publish(msg)
+
             for i in range(len(self.buttons)):
-                if(self.buttons[i].button.enabled):
-                    print(f"Button {i} publishing.")
+                if(self.buttons[i].enabled):
                     self.buttons[i].publisher.publish(msg)
       
     def sync_frames(self):
@@ -950,7 +884,7 @@ class OperatorGUI(QMainWindow):
                 poseMsg.pose.orientation.x = float(quaternions[0])
                 poseMsg.pose.orientation.y = float(quaternions[1])
                 poseMsg.pose.orientation.z = float(quaternions[2])
-                #p_in_base = self.tf.transformPose("/base_link", poseMsg)
+
                 self.tf_changer.publish(poseMsg)
 
 # TODO: Cross-check structure mechanisms. Do they make sense?
