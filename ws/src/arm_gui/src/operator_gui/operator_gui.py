@@ -84,7 +84,7 @@ class OperatorGUI(QMainWindow):
         # Control setup.
         self.get_control_params()
 
-        self.swarm_buttons = []
+        self.team_buttons = []
         self.buttons = []
         self.labels = []
         self.leds = []
@@ -94,9 +94,7 @@ class OperatorGUI(QMainWindow):
         self.translation_disabled = False
 
         self.tf = TransformListener()
-        self.tf_changer = rospy.Publisher(
-            self.tf_changer_topic, PoseStamped, queue_size=10
-        )
+        self.tf_changer = None
 
         # Subscribe to the input command topic.
         rospy.Subscriber(self.input_command_topic, Twist, self.offset_callback)
@@ -233,11 +231,12 @@ class OperatorGUI(QMainWindow):
 
         self.resize_swarm_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
         self.input_command_topic = rospy.get_param('input_command_topic')
-        self.tf_changer_topic = rospy.get_param('tf_changer_topic')
-        self.swarm_command_topic = rospy.get_param('swarm_command_topic')
-        self.swarm_frame_command_topic = rospy.get_param('swarm_frame_command_topic')
-        self.swarm_tf = rospy.get_param('swarm_tf_frame')
-        #self.sync_topic = rospy.get_param('sync_frames_topic')
+
+        self.team_command_topic = ""
+        self.team_frame_command_topic = ""
+        self.team_footprint_topic = ""
+        self.team_tf_frame = ""
+        self.tf_changer_topic = ""
 
     def create_ui(self):
         '''Create the basic UI.'''
@@ -468,6 +467,22 @@ class OperatorGUI(QMainWindow):
             self.robot_command_topics = response.robot_command_topics
             self.virtual_robot_frames = response.virtual_robot_frames
             self.real_robot_frames = response.real_robot_frames
+
+            self.team_id = response.team_id
+
+            self.team_command_topic = response.team_command_topic
+            self.team_frame_command_topic = response.team_frame_command_topic
+            self.team_footprint_topic = response.team_footprint_topic
+            self.team_tf_frame = response.team_tf_frame
+            self.tf_changer_topic = response.tf_changer_topic
+
+            if self.tf_changer is not None:
+                self.tf_changer.unregister()
+
+            if len(self.tf_changer_topic) > 0:
+                self.tf_changer = rospy.Publisher(
+                    self.tf_changer_topic, PoseStamped, queue_size=10
+                )
 
             self.node_names = []
             for robot in range(self.num_robots):
@@ -716,15 +731,8 @@ class OperatorGUI(QMainWindow):
         self.disableRotationButton.pressed.connect(self.toggle_rotation)
         syncRotateLayout.addWidget(self.disableRotationButton)
 
-        # Swarm control buttons.
-        swarmLayout = QHBoxLayout()
-
-        self.moveSwarmButton = RobotButton("Swarm", self.swarm_command_topic)
-        self.moveSwarmFrameButton = RobotButton("Swarm Frame", self.swarm_frame_command_topic)
-        self.swarm_buttons.append(self.moveSwarmButton)
-        self.swarm_buttons.append(self.moveSwarmFrameButton)
-        swarmLayout.addWidget(self.moveSwarmButton)
-        swarmLayout.addWidget(self.moveSwarmFrameButton)
+        # Team control buttons.
+        self.teamLayout = QHBoxLayout()
 
         # Individual robot control buttons and labels.
         self.robotLabelLayout = QHBoxLayout()
@@ -738,7 +746,7 @@ class OperatorGUI(QMainWindow):
         self.robotControlLayout.addLayout(structureSizeLayout)
         self.robotControlLayout.addLayout(saveLoadLayout)
         self.robotControlLayout.addLayout(syncRotateLayout)
-        self.robotControlLayout.addLayout(swarmLayout)
+        self.robotControlLayout.addLayout(self.teamLayout)
         self.robotControlLayout.addLayout(self.robotLabelLayout)
         self.robotControlLayout.addLayout(self.robotButtonLayout)
         self.robotControlLayout.addLayout(self.robotFrameButtonLayout)
@@ -757,7 +765,14 @@ class OperatorGUI(QMainWindow):
         self.real_robot_frames = []
         self.virtual_robot_frames = []
 
-        # Clear the 4 layouts.
+        self.team_command_topic = ""
+        self.team_frame_command_topic = ""
+        self.team_footprint_topic = ""
+        self.team_tf_frame = ""
+        self.tf_changer_topic = ""
+
+        # Clear the 5 layouts.
+        clear_layout(self.teamLayout)
         clear_layout(self.robotLabelLayout)
         clear_layout(self.robotButtonLayout)
         clear_layout(self.robotFrameButtonLayout)
@@ -772,9 +787,21 @@ class OperatorGUI(QMainWindow):
         Called whenever a task with robots is started to set the correct
         number of robot buttons with their topics.
         '''
+        self.team_buttons = []
         self.buttons = []
         self.labels = []
         self.leds = []
+
+        if len(self.team_command_topic) and len(self.team_frame_command_topic):
+            self.moveTeamButton = RobotButton("Team", self.team_command_topic)
+            self.moveTeamFrameButton = RobotButton(
+                "Team Frame",
+                self.team_frame_command_topic
+            )
+            self.team_buttons.append(self.moveTeamButton)
+            self.team_buttons.append(self.moveTeamFrameButton)
+            self.teamLayout.addWidget(self.moveTeamButton)
+            self.teamLayout.addWidget(self.moveTeamFrameButton)
 
         for robot in range(self.num_robots):
             led = LEDIndicator(robot)
@@ -818,9 +845,9 @@ class OperatorGUI(QMainWindow):
                 msg.linear.y = msg.linear.y*0.
                 msg.linear.z = msg.linear.z*0.
 
-            for i in range(len(self.swarm_buttons)):
-                if(self.swarm_buttons[i].enabled):
-                    self.swarm_buttons[i].publisher.publish(msg)
+            for i in range(len(self.team_buttons)):
+                if(self.team_buttons[i].enabled):
+                    self.team_buttons[i].publisher.publish(msg)
 
             for i in range(len(self.buttons)):
                 if(self.buttons[i].enabled):
@@ -829,9 +856,9 @@ class OperatorGUI(QMainWindow):
     def sync_frames(self):
         '''.'''
         for i in range(self.num_robots):
-            if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(self.real_robot_frames[i]):
-                t = self.tf.getLatestCommonTime(self.real_robot_frames[i], self.swarm_tf)
-                (trans,quaternions) = self.tf.lookupTransform(self.swarm_tf,self.real_robot_frames[i],t)
+            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.real_robot_frames[i]):
+                t = self.tf.getLatestCommonTime(self.real_robot_frames[i], self.team_tf_frame)
+                (trans,quaternions) = self.tf.lookupTransform(self.team_tf_frame,self.real_robot_frames[i],t)
                 poseMsg = PoseStamped()
                 poseMsg.header.frame_id = self.virtual_robot_frames[i]
                 
@@ -848,9 +875,9 @@ class OperatorGUI(QMainWindow):
     def expand_structure(self):
         '''Expand the swarm's structure by a scaling factor.'''
         for i in range(self.num_robots):
-            if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(self.virtual_robot_frames[i]):
-                t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.swarm_tf)
-                trans, quaternions = self.tf.lookupTransform(self.swarm_tf,self.virtual_robot_frames[i], t)
+            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frames[i]):
+                t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.team_tf_frame)
+                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frames[i], t)
                 poseMsg = PoseStamped()
                 poseMsg.header.frame_id = self.virtual_robot_frames[i]
                 #rospy.logwarn(str(trans[0]))
@@ -870,9 +897,9 @@ class OperatorGUI(QMainWindow):
     def shrink_structure(self):
         '''Shrink the swarm's structure by a scaling factor.'''
         for i in range(self.num_robots):
-            if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(self.virtual_robot_frames[i]):
-                t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.swarm_tf)
-                trans, quaternions = self.tf.lookupTransform(self.swarm_tf,self.virtual_robot_frames[i], t)
+            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frames[i]):
+                t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.team_tf_frame)
+                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frames[i], t)
                 poseMsg = PoseStamped()
                 poseMsg.header.frame_id = self.virtual_robot_frames[i]
                 trans[0] -= trans[0]*self.resize_swarm_scaling_factor
@@ -898,8 +925,8 @@ class OperatorGUI(QMainWindow):
             
             for i in range(len(self.virtual_robot_frames)):
                 if(self.tf.frameExists(self.virtual_robot_frames[i])):
-                    t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.swarm_tf)
-                    position, quaternion = self.tf.lookupTransform(self.virtual_robot_frames[i], self.swarm_tf, t)
+                    t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.team_tf_frame)
+                    position, quaternion = self.tf.lookupTransform(self.virtual_robot_frames[i], self.team_tf_frame, t)
                     
                     print(position, quaternion)
                     f.write("robot_name: %s\n"%self.virtual_robot_frames[i])
@@ -923,9 +950,9 @@ class OperatorGUI(QMainWindow):
                 position_line=lines[index+1][1:-2]
                 quaternion_line=lines[index+2][1:-2]
                 rospy.loginfo(frame_name)
-                if self.tf.frameExists(self.swarm_tf) and self.tf.frameExists(frame_name):
+                if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(frame_name):
                     rospy.loginfo(str(i))
-                    #t = self.tf.getLatestCommonTime(self.swarm_tf, frame_name)
+                    #t = self.tf.getLatestCommonTime(self.team_tf_frame, frame_name)
                     poseMsg = PoseStamped()
                     poseMsg.header.frame_id = frame_name
                     positions=position_line.split(', ')

@@ -1,9 +1,34 @@
 # Number of robots available.
 num_robots: 4
 
+# Team-level parameters.
+# Topic where the team's footprint will be published by swarm_control.
+footprint_topic: "team_footprint"
+
+# 
+# Publishes PoseStamped message for each robot to expand/shrink/load the swarm structure
+frame_sync_topic_name: "tf_changer"
+tf_changer_topic: "team_tf_changer"
+
+# If "Move Swarm" button is pressed, commands the whole swarm with this topic
+# with actually moving the robots with the spacemouse input
+team_command_topic: "team_vel"
+
+# If "Move Swarm Frame" button is pressed, allows to virtually adjust the desired pose of the whole swarm 
+# (?, or just the swarm frame) without actually moving the robots with the spacemouse input
+team_frame_command_topic: "team_frame_vel"
+
+# Virtual (desired) swarm frame name.
+team_tf_frame: "team_frame"
+
+# Robot enable status topic.
+robot_enable_status_topic_name: "/robot_enable_status"
+
+
+# Robot-level parameters.
 # Frame topics for each robot. Controlling these controls the TF frame
 # and not the physical robot.
-robot_frame_command_topic: "just_robot_vel_"
+robot_frame_command_topic: "robot_frame_vel"
 
 # Command topics for each robot. Controlling these controls the phyiscal robot.
 robot_command_topic: "/d/cmd_vel"
@@ -12,8 +37,12 @@ robot_command_topic: "/d/cmd_vel"
 virtual_robot_frame: "tf_robot_"
 
 # Actual robot (control point) frame names.
-# Needed to be able to use the syncing desired robot frames function
+# Needed to be able to use the syncing desired robot frames function.
 real_robot_frame: "d_tf_base_link"
+
+# Robot desired state topic name.
+# swarm_control.py publishes desired robot states here.
+robot_desired_state_topic: "/d/desired_state"
 
 # Name of each robot. Used in the GUI.
 robot_name: "D_"

@@ -1,5 +1,3 @@
-number_of_robots: 2
-
 # When expanding/shrinking the formation structre with "+" and "-" buttons, specifies the change ratio
 resize_scaling_factor: 0.05
 
@@ -8,20 +6,5 @@ resize_scaling_factor: 0.05
 input_command_topic: "deadman_switch_spacenav_twist"
 
 ## Publisher Topics
-# Publishes PoseStamped message for each robot to expand/shrink/load the swarm structure
-tf_changer_topic: "tf_changer"
-
-# If "Move Swarm" button is pressed, commands the whole swarm with this topic
-# with actually moving the robots with the spacemouse input
-swarm_command_topic: "desired_swarm_vel"
-
-# If "Move Swarm Frame" button is pressed, allows to virtually adjust the desired pose of the whole swarm 
-# (?, or just the swarm frame) without actually moving the robots with the spacemouse input
-swarm_frame_command_topic: "just_swarm_vel"
-
 # The LED button that enables or disables the robot from the swarm structure
 robot_enable_status_topic: "robot_enable_status"
-
-## TF names
-# Virtual (desired) swarm frame name
-swarm_tf_frame: "swarm_frame"

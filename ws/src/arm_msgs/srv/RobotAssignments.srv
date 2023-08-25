@@ -8,3 +8,9 @@ string[] robot_command_topics
 string[] virtual_robot_frames
 string[] real_robot_frames
 StringList[] robot_node_names
+uint32 team_id
+string team_command_topic
+string team_frame_command_topic
+string team_footprint_topic
+string team_tf_frame
+string tf_changer_topic
