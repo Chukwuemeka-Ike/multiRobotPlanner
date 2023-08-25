@@ -9,7 +9,8 @@ Description:
 import rospy
 
 from arm_msgs.msg import Tickets, Ticket
-from arm_constants.test_jobs_jobless import *
+# from arm_constants.test_jobs_jobless import *
+from arm_constants.test_jobs_small import *
 
 
 def add_tickets(publisher, tickets: dict):
