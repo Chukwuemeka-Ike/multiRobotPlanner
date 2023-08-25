@@ -18,7 +18,7 @@ from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
 
 from arm_utils.conversion_utils import convert_task_dict_to_ticket_list, convert_ticket_list_to_task_dict
-from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list, get_job_last_ticket_status
+from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list, get_job_last_ticket_status, get_tree_job_start_ids
 
 
 log_tag = "Ticket Manager"
@@ -59,11 +59,11 @@ class TicketManager():
         self.deleted = {}
 
         # Dictionary of {job_id: {"tickets": [ticket_ids], "status": ""}, ...}.
-        # Status is either Finished or Unfinished.
+        # Status is either Deleted, Done, or Unfinished.
         self.jobs = {}
 
         # The lowest job ID we can use when adding a new one to the list.
-        self.minJobID = 0
+        self.minJobID = 1
 
         # Timer variables for triggering re-scheduling.
         self.ongoing_timer = None
@@ -148,6 +148,8 @@ class TicketManager():
         self.update_job_statuses()
 
         self.announce_ticket_list_update()
+        # print(self.ticket_dict)
+        # print(self.jobs)
 
     def edit_ticket_message_callback(self, msg):
         '''Callback when an edit_ticket message is received.
@@ -459,45 +461,37 @@ class TicketManager():
         Returns:
             temp_dict: the original dictionary with job IDs.
         '''
-        # Step 1. Iterate through the temp dictionary and search for each
-        # ticket's parents in the main ticket list or done.
-        # If any parent is in either, add that parent's job_id to the ticket.
-        # If they're not in the main list, the parents are probably the temp
-        # dictionary. Save the ticket in a list.
-        # If there are no parents, create a new job_id for the ticket.
-        # Step 2. Go through the no_found_parents list and search for each
-        # ticket's parents in the temp dictionary.
-        # Go as high as possible in the job tree, get the top job_id,
-        # then set it to the ticket.
-
-        # Step 1.
-        no_found_parents = []
+        merged_ticket_dicts = {**temp_dict, **self.ticket_dict}
+        visited_tickets = []
         for ticket_id, ticket in temp_dict.items():
-            if len(ticket["parents"]) == 0:
-                self.minJobID += 1
-                ticket["job_id"] = self.minJobID
-                continue
-            for parent_id in ticket["parents"]:
-                if parent_id in self.ticket_dict:
-                    ticket["job_id"] = self.ticket_dict[parent_id]["job_id"]
-                    continue
-                elif parent_id in self.done:
-                    ticket["job_id"] = self.done[parent_id]["job_id"]
-                    continue
-            no_found_parents.append(ticket_id)
+            if ticket_id not in visited_tickets:
+                # Get the job starting points.
+                job_start_points = get_tree_job_start_ids(
+                    ticket_id, merged_ticket_dicts
+                )
+                job_id = None
 
-        # Step 2. Iterate through the tickets with no found parents.
-        # For each, look for the parents in the dictionary recursively.
-        # When we get to the top, set the job_id to the ticket.
-        for ticket_id in no_found_parents:
-            ticket = temp_dict[ticket_id]
+                # Check the start points for job ID's.
+                for start_point in job_start_points:
+                    if "job_id" in merged_ticket_dicts[start_point]:
+                        job_id = merged_ticket_dicts[start_point]["job_id"]
+                        break
 
-            linear_job = [ticket_id]
-            get_all_parents_from_task_list(ticket_id, temp_dict, linear_job)
+                # If there were no job_id's, get a new one.
+                if job_id == None:
+                    job_id = self.minJobID
+                    self.minJobID += 1
 
-            # Set the job_id for the ticket.
-            top_ticket = temp_dict[linear_job[-1]]
-            ticket["job_id"] = top_ticket["job_id"]
+                # Propagate the job_id all the way through.
+                for start_point in job_start_points:
+                    linear_job = [start_point]
+                    get_all_children_from_task_list(
+                        start_point, merged_ticket_dicts, linear_job
+                    )
+
+                    for ticket in linear_job:
+                        merged_ticket_dicts[ticket]["job_id"] = job_id
+                        visited_tickets.append(ticket)
 
         return temp_dict
 
@@ -513,7 +507,7 @@ class TicketManager():
             self.ticket_dict[ticket_id] = ticket
             self.waiting.append(ticket_id)
 
-    def delete_ticket(self, ticket_id):
+    def delete_ticket(self, ticket_id: int) -> None:
         '''Removes ticket_id from all possible sets and puts it in deleted.'''
 
         # Delete the ticket from ticket_dict and any set it might be in.
@@ -537,7 +531,7 @@ class TicketManager():
             self.deleted[ticket_id]["time_left"] = 0
             del(self.done[ticket_id])
 
-    def end_ticket(self, ticket_id) -> float:
+    def end_ticket(self, ticket_id: int) -> float:
         '''Moves ticket_id from ongoing to done.
         
         Returns:
@@ -557,7 +551,7 @@ class TicketManager():
 
         return ticket_time_left
 
-    def announce_ticket_start(self, ticket_id):
+    def announce_ticket_start(self, ticket_id: int) -> None:
         '''Announces that we're starting the ticket.'''
         msg = Ticket()
         msg.ticket_id = ticket_id
