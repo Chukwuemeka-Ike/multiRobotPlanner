@@ -113,7 +113,7 @@ class SupervisorGUI(QMainWindow):
 
         # The minimum ticket ID that can be used.
         # Updated every time a ticket list is requested.
-        self.min_ticket_id = 0
+        self.min_ticket_id = 1
 
         # Set the central widget and window layout.
         self.centralWidget = QWidget(self)
