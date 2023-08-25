@@ -53,7 +53,8 @@
 
     <!-- Spawn the robots. -->
     <group ns="$(arg name1)">
-        <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" >
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
             <arg name="x"         value="$(arg x1)" />
             <arg name="y"         value="$(arg y1)" />
             <arg name="z"         value="$(arg z1)" />
@@ -70,7 +71,8 @@
         </include>
     </group>
     <group ns="$(arg name2)">
-        <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" >
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
             <arg name="x"         value="$(arg x2)" />
             <arg name="y"         value="$(arg y2)" />
             <arg name="z"         value="$(arg z2)" />
@@ -87,7 +89,8 @@
         </include>
     </group>
     <group ns="$(arg name3)">
-        <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" >
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
             <arg name="x"         value="$(arg x3)" />
             <arg name="y"         value="$(arg y3)" />
             <arg name="z"         value="$(arg z3)" />
@@ -104,7 +107,8 @@
         </include>
     </group>
     <group ns="$(arg name4)">
-        <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" >
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
             <arg name="x"         value="$(arg x4)" />
             <arg name="y"         value="$(arg y4)" />
             <arg name="z"         value="$(arg z4)" />
