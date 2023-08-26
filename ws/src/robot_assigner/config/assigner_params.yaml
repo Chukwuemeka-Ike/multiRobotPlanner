@@ -1,5 +1,5 @@
-# Number of robots available.
-num_robots: 4
+# Number of robots in the fleet at startup.
+fleet_size: 4
 
 # Team-level parameters.
 # Topic where the team's footprint will be published by swarm_control.

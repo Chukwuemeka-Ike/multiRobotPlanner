@@ -12,7 +12,8 @@ import rospy
 from std_msgs.msg import String
 
 from arm_msgs.msg import StringList
-from arm_msgs.srv import RobotAssignments, RobotAssignmentsRequest,\
+from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
+    FleetInformationResponse, RobotAssignments, RobotAssignmentsRequest,\
     RobotAssignmentsResponse, TicketList, TicketListRequest
 
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
@@ -39,12 +40,12 @@ class RobotAssigner():
         rospy.on_shutdown(self.shutdown_robot_assigner)
         rospy.loginfo(f"{log_tag}: Node started.")
 
-        # Get the number of robots.
-        self.num_robots = rospy.get_param("num_robots")
+        # Get the number of robots in the fleet.
+        self.fleet_size = rospy.get_param("fleet_size")
 
         # Robot pool - the sets of available and occupied robots.
         # Available is [IDs], and occupied is {id: job_id}.
-        self.available = list(range(1, self.num_robots+1))
+        self.available = list(range(1, self.fleet_size+1))
         self.occupied = {}
 
         # Get the per-robot parameters from assigner_params.yaml.
@@ -54,6 +55,7 @@ class RobotAssigner():
         self.real_robot_frame = rospy.get_param("real_robot_frame")
         self.robot_name = rospy.get_param("robot_name")
         self.robot_node_names = rospy.get_param("robot_node_names")
+        self.robot_desired_state_topic = rospy.get_param("robot_desired_state_topic")
 
         # Create lists for each parameter.
         # The number of robots determines the length of each list.
@@ -66,11 +68,14 @@ class RobotAssigner():
         self.robot_command_topics = [
             self.robot_command_topic.replace("/d", f"/d{i}") for i in self.available
         ]
-        self.virtual_robot_frames = [
+        self.virtual_robot_frame_names = [
             self.virtual_robot_frame + str(i) for i in self.available
         ]
-        self.real_robot_frames = [
+        self.real_robot_frame_names = [
             self.real_robot_frame.replace("d_", f"d{i}_") for i in self.available
+        ]
+        self.robot_desired_state_topics = [
+            self.robot_desired_state_topic.replace("/d", f"/d{i}") for i in self.available
         ]
 
         # Get the per-team parameters.
@@ -117,6 +122,13 @@ class RobotAssigner():
             self.send_robot_assignments
         )
 
+        # Service for fleet information. Provides info about all robots.
+        self.fleet_information_service = rospy.Service(
+            'fleet_information_service',
+            FleetInformation,
+            self.send_fleet_information
+        )
+
         # Request the ticket list on startup.
         self.request_ticket_list(None)
 
@@ -157,23 +169,25 @@ class RobotAssigner():
         # Robot IDs start at 1, so subtract 1 to get the indices for
         # accessing their info from the robot info lists.
         indices = [id-1 for id in assigned_ids]
-        names = []
-        frame_command_topics = []
-        command_topics = []
-        virtual_robot_frames = []
-        real_robot_frames = []
-        node_names = []
+        robot_names = []
+        robot_frame_command_topics = []
+        robot_command_topics = []
+        virtual_robot_frame_names = []
+        real_robot_frame_names = []
+        robot_node_names = []
+        robot_desired_state_topics = []
 
         for idx in indices:
-            names.append(self.robot_names[idx])
-            frame_command_topics.append(self.robot_frame_command_topics[idx])
-            command_topics.append(self.robot_command_topics[idx])
-            virtual_robot_frames.append(self.virtual_robot_frames[idx])
-            real_robot_frames.append(self.real_robot_frames[idx])
+            robot_names.append(self.robot_names[idx])
+            robot_frame_command_topics.append(self.robot_frame_command_topics[idx])
+            robot_command_topics.append(self.robot_command_topics[idx])
+            virtual_robot_frame_names.append(self.virtual_robot_frame_names[idx])
+            real_robot_frame_names.append(self.real_robot_frame_names[idx])
+            robot_desired_state_topics.append(self.robot_desired_state_topics[idx])
 
             nodes = StringList()
             nodes.string_list = self.robot_node_names[idx]
-            node_names.append(nodes)
+            robot_node_names.append(nodes)
 
         team_id = 0
         team_command_topic = ""
@@ -192,18 +206,44 @@ class RobotAssigner():
         return RobotAssignmentsResponse(
             num_assigned_robots,
             assigned_ids,
-            names,
-            frame_command_topics,
-            command_topics,
-            virtual_robot_frames,
-            real_robot_frames,
-            node_names,
+            robot_names,
+            robot_command_topics,
+            robot_frame_command_topics,
+            real_robot_frame_names,
+            virtual_robot_frame_names,
+            robot_desired_state_topics,
+            robot_node_names,
             team_id,
             team_command_topic,
             team_frame_command_topic,
             team_footprint_topic,
             team_tf_frame,
             tf_changer_topic,
+        )
+
+    def send_fleet_information(self, _: FleetInformationRequest):
+        '''Sends information about all the individual robots in the fleet.
+
+        The fleet information is the topics, names, and frames for all robots,
+        so other nodes can get all topics at once and subsequently index using
+        relevant IDs.
+        '''
+        robot_node_names = []
+        for idx in range(len(self.robot_names)):
+
+            nodes = StringList()
+            nodes.string_list = self.robot_node_names[idx]
+            robot_node_names.append(nodes)
+
+        return FleetInformationResponse(
+            self.fleet_size,
+            self.robot_names,
+            self.robot_command_topics,
+            self.robot_frame_command_topics,
+            self.real_robot_frame_names,
+            self.virtual_robot_frame_names,
+            self.robot_desired_state_topics,
+            robot_node_names
         )
 
     def request_ticket_list(self, _):

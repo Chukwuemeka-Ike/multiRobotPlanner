@@ -1,0 +1,9 @@
+---
+uint32 fleet_size
+string[] robot_names
+string[] robot_command_topics
+string[] robot_frame_command_topics
+string[] real_robot_frame_names
+string[] virtual_robot_frame_names
+string[] robot_desired_state_topics
+StringList[] robot_node_names

@@ -21,6 +21,7 @@ add_message_files(
 
 add_service_files(
     FILES
+    FleetInformation.srv
     MachinesOverview.srv
     MachineStatus.srv
     RobotAssignments.srv
