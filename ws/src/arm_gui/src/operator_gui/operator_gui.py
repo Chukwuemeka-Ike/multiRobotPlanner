@@ -226,8 +226,8 @@ class OperatorGUI(QMainWindow):
         self.robot_command_topics = []
         self.robot_frame_command_topics = []
         self.robot_names = []
-        self.real_robot_frames = []
-        self.virtual_robot_frames = []
+        self.real_robot_frame_names = []
+        self.virtual_robot_frame_names = []
 
         self.resize_swarm_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
         self.input_command_topic = rospy.get_param('input_command_topic')
@@ -465,8 +465,8 @@ class OperatorGUI(QMainWindow):
             self.robot_names = response.robot_names
             self.robot_frame_command_topics = response.robot_frame_command_topics
             self.robot_command_topics = response.robot_command_topics
-            self.virtual_robot_frames = response.virtual_robot_frames
-            self.real_robot_frames = response.real_robot_frames
+            self.virtual_robot_frame_names = response.virtual_robot_frame_names
+            self.real_robot_frame_names = response.real_robot_frame_names
 
             self.team_id = response.team_id
 
@@ -762,8 +762,8 @@ class OperatorGUI(QMainWindow):
         self.robot_command_topics = []
         self.robot_frame_command_topics = []
         self.robot_names = []
-        self.real_robot_frames = []
-        self.virtual_robot_frames = []
+        self.real_robot_frame_names = []
+        self.virtual_robot_frame_names = []
 
         self.team_command_topic = ""
         self.team_frame_command_topic = ""
@@ -856,11 +856,11 @@ class OperatorGUI(QMainWindow):
     def sync_frames(self):
         '''.'''
         for i in range(self.num_robots):
-            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.real_robot_frames[i]):
-                t = self.tf.getLatestCommonTime(self.real_robot_frames[i], self.team_tf_frame)
-                (trans,quaternions) = self.tf.lookupTransform(self.team_tf_frame,self.real_robot_frames[i],t)
+            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.real_robot_frame_names[i]):
+                t = self.tf.getLatestCommonTime(self.real_robot_frame_names[i], self.team_tf_frame)
+                (trans,quaternions) = self.tf.lookupTransform(self.team_tf_frame,self.real_robot_frame_names[i],t)
                 poseMsg = PoseStamped()
-                poseMsg.header.frame_id = self.virtual_robot_frames[i]
+                poseMsg.header.frame_id = self.virtual_robot_frame_names[i]
                 
                 poseMsg.pose.position.x = float(trans[0])
                 poseMsg.pose.position.y = float(trans[1])
@@ -875,11 +875,11 @@ class OperatorGUI(QMainWindow):
     def expand_structure(self):
         '''Expand the swarm's structure by a scaling factor.'''
         for i in range(self.num_robots):
-            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frames[i]):
-                t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.team_tf_frame)
-                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frames[i], t)
+            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frame_names[i]):
+                t = self.tf.getLatestCommonTime(self.virtual_robot_frame_names[i], self.team_tf_frame)
+                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frame_names[i], t)
                 poseMsg = PoseStamped()
-                poseMsg.header.frame_id = self.virtual_robot_frames[i]
+                poseMsg.header.frame_id = self.virtual_robot_frame_names[i]
                 #rospy.logwarn(str(trans[0]))
                 trans[0] += trans[0]*self.resize_swarm_scaling_factor
                 trans[1] += trans[1]*self.resize_swarm_scaling_factor
@@ -897,11 +897,11 @@ class OperatorGUI(QMainWindow):
     def shrink_structure(self):
         '''Shrink the swarm's structure by a scaling factor.'''
         for i in range(self.num_robots):
-            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frames[i]):
-                t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.team_tf_frame)
-                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frames[i], t)
+            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frame_names[i]):
+                t = self.tf.getLatestCommonTime(self.virtual_robot_frame_names[i], self.team_tf_frame)
+                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frame_names[i], t)
                 poseMsg = PoseStamped()
-                poseMsg.header.frame_id = self.virtual_robot_frames[i]
+                poseMsg.header.frame_id = self.virtual_robot_frame_names[i]
                 trans[0] -= trans[0]*self.resize_swarm_scaling_factor
                 trans[1] -= trans[1]*self.resize_swarm_scaling_factor
                 poseMsg.pose.position.x = float(trans[0])
@@ -923,13 +923,13 @@ class OperatorGUI(QMainWindow):
             name = self.package_path + '/resource/' + name + '.txt'
             f = open(name, "w")
             
-            for i in range(len(self.virtual_robot_frames)):
-                if(self.tf.frameExists(self.virtual_robot_frames[i])):
-                    t = self.tf.getLatestCommonTime(self.virtual_robot_frames[i], self.team_tf_frame)
-                    position, quaternion = self.tf.lookupTransform(self.virtual_robot_frames[i], self.team_tf_frame, t)
+            for i in range(len(self.virtual_robot_frame_names)):
+                if(self.tf.frameExists(self.virtual_robot_frame_names[i])):
+                    t = self.tf.getLatestCommonTime(self.virtual_robot_frame_names[i], self.team_tf_frame)
+                    position, quaternion = self.tf.lookupTransform(self.virtual_robot_frame_names[i], self.team_tf_frame, t)
                     
                     print(position, quaternion)
-                    f.write("robot_name: %s\n"%self.virtual_robot_frames[i])
+                    f.write("robot_name: %s\n"%self.virtual_robot_frame_names[i])
                     f.write(str(position)+"\n")
                     f.write(str(quaternion)+"\n")
             f.close()
