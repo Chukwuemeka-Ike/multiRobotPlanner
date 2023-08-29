@@ -1,17 +1,9 @@
 uint32 ticket_id
 ---
 uint32 num_assigned_robots
-uint32[] robot_ids
-string[] robot_names
-string[] robot_command_topics
-string[] robot_frame_command_topics
-string[] real_robot_frame_names
-string[] virtual_robot_frame_names
-string[] robot_desired_state_topics
-StringList[] robot_node_names
+uint32[] assigned_robot_ids
 uint32 team_id
 string team_command_topic
 string team_frame_command_topic
 string team_footprint_topic
-string team_tf_frame
-string tf_changer_topic
+string team_tf_frame_name
