@@ -21,7 +21,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 
 from arm_msgs.msg import Ticket
-from arm_msgs.srv import MachineStatus, MachineStatusRequest,\
+from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
+        MachineStatus, MachineStatusRequest,\
         RobotAssignments, RobotAssignmentsRequest,\
         TicketList, TicketListRequest,\
         UnboundMachines, UnboundMachinesRequest
@@ -219,24 +220,37 @@ class OperatorGUI(QMainWindow):
 
     def get_control_params(self):
         '''Get the ROS parameters for controlling robots when on a task.'''
-        # These parameters are empty on startup and get updated whenever a task
-        # is started 
-        self.num_robots = 0
-        self.node_names = []
-        self.robot_command_topics = []
-        self.robot_frame_command_topics = []
-        self.robot_names = []
-        self.real_robot_frame_names = []
-        self.virtual_robot_frame_names = []
-
-        self.resize_swarm_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
+        # Parameters saved in gui_params.yaml.
+        self.resize_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
         self.input_command_topic = rospy.get_param('input_command_topic')
+
+        # These parameters are task-specific, so they're empty on startup.
+        # They get updated whenever a task is started.
+        self.num_assigned_robots = 0
+        self.assigned_robot_ids = []
+        self.assigned_robot_indices = []
 
         self.team_command_topic = ""
         self.team_frame_command_topic = ""
         self.team_footprint_topic = ""
-        self.team_tf_frame = ""
+        self.team_tf_frame_name = ""
+        
+
+        # Information about the robot fleet that does not change. Robot names,
+        # command topics, tf frame names, enable status topic, and tf changer
+        # topic. Will use ticket assigned robot IDs to index the lists.
+        self.fleet_size = 0
+        self.robot_names = []
+        self.robot_command_topics = []
+        self.robot_frame_command_topics = []
+        self.real_robot_frame_names = []
+        self.virtual_robot_frame_names = []
+        self.node_names = []
         self.tf_changer_topic = ""
+        self.robot_enable_status_topic = ""
+
+        # Populate the parameters.
+        self.request_fleet_information()
 
     def create_ui(self):
         '''Create the basic UI.'''
@@ -352,7 +366,7 @@ class OperatorGUI(QMainWindow):
         msg.data = self.machine_id
         self.bind_machine_pub.publish(msg)
 
-        # Set the .
+        # Set the GUI as bound.
         self.gui_is_bound = True
         # print(f"Binding {self.machine_name} with id {self.machine_id}.")
 
@@ -399,14 +413,13 @@ class OperatorGUI(QMainWindow):
         '''Requests the machines that are not already bound to a GUI.'''
         rospy.wait_for_service('unbound_machine_service')
         try:
-            # TicketListRequest() is empty.
+            # UnboundMachinesRequest() is empty.
             request = UnboundMachinesRequest()
             unbound_machines = rospy.ServiceProxy('unbound_machine_service', UnboundMachines)
             response = unbound_machines(request)
 
             self.unbound_machines = response.machine_ids
             self.unbound_machine_names = response.machine_names
-
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Unbound machines request failed: {e}.')
 
@@ -441,52 +454,72 @@ class OperatorGUI(QMainWindow):
             response = ticket_list(request)
 
             self.all_tickets = convert_ticket_list_to_task_dict(response.all_tickets)
-            self.waiting = response.waiting
-            self.ready = response.ready
-            self.ongoing = response.ongoing
-            self.done = response.done
+            # self.waiting = response.waiting
+            # self.ready = response.ready
+            # self.ongoing = response.ongoing
+            # self.done = response.done
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
-    def request_assigned_robot_information(self, ticket_id: int):
-        '''.'''
+    def request_fleet_information(self):
+        '''Requests the information about all robots in the fleet.
+
+        The information includes the total number of robots in the fleet,
+        robot names, command topics, and frame names.
+        '''
+        rospy.wait_for_service('fleet_information_service')
+        try:
+            request = FleetInformationRequest()
+            fleet_information = rospy.ServiceProxy(
+                "fleet_information_service",
+                FleetInformation
+            )
+            response = fleet_information(request)
+
+            self.fleet_size = response.fleet_size
+            self.robot_names = response.robot_names
+            self.robot_command_topics = response.robot_command_topics
+            self.robot_frame_command_topics = response.robot_frame_command_topics
+            self.real_robot_frame_names = response.real_robot_frame_names
+            self.virtual_robot_frame_names = response.virtual_robot_frame_names
+            # self.state_publish_topics = response.robot_desired_state_topics
+
+            self.node_names = []
+            for robot in range(self.fleet_size):
+                self.node_names.append(response.robot_node_names[robot].string_list)
+
+            self.tf_changer_topic = response.tf_changer_topic
+            self.tf_changer = rospy.Publisher(
+                self.tf_changer_topic, PoseStamped, queue_size=10
+            )
+            self.robot_enable_status_topic = response.robot_enable_status_topic
+        except rospy.ServiceException as e:
+            rospy.logerr(f"{log_tag}: Fleet information request failed: {e}.")
+
+    def request_assigned_robot_information(self):
+        '''Requests info about the robots assigned to the selected ticket.'''
         rospy.wait_for_service('robot_assignments_service')
         try:
             request = RobotAssignmentsRequest()
-            request.ticket_id = ticket_id
+            request.ticket_id = self.ticket_id
             robot_assignments = rospy.ServiceProxy(
                 'robot_assignments_service',
                 RobotAssignments
             )
             response = robot_assignments(request)
 
-            self.num_robots = response.num_assigned_robots
-            self.robot_ids = response.robot_ids
-            self.robot_names = response.robot_names
-            self.robot_frame_command_topics = response.robot_frame_command_topics
-            self.robot_command_topics = response.robot_command_topics
-            self.virtual_robot_frame_names = response.virtual_robot_frame_names
-            self.real_robot_frame_names = response.real_robot_frame_names
+            self.num_assigned_robots = response.num_assigned_robots
+            self.assigned_robot_ids = response.assigned_robot_ids
+
+            # Robot IDs start at 1, so subtract 1 to get the indices for
+            # accessing their info from the robot info lists.
+            self.assigned_robot_indices = [id-1 for id in self.assigned_robot_ids]
 
             self.team_id = response.team_id
-
             self.team_command_topic = response.team_command_topic
             self.team_frame_command_topic = response.team_frame_command_topic
             self.team_footprint_topic = response.team_footprint_topic
-            self.team_tf_frame = response.team_tf_frame
-            self.tf_changer_topic = response.tf_changer_topic
-
-            if self.tf_changer is not None:
-                self.tf_changer.unregister()
-
-            if len(self.tf_changer_topic) > 0:
-                self.tf_changer = rospy.Publisher(
-                    self.tf_changer_topic, PoseStamped, queue_size=10
-                )
-
-            self.node_names = []
-            for robot in range(self.num_robots):
-                self.node_names.append(response.robot_node_names[robot].string_list)
+            self.team_tf_frame_name = response.team_tf_frame_name
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Robot assignment request failed: {e}.")
 
@@ -543,7 +576,6 @@ class OperatorGUI(QMainWindow):
                 self.ticketIDComboBox.currentText()
             )
 
-
     def update_ticket_dropdown(self):
         '''Updates the ticket ID dropdown.'''
         # Empty the ticket combo box, then add the IDs after requesting
@@ -590,11 +622,11 @@ class OperatorGUI(QMainWindow):
         msg.ticket_id = self.ticket_id
 
         # Request the assigned robot information.
-        self.request_assigned_robot_information(self.ticket_id)
+        self.request_assigned_robot_information()
 
         # If there are no assigned robots, ask the operator if they want to
         # work on the task manually. If they choose no, exit the function.
-        if self.num_robots == 0:
+        if self.num_assigned_robots == 0:
             message = "There are no robots assigned to this ticket." +\
                 "\nWould you like to continue manually?"
             popup_dialog = BasicConfirmDialog(
@@ -615,10 +647,10 @@ class OperatorGUI(QMainWindow):
         self.startButton.setEnabled(False)
         self.endButton.setEnabled(True)
 
-        if self.num_robots != 0:
+        if self.num_assigned_robots != 0:
             enable_layout(self.controlLayout)
             self.update_robot_control_layout()
-        
+
     def end_ticket(self):
         '''Ends the selected ticket and publishes its ID.'''
         # Publish the message.
@@ -637,11 +669,11 @@ class OperatorGUI(QMainWindow):
         self.startButton.setEnabled(True)
         self.endButton.setEnabled(False)
         disable_layout(self.controlLayout)
-        
+
         self.update_ticket_dropdown()
 
     def create_control_layout(self):
-        '''.'''
+        '''Layout for working on a task with robots.'''
         self.controlLayout = QHBoxLayout()
         self.create_task_layout()
         self.create_robot_control_layout()
@@ -650,7 +682,7 @@ class OperatorGUI(QMainWindow):
         self.controlLayout.addLayout(self.robotControlLayout)
 
     def create_task_layout(self):
-        '''.'''
+        '''Layout for task motion controls and calling the robots.'''
         self.taskLayout = QVBoxLayout()
 
         self.callRobotsButton = QPushButton("Call for Robots")
@@ -695,7 +727,12 @@ class OperatorGUI(QMainWindow):
         '''.'''
 
     def create_robot_control_layout(self):
-        '''.'''
+        '''Layout for manually controlling the robots.
+
+        Contains buttons for enabling individual robots, frames, and their
+        team as applicable. Also contains structure controls - expand, shrink,
+        save, load. Sync frames.
+        '''
         self.robotControlLayout = QVBoxLayout()
 
         structureSizeLayout = QHBoxLayout()
@@ -757,19 +794,20 @@ class OperatorGUI(QMainWindow):
         '''Clears the robot-specific control layout and parameters.'''
         # Empty the parameters to ensure the GUI doesn't maintain control
         # of robots it shouldn't.
-        self.num_robots = 0
-        self.node_names = []
-        self.robot_command_topics = []
-        self.robot_frame_command_topics = []
-        self.robot_names = []
-        self.real_robot_frame_names = []
-        self.virtual_robot_frame_names = []
+        self.num_assigned_robots = 0
+        self.assigned_robot_ids = []
+        self.assigned_robot_indices = []
 
         self.team_command_topic = ""
         self.team_frame_command_topic = ""
         self.team_footprint_topic = ""
-        self.team_tf_frame = ""
-        self.tf_changer_topic = ""
+        self.team_tf_frame_name = ""
+
+        # Unregister the publishers for the buttons.
+        for button in self.team_buttons:
+            button.publisher.unregister()
+        for button in self.buttons:
+            button.publisher.unregister()
 
         # Clear the 5 layouts.
         clear_layout(self.teamLayout)
@@ -778,7 +816,8 @@ class OperatorGUI(QMainWindow):
         clear_layout(self.robotFrameButtonLayout)
         clear_layout(self.robotLEDLayout)
 
-        # Update the layouts. With empty parameters, this empties buttons.
+        # Update the layouts. With empty parameters, this empties the button,
+        # led, and label lists.
         self.update_robot_control_layout()
 
     def update_robot_control_layout(self):
@@ -803,31 +842,36 @@ class OperatorGUI(QMainWindow):
             self.teamLayout.addWidget(self.moveTeamButton)
             self.teamLayout.addWidget(self.moveTeamFrameButton)
 
-        for robot in range(self.num_robots):
-            led = LEDIndicator(robot)
-            led.led_change(False)
+        for idx in range(self.num_assigned_robots):
+            # Get the robot's index, so we select the correct topics and names.
+            robot_idx = self.assigned_robot_indices[idx]
+
+            led = LEDIndicator(robot_idx)
+            # led.led_change(False)
             self.robotLEDLayout.addWidget(led)
             self.leds.append(led)
 
-            label = QLabel(self.robot_names[robot])
+            label = QLabel(self.robot_names[robot_idx])
             label.setAlignment(Qt.AlignCenter)
             self.robotLabelLayout.addWidget(label)
             self.labels.append(label)
 
             button = RobotButton(
-                self.robot_names[robot], self.robot_command_topics[robot]
+                self.robot_names[robot_idx], self.robot_command_topics[robot_idx]
             )
             self.robotButtonLayout.addWidget(button)
             self.buttons.append(button)
 
             button = RobotButton(
-                self.robot_names[robot] + " Frame",
-                self.robot_frame_command_topics[robot]
+                self.robot_names[robot_idx] + " Frame",
+                self.robot_frame_command_topics[robot_idx]
             )
             self.robotFrameButtonLayout.addWidget(button)
             self.buttons.append(button)
 
-        self.status_manager = LEDManager(self.node_names, self.leds)
+        self.status_manager = LEDManager(
+            self.node_names, self.leds, self.robot_enable_status_topic
+        )
 
     def toggle_rotation(self):
         '''.'''
@@ -852,15 +896,33 @@ class OperatorGUI(QMainWindow):
             for i in range(len(self.buttons)):
                 if(self.buttons[i].enabled):
                     self.buttons[i].publisher.publish(msg)
-      
+
+# TODO: Cross-check structure mechanisms. Do they make sense?
     def sync_frames(self):
-        '''.'''
-        for i in range(self.num_robots):
-            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.real_robot_frame_names[i]):
-                t = self.tf.getLatestCommonTime(self.real_robot_frame_names[i], self.team_tf_frame)
-                (trans,quaternions) = self.tf.lookupTransform(self.team_tf_frame,self.real_robot_frame_names[i],t)
+        '''Copies real robot frame to virtual robot frame.
+
+        Finds the transform from the team frame to the real robot frame, then
+        copies that to the virtual robot frame.
+        '''
+        for idx in range(self.num_assigned_robots):
+            # Get the robot's index, so we select the correct topics and names.
+            robot_idx = self.assigned_robot_indices[idx]
+
+            if self.tf.frameExists(self.team_tf_frame_name) and\
+                self.tf.frameExists(self.real_robot_frame_names[robot_idx]):
+
+                t = self.tf.getLatestCommonTime(
+                    self.real_robot_frame_names[robot_idx],
+                    self.team_tf_frame_name
+                )
+                trans, quaternions = self.tf.lookupTransform(
+                    self.team_tf_frame_name,
+                    self.real_robot_frame_names[robot_idx],
+                    t
+                )
+
                 poseMsg = PoseStamped()
-                poseMsg.header.frame_id = self.virtual_robot_frame_names[i]
+                poseMsg.header.frame_id = self.virtual_robot_frame_names[robot_idx]
                 
                 poseMsg.pose.position.x = float(trans[0])
                 poseMsg.pose.position.y = float(trans[1])
@@ -869,21 +931,33 @@ class OperatorGUI(QMainWindow):
                 poseMsg.pose.orientation.x = float(quaternions[0])
                 poseMsg.pose.orientation.y = float(quaternions[1])
                 poseMsg.pose.orientation.z = float(quaternions[2])
-                #p_in_base = self.tf.transformPose("/base_link", poseMsg)
+
                 self.tf_changer.publish(poseMsg)
 
     def expand_structure(self):
-        '''Expand the swarm's structure by a scaling factor.'''
-        for i in range(self.num_robots):
-            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frame_names[i]):
-                t = self.tf.getLatestCommonTime(self.virtual_robot_frame_names[i], self.team_tf_frame)
-                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frame_names[i], t)
+        '''Expand the team's structure by a scaling factor.'''
+        for idx in range(self.num_assigned_robots):
+            # Get the robot's index, so we select the correct topics and names.
+            robot_idx = self.assigned_robot_indices[idx]
+
+            if self.tf.frameExists(self.team_tf_frame_name) and\
+                self.tf.frameExists(self.virtual_robot_frame_names[robot_idx]):
+                t = self.tf.getLatestCommonTime(
+                    self.virtual_robot_frame_names[robot_idx],
+                    self.team_tf_frame_name
+                )
+                trans, quaternions = self.tf.lookupTransform(
+                    self.team_tf_frame_name,
+                    self.virtual_robot_frame_names[robot_idx],
+                    t
+                )
+
                 poseMsg = PoseStamped()
-                poseMsg.header.frame_id = self.virtual_robot_frame_names[i]
-                #rospy.logwarn(str(trans[0]))
-                trans[0] += trans[0]*self.resize_swarm_scaling_factor
-                trans[1] += trans[1]*self.resize_swarm_scaling_factor
-                #rospy.logwarn(str(trans[0]))
+                poseMsg.header.frame_id = self.virtual_robot_frame_names[robot_idx]
+
+                trans[0] += trans[0]*self.resize_scaling_factor
+                trans[1] += trans[1]*self.resize_scaling_factor
+
                 poseMsg.pose.position.x = float(trans[0])
                 poseMsg.pose.position.y = float(trans[1])
                 poseMsg.pose.position.z = float(trans[2])
@@ -891,19 +965,33 @@ class OperatorGUI(QMainWindow):
                 poseMsg.pose.orientation.x = float(quaternions[0])
                 poseMsg.pose.orientation.y = float(quaternions[1])
                 poseMsg.pose.orientation.z = float(quaternions[2])
-                #p_in_base = self.tf.transformPose("/base_link", poseMsg)
+
                 self.tf_changer.publish(poseMsg)
 
     def shrink_structure(self):
-        '''Shrink the swarm's structure by a scaling factor.'''
-        for i in range(self.num_robots):
-            if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(self.virtual_robot_frame_names[i]):
-                t = self.tf.getLatestCommonTime(self.virtual_robot_frame_names[i], self.team_tf_frame)
-                trans, quaternions = self.tf.lookupTransform(self.team_tf_frame,self.virtual_robot_frame_names[i], t)
+        '''Shrink the team's structure by a scaling factor.'''
+        for idx in range(self.num_assigned_robots):
+            # Get the robot's index, so we select the correct topics and names.
+            robot_idx = self.assigned_robot_indices[idx]
+
+            if self.tf.frameExists(self.team_tf_frame_name) and\
+                self.tf.frameExists(self.virtual_robot_frame_names[robot_idx]):
+                t = self.tf.getLatestCommonTime(
+                    self.virtual_robot_frame_names[robot_idx],
+                    self.team_tf_frame_name
+                )
+                trans, quaternions = self.tf.lookupTransform(
+                    self.team_tf_frame_name,
+                    self.virtual_robot_frame_names[robot_idx],
+                    t
+                )
+
                 poseMsg = PoseStamped()
-                poseMsg.header.frame_id = self.virtual_robot_frame_names[i]
-                trans[0] -= trans[0]*self.resize_swarm_scaling_factor
-                trans[1] -= trans[1]*self.resize_swarm_scaling_factor
+                poseMsg.header.frame_id = self.virtual_robot_frame_names[robot_idx]
+
+                trans[0] -= trans[0]*self.resize_scaling_factor
+                trans[1] -= trans[1]*self.resize_scaling_factor
+
                 poseMsg.pose.position.x = float(trans[0])
                 poseMsg.pose.position.y = float(trans[1])
                 poseMsg.pose.position.z = float(trans[2])
@@ -914,7 +1002,6 @@ class OperatorGUI(QMainWindow):
 
                 self.tf_changer.publish(poseMsg)
 
-# TODO: Cross-check structure mechanisms. Do they make sense?
     def save_structure(self):
         '''Save the current structure to a file.'''
         name, done1 = QInputDialog.getText(
@@ -922,41 +1009,55 @@ class OperatorGUI(QMainWindow):
         if(done1):
             name = self.package_path + '/resource/' + name + '.txt'
             f = open(name, "w")
-            
-            for i in range(len(self.virtual_robot_frame_names)):
-                if(self.tf.frameExists(self.virtual_robot_frame_names[i])):
-                    t = self.tf.getLatestCommonTime(self.virtual_robot_frame_names[i], self.team_tf_frame)
-                    position, quaternion = self.tf.lookupTransform(self.virtual_robot_frame_names[i], self.team_tf_frame, t)
-                    
-                    print(position, quaternion)
-                    f.write("robot_name: %s\n"%self.virtual_robot_frame_names[i])
-                    f.write(str(position)+"\n")
-                    f.write(str(quaternion)+"\n")
+
+            for idx in range(self.num_assigned_robots):
+                # Get the robot's index, so we select the correct topics and names.
+                robot_idx = self.assigned_robot_indices[idx]
+
+                if self.tf.frameExists(self.virtual_robot_frame_names[robot_idx]):
+                    t = self.tf.getLatestCommonTime(
+                        self.virtual_robot_frame_names[robot_idx],
+                        self.team_tf_frame_name
+                    )
+                    trans, quaternions = self.tf.lookupTransform(
+                        self.team_tf_frame_name,
+                        self.virtual_robot_frame_names[robot_idx],
+                        t
+                    )
+
+                    print(trans, quaternions)
+                    f.write(f"robot_name: {self.virtual_robot_frame_names[robot_idx]}\n")
+                    f.write(str(trans)+"\n")
+                    f.write(str(quaternions)+"\n")
             f.close()
 
     def load_structure(self):
         '''Load a structure from a file.'''
         name, done1 = QInputDialog.getText(
-             self, 'Load Structure', 'Enter desired file name:')
-        if(done1):
+            self, 'Load Structure', 'Enter desired file name:'
+        )
+
+        if done1:
             name = self.package_path+'/resource/'+ name + '.txt'
-            # rospy.logwarn("operator_gui.py: line 368: "+ name)
             f = open(name, "r+")
-            lines=f.readlines()
-            length=len(lines)//3
+            lines = f.readlines()
+            length = len(lines)//3
+
             for i in range(length):
                 index=3*i
                 frame_name=lines[index][12:].strip()
                 position_line=lines[index+1][1:-2]
                 quaternion_line=lines[index+2][1:-2]
-                rospy.loginfo(frame_name)
-                if self.tf.frameExists(self.team_tf_frame) and self.tf.frameExists(frame_name):
+
+                if self.tf.frameExists(self.team_tf_frame_name) and\
+                    self.tf.frameExists(frame_name):
                     rospy.loginfo(str(i))
-                    #t = self.tf.getLatestCommonTime(self.team_tf_frame, frame_name)
+
                     poseMsg = PoseStamped()
                     poseMsg.header.frame_id = frame_name
                     positions=position_line.split(', ')
                     quaternions=quaternion_line.split(', ')
+
                     poseMsg.pose.position.x = float(positions[0])
                     poseMsg.pose.position.y = float(positions[1])
                     poseMsg.pose.position.z = float(positions[2])
@@ -964,5 +1065,5 @@ class OperatorGUI(QMainWindow):
                     poseMsg.pose.orientation.x = float(quaternions[0])
                     poseMsg.pose.orientation.y = float(quaternions[1])
                     poseMsg.pose.orientation.z = float(quaternions[2])
-                    #p_in_base = self.tf.transformPose("/base_link", poseMsg)
+
                     self.tf_changer.publish(poseMsg)
