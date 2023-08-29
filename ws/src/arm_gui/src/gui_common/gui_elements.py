@@ -125,12 +125,11 @@ class MapWidget(QWidget):
 
 
 class LEDManager:
-    def __init__(self,node_names,led_objects):
+    def __init__(self,node_names, led_objects, robot_enable_status_topic):
         self.node_names = node_names
         self.led_objects = led_objects
         self.active_bots = []
-        self.robot_enable_status_topic = rospy.get_param('robot_enable_status_topic') 
-        self.publisher = rospy.Publisher(self.robot_enable_status_topic, Int32, queue_size=10)
+        self.publisher = rospy.Publisher(robot_enable_status_topic, Int32, queue_size=10)
         self.send_value = 0
         for i in range(len(led_objects)):
             self.active_bots.append(False)
@@ -139,15 +138,15 @@ class LEDManager:
         #node_names is loaded from yaml file and should be a list of lists for each robot of desired nodes
         #print(self.node_names)
         for i in range(len(self.led_objects)):
-            if(self.active_bots[i]!=self.led_objects[i].active):
-                if(self.led_objects[i].active==True):
+            if(self.active_bots[i] != self.led_objects[i].active):
+                if(self.led_objects[i].active == True):
                     out=pow(2,i)
-                    self.send_value+=out
-                    self.active_bots[i]=True
+                    self.send_value += out
+                    self.active_bots[i] = True
                 else:
                     out=pow(2,i)
-                    self.send_value-=out
-                    self.active_bots[i]=False
+                    self.send_value -= out
+                    self.active_bots[i] = False
 
                 output = Int32()
                 output.data=int(self.send_value)
