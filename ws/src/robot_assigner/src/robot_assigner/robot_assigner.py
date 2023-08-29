@@ -49,42 +49,45 @@ class RobotAssigner():
         self.occupied = {}
 
         # Get the per-robot parameters from assigner_params.yaml.
-        self.robot_frame_command_topic = rospy.get_param("robot_frame_command_topic")
-        self.robot_command_topic = rospy.get_param("robot_command_topic")
-        self.virtual_robot_frame = rospy.get_param("virtual_robot_frame")
-        self.real_robot_frame = rospy.get_param("real_robot_frame")
         self.robot_name = rospy.get_param("robot_name")
-        self.robot_node_names = rospy.get_param("robot_node_names")
+        self.robot_command_topic = rospy.get_param("robot_command_topic")
+        self.robot_frame_command_topic = rospy.get_param("robot_frame_command_topic")
+        self.real_robot_frame_name = rospy.get_param("real_robot_frame_name")
+        self.virtual_robot_frame_name = rospy.get_param("virtual_robot_frame_name")
         self.robot_desired_state_topic = rospy.get_param("robot_desired_state_topic")
+        self.robot_node_names = rospy.get_param("robot_node_names")
 
         # Create lists for each parameter.
         # The number of robots determines the length of each list.
         self.robot_names = [
             self.robot_name + str(i) for i in self.available
         ]
-        self.robot_frame_command_topics = [
-            self.robot_frame_command_topic.replace("robot_", f"robot_{i}_") for i in self.available
-        ]
         self.robot_command_topics = [
             self.robot_command_topic.replace("/d", f"/d{i}") for i in self.available
         ]
-        self.virtual_robot_frame_names = [
-            self.virtual_robot_frame + str(i) for i in self.available
+        self.robot_frame_command_topics = [
+            self.robot_frame_command_topic.replace("robot_", f"robot_{i}_") for i in self.available
         ]
         self.real_robot_frame_names = [
-            self.real_robot_frame.replace("d_", f"d{i}_") for i in self.available
+            self.real_robot_frame_name.replace("d_", f"d{i}_") for i in self.available
+        ]
+        self.virtual_robot_frame_names = [
+            self.virtual_robot_frame_name + str(i) for i in self.available
         ]
         self.robot_desired_state_topics = [
             self.robot_desired_state_topic.replace("/d", f"/d{i}") for i in self.available
         ]
 
+        # These topics are constant across robots and teams.
+        self.tf_changer_topic = rospy.get_param("tf_changer_topic")
+        self.robot_enable_status_topic = rospy.get_param("robot_enable_status_topic")
+
         # Get the per-team parameters.
-        # Whenever a ticket's assignments are requested, these are 
+        # Whenever a ticket's assignments are requested, these are also sent.
         self.team_command_topic = rospy.get_param("team_command_topic")
         self.team_frame_command_topic = rospy.get_param("team_frame_command_topic")
-        self.footprint_topic = rospy.get_param("footprint_topic")
-        self.team_tf_frame = rospy.get_param("team_tf_frame")
-        self.tf_changer_topic = rospy.get_param("tf_changer_topic")
+        self.team_footprint_topic = rospy.get_param("team_footprint_topic")
+        self.team_tf_frame_name = rospy.get_param("team_tf_frame_name")
 
         # Assignments is a dictionary with job IDs as keys and dictionaries
         # of the jobs' ticket-robot assignments as values.
@@ -147,11 +150,38 @@ class RobotAssigner():
         # and to allow us pick up the next shift.
         rospy.loginfo(f"{log_tag}: Node shutdown.")
 
+    def send_fleet_information(self, _: FleetInformationRequest):
+        '''Sends information about all the individual robots in the fleet.
+
+        The fleet information is the topics, names, and frames for all robots,
+        so other nodes can get all topics at once and subsequently index using
+        relevant IDs.
+        '''
+        robot_node_names = []
+        for idx in range(len(self.robot_names)):
+
+            nodes = StringList()
+            nodes.string_list = self.robot_node_names[idx]
+            robot_node_names.append(nodes)
+
+        return FleetInformationResponse(
+            self.fleet_size,
+            self.robot_names,
+            self.robot_command_topics,
+            self.robot_frame_command_topics,
+            self.real_robot_frame_names,
+            self.virtual_robot_frame_names,
+            self.robot_desired_state_topics,
+            robot_node_names,
+            self.tf_changer_topic,
+            self.robot_enable_status_topic
+        )
+
     def send_robot_assignments(self, request: RobotAssignmentsRequest):
-        '''Sends info about the robots assigned to a requested ticket ID.
+        '''Sends info about the robots and team assigned to a requested ticket ID.
 
         If the job_id isn't in assignments, there are no assigned robots, and
-        we return empty lists
+        we return empty lists and strings.
         '''
         ticket_id = request.ticket_id
         job_id = self.all_tickets[ticket_id]["job_id"]
@@ -193,57 +223,22 @@ class RobotAssigner():
         team_command_topic = ""
         team_frame_command_topic = ""
         team_footprint_topic = ""
-        team_tf_frame = ""
-        tf_changer_topic = ""
+        team_tf_frame_name = ""
         if ticket_id in self.teams:
             team_id = min(self.teams[ticket_id])
             team_command_topic = self.team_command_topic.replace("team_", f"team_{team_id}_")
             team_frame_command_topic = self.team_frame_command_topic.replace("team_", f"team_{team_id}_")
-            team_footprint_topic = self.footprint_topic.replace("team_", f"team_{team_id}_")
-            team_tf_frame = self.team_tf_frame.replace("team_", f"team_{team_id}_")
-            tf_changer_topic = self.tf_changer_topic.replace("team_", f"team_{team_id}_")
+            team_footprint_topic = self.team_footprint_topic.replace("team_", f"team_{team_id}_")
+            team_tf_frame_name = self.team_tf_frame_name.replace("team_", f"team_{team_id}_")
 
         return RobotAssignmentsResponse(
             num_assigned_robots,
             assigned_ids,
-            robot_names,
-            robot_command_topics,
-            robot_frame_command_topics,
-            real_robot_frame_names,
-            virtual_robot_frame_names,
-            robot_desired_state_topics,
-            robot_node_names,
             team_id,
             team_command_topic,
             team_frame_command_topic,
             team_footprint_topic,
-            team_tf_frame,
-            tf_changer_topic,
-        )
-
-    def send_fleet_information(self, _: FleetInformationRequest):
-        '''Sends information about all the individual robots in the fleet.
-
-        The fleet information is the topics, names, and frames for all robots,
-        so other nodes can get all topics at once and subsequently index using
-        relevant IDs.
-        '''
-        robot_node_names = []
-        for idx in range(len(self.robot_names)):
-
-            nodes = StringList()
-            nodes.string_list = self.robot_node_names[idx]
-            robot_node_names.append(nodes)
-
-        return FleetInformationResponse(
-            self.fleet_size,
-            self.robot_names,
-            self.robot_command_topics,
-            self.robot_frame_command_topics,
-            self.real_robot_frame_names,
-            self.virtual_robot_frame_names,
-            self.robot_desired_state_topics,
-            robot_node_names
+            team_tf_frame_name,
         )
 
     def request_ticket_list(self, _):
