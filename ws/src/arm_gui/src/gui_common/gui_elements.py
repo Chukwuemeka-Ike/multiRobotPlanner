@@ -182,24 +182,36 @@ class LEDManager:
 
 
 class LEDIndicator(QAbstractButton):
-    scaledSize=1000.0
-    def __init__(self,index):
-        QAbstractButton.__init__(self)
+    scaledSize = 1000.0
+    def __init__(self, robot_id: int):
+        '''.
+
+        Args:
+            robot_id: ID of the robot the indicator is tied to.
+        '''
+        super().__init__()
+
         self.setMinimumSize(24, 24)
         self.setCheckable(True)
-        self.index=index
-        self.active=False
+
+        self.robot_id = robot_id
+        self.active = True
+        self.setChecked(self.active)
+
         self.pressed.connect(self.led_pressed)
-        # Green
+
+        # Green when on.
         self.on_color_1 = QColor(0, 255, 0)
         self.on_color_2 = QColor(0, 192, 0)
+
+        # Red when off.
         self.off_color_1 = QColor(255, 0, 0)
         self.off_color_2 = QColor(128, 0, 0)
 
     def led_pressed(self):
-        self.active=not(self.active)
-        self.led_change(self.active)
-        rospy.logwarn("hello")
+        '''Toggles the button's active state.'''
+        self.active = not(self.active)
+        self.setChecked(self.active)
 
     def resizeEvent(self, QResizeEvent):
         self.update()
@@ -241,39 +253,3 @@ class LEDIndicator(QAbstractButton):
 
         painter.setBrush(gradient)
         painter.drawEllipse(QPointF(0, 0), 400, 400)
-
-    def led_change(self, state):
-        self.setChecked(state)
-
-    @pyqtProperty(QColor)
-    def onColor1(self):
-        return self.on_color_1
-
-    @onColor1.setter
-    def onColor1(self, color):
-        self.on_color_1 = color
-
-    @pyqtProperty(QColor)
-    def onColor2(self):
-        return self.on_color_2
-
-    @onColor2.setter
-    def onColor2(self, color):
-        self.on_ciagnosticscreen.backToRun.pressed.connect(self._to_run_screen)
-        #self._runscolor_2 = color
-
-    @pyqtProperty(QColor)
-    def offColor1(self):
-        return self.off_color_1
-
-    @offColor1.setter
-    def offColor1(self, color):
-        self.off_color_1 = color
-
-    @pyqtProperty(QColor)
-    def offColor2(self):
-        return self.off_color_2
-
-    @offColor2.setter
-    def offColor2(self, color):
-        self.off_color_2 = color
