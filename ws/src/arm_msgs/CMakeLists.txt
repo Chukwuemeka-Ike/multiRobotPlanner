@@ -11,7 +11,11 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 set(MSG_FILES 
-    IntList.msg StringList.msg Ticket.msg Tickets.msg
+    IntList.msg
+    RobotEnableStatus.msg
+    StringList.msg
+    Ticket.msg
+    Tickets.msg
 )
 
 add_message_files(

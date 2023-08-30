@@ -172,7 +172,7 @@ class OperatorGUI(QMainWindow):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         # TODO.
         self.request_ticket_list()
-        self.status_manager.poll_node_names()
+        self.status_manager.poll_led_indicators()
         self.update_machine_dropdown()
         self.update_ticket_dropdown()
 
@@ -245,7 +245,6 @@ class OperatorGUI(QMainWindow):
         self.robot_frame_command_topics = []
         self.real_robot_frame_names = []
         self.virtual_robot_frame_names = []
-        self.node_names = []
         self.tf_changer_topic = ""
         self.robot_enable_status_topic = ""
 
@@ -483,10 +482,6 @@ class OperatorGUI(QMainWindow):
             self.real_robot_frame_names = response.real_robot_frame_names
             self.virtual_robot_frame_names = response.virtual_robot_frame_names
             # self.state_publish_topics = response.robot_desired_state_topics
-
-            self.node_names = []
-            for robot in range(self.fleet_size):
-                self.node_names.append(response.robot_node_names[robot].string_list)
 
             self.tf_changer_topic = response.tf_changer_topic
             self.tf_changer = rospy.Publisher(
@@ -808,6 +803,9 @@ class OperatorGUI(QMainWindow):
             button.publisher.unregister()
         for button in self.buttons:
             button.publisher.unregister()
+        
+        # Unregister the status manager's publisher.
+        self.status_manager.publisher.unregister()
 
         # Clear the 5 layouts.
         clear_layout(self.teamLayout)
@@ -846,7 +844,8 @@ class OperatorGUI(QMainWindow):
             # Get the robot's index, so we select the correct topics and names.
             robot_idx = self.assigned_robot_indices[idx]
 
-            led = LEDIndicator(robot_idx)
+            # Create the LED Indicator with the robot's ID.
+            led = LEDIndicator(self.assigned_robot_ids[idx])
             # led.led_change(False)
             self.robotLEDLayout.addWidget(led)
             self.leds.append(led)
@@ -870,7 +869,7 @@ class OperatorGUI(QMainWindow):
             self.buttons.append(button)
 
         self.status_manager = LEDManager(
-            self.node_names, self.leds, self.robot_enable_status_topic
+            self.leds, self.robot_enable_status_topic
         )
 
     def toggle_rotation(self):

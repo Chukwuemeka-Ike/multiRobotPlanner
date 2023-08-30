@@ -19,6 +19,8 @@ from rviz import bindings as rviz
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int32
 
+from arm_msgs.msg import RobotEnableStatus
+
 
 class ToggleButton(QPushButton):
     '''A push button that changes color when pressed.'''
@@ -36,12 +38,14 @@ class ToggleButton(QPushButton):
         else:
             self.setStyleSheet("QPushButton {background-color: light gray; color: black;}")
 
+
 class RobotButton(ToggleButton):
     '''.'''
     def __init__(self, button_name, button_topic) -> None:
         self.buttonName = button_name + "\n Motion Enable"
         super().__init__(self.buttonName)
         self.publisher = rospy.Publisher(button_topic, Twist, queue_size=0)
+
 
 class FixedWidthLabel(QLabel):
     '''Creates a fixed width label. Allows us specify the size in the constructor.'''
@@ -125,33 +129,56 @@ class MapWidget(QWidget):
 
 
 class LEDManager:
-    def __init__(self,node_names, led_objects, robot_enable_status_topic):
-        self.node_names = node_names
-        self.led_objects = led_objects
-        self.active_bots = []
-        self.publisher = rospy.Publisher(robot_enable_status_topic, Int32, queue_size=10)
-        self.send_value = 0
-        for i in range(len(led_objects)):
-            self.active_bots.append(False)
-            
-    def poll_node_names(self):
-        #node_names is loaded from yaml file and should be a list of lists for each robot of desired nodes
-        #print(self.node_names)
-        for i in range(len(self.led_objects)):
-            if(self.active_bots[i] != self.led_objects[i].active):
-                if(self.led_objects[i].active == True):
-                    out=pow(2,i)
-                    self.send_value += out
-                    self.active_bots[i] = True
-                else:
-                    out=pow(2,i)
-                    self.send_value -= out
-                    self.active_bots[i] = False
+    def __init__(
+            self, led_indicators, robot_enable_status_topic
+        ) -> None:
+        '''.'''
 
-                output = Int32()
-                output.data=int(self.send_value)
-                self.publisher.publish(output)
+        self.led_indicators = led_indicators
+        self.robot_enable_status = [
+            led_indicators[i].active for i in range(len(led_indicators))
+        ]
+
+        # Register the publisher.
+        self.publisher = rospy.Publisher(
+            robot_enable_status_topic, RobotEnableStatus, queue_size=10
+        )
+        # Publish the enable status once to ensure other nodes have the
+        # right values on creation.
+        self.publish_enable_status()
+   
+    def poll_led_indicators(self):
+        '''Polls the LED indicators.
+
+        If any indicator has changed since last poll, it publishes all
+        robots' enable statuses.
+        '''
+        # Count the number of LED indicators that have changed.
+        num_changed_status = 0
+        for i in range(len(self.led_indicators)):
+            if(self.robot_enable_status[i] != self.led_indicators[i].active):
+                num_changed_status += 1
+                self.robot_enable_status[i] = self.led_indicators[i].active
+
+        # Send the enabled and disabled IDs if any indicator has changed.
+        if num_changed_status > 0:
+            self.publish_enable_status()
         time.sleep(0.01)
+
+    def publish_enable_status(self):
+        '''Publishes the enable status for all robots.'''
+        enabled_ids = []
+        disabled_ids = []
+        for i in range(len(self.led_indicators)):
+            if self.led_indicators[i].active == True:
+                enabled_ids.append(self.led_indicators[i].robot_id)
+            elif self.led_indicators[i].active == False:
+                disabled_ids.append(self.led_indicators[i].robot_id)
+
+        output = RobotEnableStatus()
+        output.enabled_ids = enabled_ids
+        output.disabled_ids = disabled_ids
+        self.publisher.publish(output)
 
 
 class LEDIndicator(QAbstractButton):
