@@ -198,7 +198,7 @@ class LEDIndicator(QAbstractButton):
         self.active = True
         self.setChecked(self.active)
 
-        self.pressed.connect(self.led_pressed)
+        self.clicked.connect(self.led_pressed)
 
         # Green when on.
         self.on_color_1 = QColor(0, 255, 0)
