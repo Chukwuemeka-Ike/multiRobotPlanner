@@ -63,7 +63,7 @@ class RobotAssigner():
             self.robot_name + str(i) for i in self.available
         ]
         self.robot_command_topics = [
-            self.robot_command_topic.replace("/d", f"/d{i}") for i in self.available
+            self.robot_command_topic.replace("/d_", f"/d{i}") for i in self.available
         ]
         self.robot_frame_command_topics = [
             self.robot_frame_command_topic.replace("robot_", f"robot_{i}_") for i in self.available
@@ -75,9 +75,10 @@ class RobotAssigner():
             self.virtual_robot_frame_name + str(i) for i in self.available
         ]
         self.robot_desired_state_topics = [
-            self.robot_desired_state_topic.replace("/d", f"/d{i}") for i in self.available
+            self.robot_desired_state_topic.replace("/d_", f"/d{i}") for i in self.available
         ]
 
+        # print(f"Desired state topics: {self.robot_desired_state_topics}")
         # These topics are constant across robots and teams.
         self.tf_changer_topic = rospy.get_param("tf_changer_topic")
         self.robot_enable_status_topic = rospy.get_param("robot_enable_status_topic")
@@ -239,6 +240,10 @@ class RobotAssigner():
             team_frame_command_topic,
             team_footprint_topic,
             team_tf_frame_name,
+            # "desired_swarm_vel",
+            # "just_swarm_vel",
+            # "/swarm_footprint",
+            # "/swarm_frame"
         )
 
     def request_ticket_list(self, _):
