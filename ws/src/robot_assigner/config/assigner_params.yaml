@@ -31,7 +31,7 @@ robot_enable_status_topic: "robot_enable_status"
 robot_frame_command_topic: "robot_frame_vel"
 
 # Command topics for each robot. Controlling these controls the phyiscal robot.
-robot_command_topic: "/d/cmd_vel"
+robot_command_topic: "/d_/cmd_vel"
 
 # Virtual (desired) robot (control point) frame names.
 virtual_robot_frame_name: "tf_robot_"
@@ -42,7 +42,7 @@ real_robot_frame_name: "d_tf_base_link"
 
 # Robot desired state topic name.
 # swarm_control.py publishes desired robot states here.
-robot_desired_state_topic: "/d/desired_state"
+robot_desired_state_topic: "/d_/desired_state"
 
 # Name of each robot. Used in the GUI.
 robot_name: "D_"
