@@ -703,7 +703,7 @@ class OperatorGUI(QMainWindow):
         self.taskLayout.addStretch()
 
     def call_robots(self):
-        '''Calls the robots to the station when pressed.'''
+        '''Calls the robots to the station when clicked.'''
         msg = PoseStamped()
 
         # Get the machine's location.
@@ -733,11 +733,11 @@ class OperatorGUI(QMainWindow):
         structureSizeLayout = QHBoxLayout()
         self.shrinkButton = QPushButton("-")
         self.shrinkButton.setFont(QFont('Times', structureButtonFontSize))
-        self.shrinkButton.pressed.connect(self.shrink_structure)
+        self.shrinkButton.clicked.connect(self.shrink_structure)
 
         self.expandButton = QPushButton("+")
         self.expandButton.setFont(QFont('Times', structureButtonFontSize))
-        self.expandButton.pressed.connect(self.expand_structure)
+        self.expandButton.clicked.connect(self.expand_structure)
 
         adjustStructure = QLabel("<h2>Adjust Structure Size</h2>")
         adjustStructure.setAlignment(Qt.AlignCenter)
@@ -748,19 +748,19 @@ class OperatorGUI(QMainWindow):
 
         saveLoadLayout = QHBoxLayout()
         self.saveStructureButton = QPushButton("Save Structure")
-        self.saveStructureButton.pressed.connect(self.save_structure)
+        self.saveStructureButton.clicked.connect(self.save_structure)
         self.loadStructureButton = QPushButton("Load Structure")
-        self.loadStructureButton.pressed.connect(self.load_structure)
+        self.loadStructureButton.clicked.connect(self.load_structure)
         saveLoadLayout.addWidget(self.saveStructureButton)
         saveLoadLayout.addWidget(self.loadStructureButton)
 
         # Sync frame and rotation disable buttons.
         syncRotateLayout = QHBoxLayout()
-        self.syncFramesButton = ToggleButton("Sync Frames")
-        self.syncFramesButton.pressed.connect(self.sync_frames)
+        self.syncFramesButton = QPushButton("Sync Frames")
+        self.syncFramesButton.clicked.connect(self.sync_frames)
         syncRotateLayout.addWidget(self.syncFramesButton)
         self.disableRotationButton = ToggleButton("Disable Rotation")
-        self.disableRotationButton.pressed.connect(self.toggle_rotation)
+        self.disableRotationButton.clicked.connect(self.toggle_rotation)
         syncRotateLayout.addWidget(self.disableRotationButton)
 
         # Team control buttons.
