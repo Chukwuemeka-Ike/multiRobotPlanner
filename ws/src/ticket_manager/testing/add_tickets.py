@@ -7,6 +7,7 @@ Author - Chukwuemeka Osaretin Ike
 Description:
 '''
 import rospy
+import time
 
 from arm_msgs.msg import Tickets, Ticket
 # from arm_constants.test_jobs_jobless import *
@@ -42,8 +43,7 @@ if __name__ == "__main__":
     )
     
     # Wait 1 second, or the message won't publish.
-    rate = rospy.Rate(1)
-    rate.sleep()
+    time.sleep(1)
 
     add_tickets(add_ticket_pub, test_data_1["ticket_add_0"])
     # add_tickets(add_ticket_pub, test_data_1["ticket_add_1"])
