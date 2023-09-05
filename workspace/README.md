@@ -83,16 +83,31 @@ rosrun ticket_manager add_tickets.py
 
 
 ### User Interface
-There are two user interfaces for working with the system.
+There are two graphical user interfaces (GUIs) for working with the system.
 1. Supervisor GUI (SG) - ticket management and overall system monitoring
 2. Operator GUI (OG) - ticket operation and ticket-specific robot control
 
-With the high level background components running, we can now run the UI's.
+With the high level background components running, we can now run the GUI's.
 ```bash
 roslaunch arm_gui both_guis.launch
 ```
+To have the underlying simulations show up in both UI's RViz windows, open another terminal and run the following command.
+```bash
+cd multiRobotPlanner/workspace
+chmod +x robot_sim.bash
+./robot_sim.bash
+```
+With the high-level components, the user interfaces, and the robot simulations running, and with tickets added, the GUIs should look similar to the images below.
 
-## Descriptions
+|![Supervisor GUI on Startup](Images/supervisorGUIStartup.png)|![Operator GUI on Startup](Images/operatorGUIStartup.png)|
+|-|-|
+|<center>Supervisor GUI</center>|<center>Operator GUI</center>|
+
+The SG can be used to add and edit tickets in the high-level system, and to delete entire jobs from the system. It also allows the user monitor the overall workspace and schedule progression.
+
+The OG can be used to work on tickets, which involves starting the tickets, controlling the robots assigned to the tickets, and ending those tickets. Starting and ending tickets steps through the schedule until there are no tickets left.
+
+## High-Level Descriptions
 ### Tickets
 A Ticket is the atomic component of the high-level system. It represents a task that needs to be completed towards building a piece. Jobs can be built using multiple tickets. The Ticket message template is shown below.
 ```bash
