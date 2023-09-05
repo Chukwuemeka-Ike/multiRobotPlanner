@@ -35,20 +35,21 @@ git clone https://github.com/burakaksoy/Swarm-Robotics-2.git
 First, we start by installing the system-level package dependencies. The list of packages required to run this project are listed in *[apt_requirements.txt](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/apt_requirements.txt)*. The *[install_apt_packages](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/install_apt_packages.bash)* bash script installs all the packages in that file.
 
 ```bash
-chmod +x install_apt_packages # make the script executable
-./install_apt_packages.bash
+cd workspace
+chmod +x install_apt_packages.bash # make the script executable
+sudo ./install_apt_packages.bash
 ```
 
 The user interfaces in this project contain RViz windows that show a simulated representation of what is happening on the factory floor. To do so, we rely on the work done by [Burak Aksoy](https://github.com/burakaksoy). His work brings additional package dependencies to this project, which can be installed using the commands below:
 ```bash
 chmod +x install_burak_dependencies.bash
-./install_burak_dependencies.bash
+sudo ./install_burak_dependencies.bash
 ```
 
 #### Python Packages
 Next, we install the Python dependencies.
 ```bash
-pip3 install -d py_requirements.txt
+pip3 install -r py_requirements.txt
 ```
 
 ### Build
