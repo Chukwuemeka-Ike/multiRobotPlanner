@@ -12,6 +12,24 @@ The following instructions assume you're running an Ubuntu 20.04 system with ROS
 1. [Ubuntu Install Instructions](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview)
 2. [ROS Noetic Install Instructions](https://wiki.ros.org/noetic/Installation/Ubuntu)
 
+### Repositories
+Clone this repository into a new folder.
+```bash
+cd
+mkdir multiRobotPlanner
+cd multiRobotPlanner
+git clone https://github.com/Chukwuemeka-Ike/multiRobotPlanner.git . 
+```
+
+Clone the following repositories by Burak into the *src/* subfolder for running the simulations.
+```bash
+cd workspace/src
+git clone https://github.com/burakaksoy/RVizMeshVisualizer.git
+git clone https://github.com/burakaksoy/AssistiveRobot-SimulationFiles.git
+git clone https://github.com/burakaksoy/uwb_gazebo_plugin.git
+git clone https://github.com/burakaksoy/Swarm-Robotics-2.git
+```
+
 ### Project Dependencies
 #### System-Level Packages
 First, we start by installing the system-level package dependencies. The list of packages required to run this project are listed in *[apt_requirements.txt](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/apt_requirements.txt)*. The *[install_apt_packages](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/install_apt_packages.bash)* bash script installs all the packages in that file.
@@ -34,23 +52,6 @@ pip3 install -d py_requirements.txt
 ```
 
 ### Build
-Clone this repository.
-```bash
-cd
-mkdir multiRobotPlanner
-cd multiRobotPlanner
-git clone https://github.com/Chukwuemeka-Ike/multiRobotPlanner.git . 
-```
-
-Clone the following repositories by Burak into the *src/* subfolder for running the simulations.
-```bash
-cd workspace/src
-git clone https://github.com/burakaksoy/RVizMeshVisualizer.git
-git clone https://github.com/burakaksoy/AssistiveRobot-SimulationFiles.git
-git clone https://github.com/burakaksoy/uwb_gazebo_plugin.git
-git clone https://github.com/burakaksoy/Swarm-Robotics-2.git
-```
-
 Navigate to *workspace*, build the packages, and source the built workspace packages with the following commands.
 ```bash
 cd workspace
