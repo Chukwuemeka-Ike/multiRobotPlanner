@@ -1,3 +1,5 @@
+*.identifier
+*.Identifier
 .catkin_workspace
 *.smt
 *.pyc
@@ -8,9 +10,10 @@ devel/
 saves/
 
 # Scheduler save directories.
-Plans/
-Images/
 Constraints/
+Operations/Images/
+Operations/Schedulers/Images/
+Plans/
 Videos/
 
 # Common testing dirs & files. I tend to create these in random directories.
