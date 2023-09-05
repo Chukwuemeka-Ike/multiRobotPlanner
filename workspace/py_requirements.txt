@@ -1,5 +1,5 @@
 # Requirements for this repository.
-ortools
+ortools==9.7.2996
 numpy==1.21.0
 matplotlib
 pyqt5

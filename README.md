@@ -15,7 +15,7 @@ Each major folder in this repo represents a specific iteration of the task sched
 **NOTE: workspace is the only folder intended for use. Other folders are included here because they represent the entirety of the design process for this project.**
 
 ### Workspace
-*workspace* contains the final version of the entire high-level system, including the Operations scheduler. The workspace contains all the packages necessary for running the version of this project intended for use and distribution. Those interested in using this project can skip the remainder of this README. More details and documentation can be found [here](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/tree/master/workspace).
+*workspace* contains the final version of the entire high-level system, including the Operations scheduler. The workspace contains all the packages necessary for running the version of this project intended for use and distribution. Those interested in using this project can skip the remainder of this README. More details and documentation can be found [here](workspace).
 
 ### Finegrained
 The finegrained planner was the first iteration for robot planning. It used an optimization tool and a constraint solver to generate feasible paths for mobile robots in a 2D plane.

@@ -56,7 +56,7 @@ pip3 install -r py_requirements.txt
 Navigate to *workspace*, build the packages, and source the built workspace packages with the following commands.
 ```bash
 cd workspace
-catkin_make
+catkin_make -DCATKIN_BLACKLIST_PACKAGES='dingo_base;dingo_customization'
 source devel/setup.bash
 ```
 If this runs correctly, the project's components should be ready to use.

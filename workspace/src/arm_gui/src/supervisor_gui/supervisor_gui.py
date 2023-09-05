@@ -39,19 +39,6 @@ from gui_common.gui_elements import FixedWidthLabel, MapWidget
 from gui_common.gui_utils import clear_layout
 
 
-# *****************************************************************************
-schedule = pd.read_csv(f"~/arm/ws/src/arm_gui/src/gui_common/CPSATScheduleD.csv", index_col=0)
-# schedule.insert(0, 't', schedule.index)
-# schedule.reset_index(drop=True, inplace=True)
-# schedule.index.name = 't'
-# print(schedule.head())
-
-# Lists get converted to strings when saved. This converts the string back.
-schedule["parents"] = schedule["parents"].apply(lambda x:json.loads(x))
-schedule["start"] = schedule["start"].apply(lambda x:int(x))
-schedule["end"] = schedule["end"].apply(lambda x:int(x))
-
-
 log_tag = "Supervisor GUI"
 
 
@@ -284,9 +271,6 @@ class SupervisorGUI(QMainWindow):
 
         self.scheduleCanvas = FigureCanvas(figure)
         self.ax = figure.add_subplot(111)
-
-        # # Draw the placeholder schedule.
-        # self._drawSchedule(schedule)
 
     def _drawSchedule(self, schedule):
         '''.'''
