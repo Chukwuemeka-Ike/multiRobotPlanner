@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package()
 catkin_python_setup()
 catkin_install_python(
-    PROGRAMS nodes/supervisor_gui_node nodes/operator_gui_node nodes/tester.py
+    PROGRAMS 
+    nodes/supervisor_gui_node
+    nodes/operator_gui_node
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
