@@ -1,9 +1,0 @@
-uint32 ticket_id
----
-uint32 num_assigned_robots
-uint32[] assigned_robot_ids
-uint32 team_id
-string team_command_topic
-string team_frame_command_topic
-string team_footprint_topic
-string team_tf_frame_name

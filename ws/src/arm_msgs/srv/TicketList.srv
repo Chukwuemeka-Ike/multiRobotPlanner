@@ -1,7 +1,0 @@
-# No request data
----
-Ticket[] all_tickets
-uint32[] waiting
-uint32[] ready
-uint32[] ongoing
-uint32[] done

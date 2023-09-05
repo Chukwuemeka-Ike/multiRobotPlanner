@@ -35,14 +35,14 @@ dingo/
 dingo_ws/
 
 # External packages.
-workspace/src/dingo_*
-workspace/src/lab_gazebo
-workspace/src/object_visualizer
-workspace/src/swarm2_launch
-workspace/src/swarm*
-workspace/src/vel_controller
-workspace/src/topic_tf_transformers
-workspace/src/uwb_*
+src/dingo_*
+src/lab_gazebo
+src/object_visualizer
+src/swarm2_launch
+src/swarm*
+src/vel_controller
+src/topic_tf_transformers
+src/uwb_*
 
 RVizMeshVisualizer
 AssistiveRobot-SimulationFiles

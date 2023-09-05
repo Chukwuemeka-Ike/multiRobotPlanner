@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <rosparam command="load" file="$(find machine_manager)/config/machine_params.yaml"/>
-    <node name="machine_manager" pkg="machine_manager" type="machine_manager_node" output="screen"/>
-</launch>

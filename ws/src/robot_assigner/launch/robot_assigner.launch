@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <rosparam command="load" file="$(find robot_assigner)/config/assigner_params.yaml"/>
-    <node name="robot_assigner" pkg="robot_assigner" type="robot_assigner_node" output="screen"/>
-</launch>

@@ -1,6 +1,0 @@
-uint32 machine_id
----
-string status
-uint32[] assigned_ids
-uint32[] ready_assigned_ids
-float32[] machine_location
