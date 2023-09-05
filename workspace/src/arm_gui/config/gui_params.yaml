@@ -1,0 +1,10 @@
+# When expanding/shrinking the formation structre with "+" and "-" buttons, specifies the change ratio
+resize_scaling_factor: 0.05
+
+## Subscriber Topics
+# Topic that subscribes to a Twist msg (Deadman switch muxed Space mouse velocity command)
+input_command_topic: "deadman_switch_spacenav_twist"
+
+## Publisher Topics
+# The LED button that enables or disables the robot from the swarm structure
+robot_enable_status_topic: "robot_enable_status"

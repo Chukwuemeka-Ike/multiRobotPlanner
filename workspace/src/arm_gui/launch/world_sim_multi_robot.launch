@@ -1,0 +1,127 @@
+<launch>
+     <arg name="use_sim_time" default="true" />
+     <arg name="show_gazebo" default="false" />
+     <arg name="headless" default="false" />
+
+     <!-- World to simulate. Default is "highbay_swarm". "anchor_plant" is the other option. -->
+     <arg name="world" default="highbay_swarm" />
+
+    <!-- Configuration of Dingo which you would like to simulate.
+        See dingo_description for details. -->
+    <arg name="config" default="$(optenv DINGO_CONFIG base)" />
+
+    <!-- Robot spawn poses. -->
+    <arg name="x1"     default="1.0"/>
+    <arg name="y1"     default="1.0"/>
+    <arg name="z1"     default="0.0"/>
+    <arg name="yaw1"   default="0"/>
+    <arg name="name1"   default="d1"/>
+    <arg name="uwb_tag_1_id1"       default="0"/>
+    <arg name="uwb_tag_2_id1"       default="1"/>
+
+    <arg name="x2"     default="-1.0"/>
+    <arg name="y2"     default="1.0"/>
+    <arg name="z2"     default="0.0"/>
+    <arg name="yaw2"   default="0"/>
+    <arg name="name2"   default="d2"/>
+    <arg name="uwb_tag_1_id2"       default="2"/>
+    <arg name="uwb_tag_2_id2"       default="3"/>
+
+    <arg name="x3"     default="-1.0"/>
+    <arg name="y3"     default="-1.0"/>
+    <arg name="z3"     default="0.0"/>
+    <arg name="yaw3"   default="0"/>
+    <arg name="name3"   default="d3"/>
+    <arg name="uwb_tag_1_id3"       default="4"/>
+    <arg name="uwb_tag_2_id3"       default="5"/>
+
+    <arg name="x4"     default="1.0"/>
+    <arg name="y4"     default="-1.0"/>
+    <arg name="z4"     default="0.0"/>
+    <arg name="yaw4"   default="0"/>
+    <arg name="name4"   default="d4"/>
+    <arg name="uwb_tag_1_id4"       default="6"/>
+    <arg name="uwb_tag_2_id4"       default="7"/>
+
+    <!-- Launch the world simulation. -->
+    <include file="$(find arm_gui)/launch/world_sim.launch">
+        <arg name="show_gazebo" value="$(arg show_gazebo)" />
+        <arg name="use_sim_time" value="$(arg use_sim_time)" />
+        <arg name="headless" value="$(arg headless)" />
+        <arg name="world" value="$(arg world)" />
+    </include>
+
+    <!-- Spawn the robots. -->
+    <group ns="$(arg name1)">
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
+            <arg name="x"         value="$(arg x1)" />
+            <arg name="y"         value="$(arg y1)" />
+            <arg name="z"         value="$(arg z1)" />
+            <arg name="yaw"       value="$(arg yaw1)" />
+            <arg name="robot_namespace"  value="$(arg name1)" />
+            <arg name="config"  value="$(arg config)" />
+            <arg name="uwb_tag_1_id"       value="$(arg uwb_tag_1_id1)"/>
+            <arg name="uwb_tag_2_id"       value="$(arg uwb_tag_2_id1)"/>
+        </include>
+
+        <include file="$(find uwb_pose_publisher)/launch/uwb_pose_publisher.launch" >
+            <arg name="config_file"              value="$(find swarm2_launch)/config/d1_uwb_pose_publisher.yaml" />
+            <arg name="antenna_calib_file"       value="$(find swarm2_launch)/config/antenna_calibration.yaml" />
+        </include>
+    </group>
+    <group ns="$(arg name2)">
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
+            <arg name="x"         value="$(arg x2)" />
+            <arg name="y"         value="$(arg y2)" />
+            <arg name="z"         value="$(arg z2)" />
+            <arg name="yaw"       value="$(arg yaw2)" />
+            <arg name="robot_namespace"  value="$(arg name2)" />
+            <arg name="config"  value="$(arg config)" />
+            <arg name="uwb_tag_1_id"       value="$(arg uwb_tag_1_id2)"/>
+            <arg name="uwb_tag_2_id"       value="$(arg uwb_tag_2_id2)"/>
+        </include>
+
+        <include file="$(find uwb_pose_publisher)/launch/uwb_pose_publisher.launch" >
+            <arg name="config_file"              value="$(find swarm2_launch)/config/d2_uwb_pose_publisher.yaml" />
+            <arg name="antenna_calib_file"       value="$(find swarm2_launch)/config/antenna_calibration.yaml" />
+        </include>
+    </group>
+    <group ns="$(arg name3)">
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
+            <arg name="x"         value="$(arg x3)" />
+            <arg name="y"         value="$(arg y3)" />
+            <arg name="z"         value="$(arg z3)" />
+            <arg name="yaw"       value="$(arg yaw3)" />
+            <arg name="robot_namespace"  value="$(arg name3)" />
+            <arg name="config"  value="$(arg config)" />
+            <arg name="uwb_tag_1_id"       value="$(arg uwb_tag_1_id3)"/>
+            <arg name="uwb_tag_2_id"       value="$(arg uwb_tag_2_id3)"/>
+        </include>
+
+        <include file="$(find uwb_pose_publisher)/launch/uwb_pose_publisher.launch" >
+            <arg name="config_file"              value="$(find swarm2_launch)/config/d3_uwb_pose_publisher.yaml" />
+            <arg name="antenna_calib_file"       value="$(find swarm2_launch)/config/antenna_calibration.yaml" />
+        </include>
+    </group>
+    <group ns="$(arg name4)">
+        <!-- <include file="$(find dingo_gazebo)/launch/spawn_dingo_multi_ground_truth.launch" > -->
+        <include file="$(find swarm2_launch)/launch/sim_launch/spawn_dingo_multi_ground_truth.launch" >
+            <arg name="x"         value="$(arg x4)" />
+            <arg name="y"         value="$(arg y4)" />
+            <arg name="z"         value="$(arg z4)" />
+            <arg name="yaw"       value="$(arg yaw4)" />
+            <arg name="robot_namespace"  value="$(arg name4)" />
+            <arg name="config"  value="$(arg config)" />
+            <arg name="uwb_tag_1_id"       value="$(arg uwb_tag_1_id4)"/>
+            <arg name="uwb_tag_2_id"       value="$(arg uwb_tag_2_id4)"/>
+        </include>
+
+        <include file="$(find uwb_pose_publisher)/launch/uwb_pose_publisher.launch" >
+            <arg name="config_file"              value="$(find swarm2_launch)/config/d4_uwb_pose_publisher.yaml" />
+            <arg name="antenna_calib_file"       value="$(find swarm2_launch)/config/antenna_calibration.yaml" />
+        </include>
+    </group>
+</launch>

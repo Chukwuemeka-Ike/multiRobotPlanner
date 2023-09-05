@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+'''
+Rensselaer Polytechnic Institute - Julius Lab
+ARM Project
+Author - Chukwuemeka Osaretin Ike
+
+Description:
+    This script tests the ticket manager node by adding and removing tickets
+    on a manually set schedule. It simulates how the signals might come in
+    during a daily operation.
+'''
+import rospy
+
+from arm_constants.test_jobs import *
+from arm_msgs.msg import Ticket, Tickets
+
+
+class TicketManagerTester:
+    '''.'''
+    def __init__(self, complete_ticket_dict):
+        rospy.init_node('ticket_manager_tester')
+
+        self.complete_ticket_dict = complete_ticket_dict
+        self.ticket_started_sub = rospy.Subscriber(
+            'ticket_started', Ticket, self.start_ticket_timer_callback
+        )
+        self.add_ticket_pub = rospy.Publisher(
+            'add_ticket', Tickets, queue_size=100
+        )
+        self.end_ticket_pub = rospy.Publisher(
+            'end_ticket', Ticket, queue_size=100
+        )
+
+    def add_tickets(self, add_set_id: int, tickets: dict, event=None):
+        '''Converts tickets to a Tickets msg and publishes it.'''
+        msg = Tickets()
+        ticket_list = []
+        for ticket_id, ticket in tickets.items():
+            ticket_msg = Ticket()
+            ticket_msg.ticket_id = ticket_id
+            ticket_msg.job_id = ticket["job_id"]
+            ticket_msg.machine_type = ticket["machine_type"]
+            ticket_msg.duration = ticket["duration"]
+            ticket_msg.parents = ticket["parents"]
+            ticket_list.append(ticket_msg)
+
+        msg.tickets = ticket_list
+        self.add_ticket_pub.publish(msg)
+        rospy.loginfo(f"Published ticket set {add_set_id}.")
+
+    def start_ticket_timer_callback(self, msg):
+        '''.'''
+        ticket_id = msg.ticket_id
+        # self.end_ticket_id = ticket_id
+        ticket_actual_duration_in_mins = \
+            complete_ticket_dict[ticket_id]["actual_duration"]
+        rospy.Timer(
+            rospy.Duration(ticket_actual_duration_in_mins), #60*
+            lambda event: self.end_ticket(ticket_id, event),
+            oneshot=True
+        )
+
+    def end_ticket(self, ticket_id, event=None):
+        '''.'''
+        msg = Ticket()
+        msg.ticket_id = ticket_id
+        msg.machine_type = complete_ticket_dict[ticket_id]["machine_type"]
+        msg.duration = complete_ticket_dict[ticket_id]["duration"]
+        msg.parents = complete_ticket_dict[ticket_id]["parents"]
+        self.end_ticket_pub.publish(msg)
+        rospy.loginfo(f"Tester: Ending ticket {ticket_id}.")
+
+
+if __name__ == '__main__':
+    # Load the test data.
+    test_data = test_data_1
+    test_data_info = test_data_1_info
+    complete_ticket_dict = test_data["complete_ticket_list"]
+    num_ticket_adds = test_data_info["num_ticket_adds"]
+    ticket_add_list = [i+1 for i in range(num_ticket_adds)]
+
+    # Create the schedule monitor tester node.
+    sMT = TicketManagerTester(complete_ticket_dict)
+
+    # Set timers for each
+    add_times = [1, 50, 110, 150, 285, 300, 301]
+    # add_times = [0.5, 2, 3.5, 5, 285, 300, 301]
+
+    add_num_0 = 0
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_0]),
+        lambda event: sMT.add_tickets(
+            add_num_0,
+            test_data[f"ticket_add_{add_num_0}"],
+            event
+        ),
+        oneshot=True
+    )
+
+    add_num_1 = 1
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_1]),
+        lambda event: sMT.add_tickets(
+            add_num_1,
+            test_data[f"ticket_add_{add_num_1}"],
+            event
+        ),
+        oneshot=True
+    )
+
+    add_num_2 = 2
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_2]),
+        lambda event: sMT.add_tickets(
+            add_num_2,
+            test_data[f"ticket_add_{add_num_2}"],
+            event
+        ),
+        oneshot=True
+    )
+
+    add_num_3 = 3
+    rospy.Timer(
+        rospy.Duration(add_times[add_num_3]),
+        lambda event: sMT.add_tickets(
+            add_num_3,
+            test_data[f"ticket_add_{add_num_3}"],
+            event
+        ),
+        oneshot=True
+    )
+    rospy.spin()

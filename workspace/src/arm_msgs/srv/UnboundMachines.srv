@@ -1,0 +1,4 @@
+# No request data
+---
+uint32[] machine_ids
+string[] machine_names

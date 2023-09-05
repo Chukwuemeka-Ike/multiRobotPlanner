@@ -1,0 +1,7 @@
+python3-pip
+ros-noetic-desktop-full
+ros-noetic-dingo-desktop
+ros-noetic-dingo-navigation
+ros-noetic-dingo-simulator
+ros-noetic-rqt-ez-publisher
+ros-noetic-visualization-tutorials # rviz python bindings.

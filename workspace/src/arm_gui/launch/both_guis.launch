@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="gui_rviz" default="world_multi_robot"/>
+    <!-- <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/> -->
+    <param name="gui_rviz_path" value="$(find swarm2_launch)/config/rviz/sim_robots.rviz"/>
+
+    <include file="$(find arm_gui)/launch/supervisor_gui.launch">
+        <arg name="gui_rviz" value="$(arg gui_rviz)" />
+    </include>
+
+    <include file="$(find arm_gui)/launch/operator_gui.launch">
+        <arg name="gui_rviz" value="$(arg gui_rviz)" />
+    </include>
+</launch>
