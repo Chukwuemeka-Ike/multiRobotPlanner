@@ -3,7 +3,6 @@
 *.pyc
 *cache
 
-constraint_utils_recycling.py
 build/
 devel/
 saves/
@@ -14,23 +13,19 @@ Images/
 Constraints/
 Videos/
 
-# Metric 
-Metric/README.md
-*/src/CMakeLists.txt
-
-# Common testing dirs & files. I tend to create these across packages.
+# Common testing dirs & files. I tend to create these in random directories.
 Scratch/
 scratch*
 tester*
 
 # Extraneous files.
-dingo_namespace.svg
-rosgraph.png
+*/src/CMakeLists.txt
 dd.png
+rosgraph.png
 sched_times.txt
+swarm1_topics.txt
 
 # Sandbox directories.
-backup_ros_d/
 dingo/
 dingo_ws/
 
