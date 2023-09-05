@@ -1,16 +1,20 @@
 # Workspace
 
+This folder contains the high-level components in a readily-usable form. The README holds instructions for installing, building, and using the high-level portion of the project.
 
 
 ## Status
-![Status - Work in Progress](https://img.shields.io/badge/status-Work%20in%20Progress-blue)
+![Status - Work in Progress](https://img.shields.io/badge/status-Work%20in%20Progress-yellow)
+
 
 ## Installation
-The following instructions assume you're running an Ubuntu 20.04 system with ROS Noetic Desktop-Full.
+The following instructions assume you're running an Ubuntu 20.04 system with ROS Noetic Desktop-Full. If that is not the case, these instructions may not work exactly as intended.
+1. [Ubuntu Install Instructions](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview)
+2. [ROS Noetic Install Instructions](https://wiki.ros.org/noetic/Installation/Ubuntu)
 
-### Dependencies
+### Project Dependencies
 #### System-Level Packages
-First, we start by installing the system-level packages. The list of packages required to run this project are listed in *[apt_requirements.txt](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/apt_requirements.txt)*. The *[install_apt_packages](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/install_apt_packages.bash)* bash script installs all the packages in the requirements file.
+First, we start by installing the system-level package dependencies. The list of packages required to run this project are listed in *[apt_requirements.txt](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/apt_requirements.txt)*. The *[install_apt_packages](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/install_apt_packages.bash)* bash script installs all the packages in that file.
 
 ```bash
 chmod +x install_apt_packages # make the script executable
@@ -38,18 +42,18 @@ cd multiRobotPlanner
 git clone https://github.com/Chukwuemeka-Ike/multiRobotPlanner.git . 
 ```
 
-Clone the following repositories by Burak for running the simulations.
+Clone the following repositories by Burak into the *src/* subfolder for running the simulations.
 ```bash
-cd ws/src
+cd workspace/src
 git clone https://github.com/burakaksoy/RVizMeshVisualizer.git
 git clone https://github.com/burakaksoy/AssistiveRobot-SimulationFiles.git
 git clone https://github.com/burakaksoy/uwb_gazebo_plugin.git
 git clone https://github.com/burakaksoy/Swarm-Robotics-2.git
 ```
 
-Navigate to the workspace directory *ws*, and build the packages with the following commands.
+Navigate to *workspace*, build the packages, and source the built workspace packages with the following commands.
 ```bash
-cd ws
+cd workspace
 catkin_make
 source devel/setup.bash
 ```
