@@ -1,5 +1,8 @@
 # Finegrained Path Planner
 
+## Status
+![Discontinued](https://img.shields.io/badge/status-discontinued-red)
+
 The first cut at the planning problem involved using an optimization tool and a constraint solver separately to generate feasible paths for the robots based on Newton's laws of motion.
 
 This approach was quickly abandoned due to its computational inefficiency coupled with the fact that it did not solve the scheduling/assignment problem we were focused on at this level of the project. The method is documented here largely for completeness.
