@@ -1,3 +1,0 @@
-,Job #,Task #,Ticket ID,Parents,Station #,Station Type #,Location,Start,End,Duration
-0,0,0,10,[9],7,4,Inspection,45,105,60
-1,0,1,9,[8],6,3,Perimeter,0,45,45
