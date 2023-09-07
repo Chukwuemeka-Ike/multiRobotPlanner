@@ -6,7 +6,7 @@ complete_ticket_list = {
     4: {"ticket_id": 4, "machine_type": 4, "actual_duration": 37.6, "duration": 40, "parents": [3]},
 
     # Job 2.
-    5: {"ticket_id": 5, "machine_type": 0, "actual_duration": 45, "duration": 50, "parents": []},
+    5: {"ticket_id": 5, "machine_type": 0, "actual_duration": 45, "duration": 50, "parents": [], "num_robots": 1},
     6: {"ticket_id": 6, "machine_type": 2, "actual_duration": 40.6, "duration": 44.2, "parents": [5]},
     7: {"ticket_id": 7, "machine_type": 3, "actual_duration": 65.9, "duration": 50, "parents": [6]},
     8: {"ticket_id": 8, "machine_type": 4, "actual_duration": 42.5, "duration": 48, "parents": [7]},
@@ -20,8 +20,4 @@ test_data_1 = {
     'complete_ticket_list': 
     complete_ticket_list.copy(),
 }
-test_data_1["ticket_add_0"] = {  
-    ticket_id: test_data_1["complete_ticket_list"][ticket_id] for ticket_id in range(
-        min(complete_ticket_list.keys()), 16
-    )
-}
+test_data_1["ticket_add_0"] = complete_ticket_list
