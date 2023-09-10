@@ -11,6 +11,7 @@ import os
 import rospy
 import rospkg
 import threading
+from typing import Tuple
 
 from geometry_msgs.msg import Twist, PoseStamped
 from std_msgs.msg import UInt32
@@ -24,6 +25,7 @@ from arm_msgs.msg import Ticket
 from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
         MachineStatus, MachineStatusRequest,\
         RobotAssignments, RobotAssignmentsRequest,\
+        RobotReplacement, RobotReplacementRequest,\
         TicketList, TicketListRequest,\
         UnboundMachines, UnboundMachinesRequest
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict
@@ -518,6 +520,91 @@ class OperatorGUI(QMainWindow):
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Robot assignment request failed: {e}.")
 
+    def request_robot_replacement(self, robot_id: int) -> Tuple[int, bool]:
+        '''Requests a replacement for a specific robot.
+
+        Args:
+            robot_id: ID of the robot to replace.
+        Returns:
+            replacement_id: ID of the replacement robot. -1 if no
+                    replacement was given.
+            replacement_successful: whether or not the replacement
+                    was successful.
+        '''
+        rospy.wait_for_service('robot_replacement_service')
+        try:
+            request = RobotReplacementRequest()
+            request.robot_id = robot_id
+            robot_replacement = rospy.ServiceProxy(
+                'robot_replacement_service',
+                RobotReplacement
+            )
+            response = robot_replacement(request)
+            return response.replacement_id, response.replacement_successful
+        except rospy.ServiceException as e:
+            rospy.logerr(f"{log_tag}: Robot replacement request failed: {e}.")
+            return -1, False
+
+    def replace_robot(self) -> None:
+        '''.'''
+        # If no options or no robot chosen, return.
+        if self.replaceRobotDropdown.currentText() == "Select Robot ID" or\
+            self.replaceRobotDropdown.currentText() == "":
+            return
+
+        # Get the remove ID.
+        remove_id = int(self.replaceRobotDropdown.currentText())
+
+        # Check if they are sure they want to replace the robot.
+        message = f"Attempting to replace robot {remove_id}. " +\
+                "Continuing will remove the robot from the team and the\n" +\
+                "system will attempt to assign a replacement." +\
+                "\n\nWould you like to continue with replacement?"
+        popup_dialog = BasicConfirmDialog(
+            self,
+            "Replace robot?",
+            message
+        )
+        result = popup_dialog.exec_()
+        if result == QDialog.Rejected:
+            return
+
+        # Disable all robots in case they're executing some motion.
+        for led in self.leds:
+            led.active = False
+            led.setChecked(led.active)
+
+        # Request a replacement from the Robot Assigner.
+        replacement_id, replacement_successful = \
+            self.request_robot_replacement(
+                remove_id
+            )
+
+        # Update the robot control buttons. Right now, just clearing
+        # and repopulating. TODO: Think about doing this better.
+        self.clear_robot_control_layout()
+        self.request_assigned_robot_information()
+        self.update_robot_control_layout()
+
+        # # Disable all robots.
+        # for led in self.leds:
+        #     led.active = False
+        #     led.setChecked(led.active)
+
+        if replacement_successful == True:
+            # Show a message that we got a replacement.
+            message = f"Successfully replaced robot {remove_id} " +\
+                f"with robot {replacement_id}. " +\
+                f"Enable only the replacement and click 'Call for Robots' " +\
+                "to call it to your workstation."
+            QMessageBox.information(self, "Replacement Successful", message)
+        else:
+            # Show a message that we got no replacement.
+            message = f"Could not replace robot {remove_id}, but it has " +\
+                "been removed from the team and can be moved out of the way."
+            QMessageBox.information(self, "No Replacement Available", message)
+            return
+
     def create_ticket_layout(self):
         '''Layout for selecting, starting, and ending a ticket.'''
         self.ticketLayout = QHBoxLayout()
@@ -680,9 +767,11 @@ class OperatorGUI(QMainWindow):
         '''Layout for task motion controls and calling the robots.'''
         self.taskLayout = QVBoxLayout()
 
+        # Button for calling robots to the workstation.
         self.callRobotsButton = QPushButton("Call for Robots")
         self.callRobotsButton.clicked.connect(self.call_robots)
 
+        # Task motion controls. Start, pause, and adjust.
         self.taskMotionGroupBox = QGroupBox("Task Motion")
         self.taskMotionGroupBox.setCheckable(False)
         self.taskMotionLayout = QHBoxLayout()
@@ -697,9 +786,25 @@ class OperatorGUI(QMainWindow):
 
         self.taskMotionGroupBox.setLayout(self.taskMotionLayout)
 
+        # For replacing robots.
+        self.replaceRobotGroupBox = QGroupBox("Robot Replacement")
+        self.replaceRobotGroupBox.setCheckable(False)
+        self.replaceRobotLayout = QHBoxLayout()
+
+        self.replaceRobotButton = QPushButton("Request Replacement")
+        self.replaceRobotButton.clicked.connect(self.replace_robot)
+        self.replaceRobotDropdown = QComboBox()
+        self.replaceRobotDropdown.addItem("Select Robot ID")
+
+        self.replaceRobotLayout.addWidget(self.replaceRobotButton)
+        self.replaceRobotLayout.addWidget(self.replaceRobotDropdown)
+
+        self.replaceRobotGroupBox.setLayout(self.replaceRobotLayout)
+
         self.taskLayout.addWidget(self.callRobotsButton)
         self.taskLayout.addWidget(self.taskMotionGroupBox)
         self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
+        self.taskLayout.addWidget(self.replaceRobotGroupBox)
         self.taskLayout.addStretch()
 
     def call_robots(self):
@@ -807,6 +912,10 @@ class OperatorGUI(QMainWindow):
         # Unregister the status manager's publisher.
         self.status_manager.publisher.unregister()
 
+        # Clear the robot replacement dropdown and add the placeholder.
+        self.replaceRobotDropdown.clear()
+        self.replaceRobotDropdown.addItem("Select Robot ID")
+
         # Clear the 5 layouts.
         clear_layout(self.teamLayout)
         clear_layout(self.robotLabelLayout)
@@ -867,6 +976,9 @@ class OperatorGUI(QMainWindow):
             )
             self.robotFrameButtonLayout.addWidget(button)
             self.buttons.append(button)
+
+            # Add the robot ID to the replace dropdown.
+            self.replaceRobotDropdown.addItem(str(self.assigned_robot_ids[idx]))
 
         self.status_manager = LEDManager(
             self.leds, self.robot_enable_status_topic

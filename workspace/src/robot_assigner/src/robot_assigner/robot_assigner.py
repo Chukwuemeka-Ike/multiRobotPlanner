@@ -14,7 +14,8 @@ from std_msgs.msg import String
 from arm_msgs.msg import StringList
 from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
     FleetInformationResponse, RobotAssignments, RobotAssignmentsRequest,\
-    RobotAssignmentsResponse, TicketList, TicketListRequest
+    RobotAssignmentsResponse, RobotReplacement, RobotReplacementRequest,\
+    RobotReplacementResponse, TicketList, TicketListRequest
 
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
     convert_task_list_to_job_list
@@ -124,6 +125,14 @@ class RobotAssigner():
             'robot_assignments_service',
             RobotAssignments,
             self.send_robot_assignments
+        )
+
+        # Service for robot replacement. Provides the replacement for a
+        # specified robot.
+        self.robot_replacement_service = rospy.Service(
+            'robot_replacement_service',
+            RobotReplacement,
+            self.replace_robot
         )
 
         # Service for fleet information. Provides info about all robots.
@@ -548,15 +557,21 @@ class RobotAssigner():
         self.assignments[job_id] = job_assignments
         self.job_assigned_ids[job_id] = assigned_ids
 
-    def on_robot_dropout(self, msg) -> None:
-        '''Remove the robot from assignments and attempt to assign a new one.'''
-        remove_id = msg.robot_id
-        
+    def replace_robot(self, request: RobotReplacementRequest) -> RobotReplacementResponse:
+        '''Replaces the robot specified in the request.'''
+        remove_id = request.robot_id
+
+        rospy.loginfo(f"{log_tag}: Attempting to replace robot {remove_id}.")
+
+        # If for some reason the ID is in the available set, just remove it.
+        # Useful if Supervisor GUI can also send remove requests.
         if remove_id in self.available:
             self.available.remove(remove_id)
             return
         elif remove_id not in self.occupied:
             return
+
+        # Get the job the robot is assigned to.
         job_id = self.occupied[remove_id]
 
         # Remove it from job_assigned_ids and occupied, but don't add
@@ -565,17 +580,40 @@ class RobotAssigner():
         del(self.occupied[remove_id])
 
         # Get a new robot from available if possible.
-        add_id = None
+        replacement_id = None
         if len(self.available) > 0:
-            add_id = self.available[0]
-            self.available.remove(add_id)
-            self.occupied[add_id] = job_id
-            self.job_assigned_ids[job_id].append(add_id)
+            replacement_id = self.available[0]
+            self.available.remove(replacement_id)
+            self.occupied[replacement_id] = job_id
+            self.job_assigned_ids[job_id].append(replacement_id)
 
         # Remove the robot ID everywhere it was placed in that job.
         # If a new robot is available, put it in the same spots.
         for _, ticket_assignments in self.assignments[job_id].items():
             if remove_id in ticket_assignments:
                 ticket_assignments.remove(remove_id)
-            if add_id is not None:
-                ticket_assignments.append(add_id)
+            if replacement_id is not None:
+                ticket_assignments.append(replacement_id)
+
+        # Check if we got a replacement_id and send the success state.
+        if replacement_id == None:
+            replacement_id = -1
+            replacement_successful = False
+            rospy.loginfo(f"{log_tag}: Replacement not successful. Robot "
+                          f"{remove_id} taken out of commission.")
+        else:
+            rospy.loginfo(f"{log_tag}: Replaced robot {remove_id} with "
+                          f"robot {replacement_id} on job {job_id}.")
+            replacement_successful = True
+
+        # Print assignments and sets.
+        for job_id, assignments in self.assignments.items():
+            print(f"Job ID: {job_id}: {assignments}")
+        print(f"Available: {self.available}")
+        print(f"Occupied: {self.occupied}")
+        print(f"Teams: {self.teams}")
+        print()
+        return RobotReplacementResponse(
+            replacement_id,
+            replacement_successful,
+        )

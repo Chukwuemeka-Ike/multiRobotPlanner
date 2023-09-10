@@ -195,7 +195,7 @@ class LEDIndicator(QAbstractButton):
         self.setCheckable(True)
 
         self.robot_id = robot_id
-        self.active = True
+        self.active = False
         self.setChecked(self.active)
 
         self.clicked.connect(self.led_pressed)

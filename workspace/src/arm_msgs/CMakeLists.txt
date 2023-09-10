@@ -29,6 +29,7 @@ add_service_files(
     MachinesOverview.srv
     MachineStatus.srv
     RobotAssignments.srv
+    RobotReplacement.srv
     Schedule.srv
     TicketList.srv
     UnboundMachines.srv
