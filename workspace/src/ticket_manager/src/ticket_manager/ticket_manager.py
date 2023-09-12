@@ -173,7 +173,8 @@ class TicketManager():
                 self.ticket_dict[ticket_id]["machine_type"] = ticket["machine_type"]
                 self.ticket_dict[ticket_id]["duration"] = ticket["duration"]
                 self.ticket_dict[ticket_id]["time_left"] = ticket["duration"]
-                # self.ticket_dict[ticket_id]["num_robots"] = ticket["num_robots"]
+                if len(self.ticket_dict[ticket_id]["parents"]) == 0:
+                    self.ticket_dict[ticket_id]["num_robots"] = ticket["num_robots"]
 
                 # Put it back in waiting it wasn't still there.
                 if ticket_id not in self.waiting:

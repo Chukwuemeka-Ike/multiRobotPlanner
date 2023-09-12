@@ -7,15 +7,15 @@ Author - Chukwuemeka Osaretin Ike
 Description:
     Supervisor GUI class designed using PyQt5.
 '''
-import json
 import os
 import pandas as pd
-
 import rospy
 import rospkg
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+from typing import Tuple
 
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import *
@@ -68,9 +68,6 @@ class SupervisorGUI(QMainWindow):
         self.edit_ticket_pub = rospy.Publisher(
             "edit_ticket", Tickets, queue_size=10
         )
-        self.end_ticket_pub = rospy.Publisher(
-            "end_ticket", Ticket, queue_size=10
-        )
         self.delete_job_pub = rospy.Publisher(
             "delete_job", UInt32, queue_size=10
         )
@@ -83,7 +80,7 @@ class SupervisorGUI(QMainWindow):
         self.machine_type_indices = []
         self.machine_type_abvs = []
 
-        # Ticket list and subsets - waiting, ready, ongoing, done.
+        # Ticket dictionary and its subsets (waiting, ready, ongoing, done).
         self.all_tickets = {}
         self.waiting = []
         self.ready = []
@@ -129,8 +126,8 @@ class SupervisorGUI(QMainWindow):
         self.updateTimer.setInterval(self.update_interval)
         self.updateTimer.start()
 
-    def center_window(self):
-        '''.'''
+    def center_window(self) -> None:
+        '''Center the window on screen.'''
         # Get the screen geometry.
         screenGeometry = QDesktopWidget().screenGeometry()
 
@@ -141,7 +138,7 @@ class SupervisorGUI(QMainWindow):
         # Move the window to the center position.
         self.move(x, y)
 
-    def show(self):
+    def show(self) -> None:
         '''Override the original show function.
         
         If the initial window size is larger than the screen,
@@ -151,27 +148,26 @@ class SupervisorGUI(QMainWindow):
         if screenGeometry.width() <= self.width() or \
             screenGeometry.height() <= self.height():
             self.showMaximized()
-        else:
-            # Call the base class method.
-            super().show()
+        # Call the base class method.
+        super().show()
 
-    def update_gui(self):
+    def update_gui(self) -> None:
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         self.request_ticket_list()
         self.request_machine_overview()
         self.update_job_list_layout()
         self.update_schedule_display()
 
-    def shutdown_gui(self):
+    def shutdown_gui(self) -> None:
         '''Announce GUI shutdown.'''
         rospy.loginfo(f"{log_tag}: Node shutdown.")
 
-    def create_ui(self):
+    def create_ui(self) -> None:
         '''Create the basic UI.'''
 
         # Create the matplotlib canvas for the schedule and the RViz widget.
         self.mapWidget = MapWidget(self.rviz_path)
-        self.create_schedule_canvas()
+        self.scheduleCanvas, self.ax = self.create_schedule_canvas()
 
         # Tabs for going between map and schedule, job list, and full schedule.
         self.tabs = QTabWidget()
@@ -188,7 +184,11 @@ class SupervisorGUI(QMainWindow):
 
         # Vertical layout for the map and schedule.
         mapSchedLayout = QVBoxLayout(self.tabs)
+        # spacer = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        # Add widgets and spacer to the layout.
         mapSchedLayout.addWidget(self.mapWidget)
+        # mapSchedLayout.addItem(spacer)
         mapSchedLayout.addWidget(self.scheduleCanvas)
 
         # Set the tabs' layouts.
@@ -201,19 +201,19 @@ class SupervisorGUI(QMainWindow):
         self.overallLayout.addWidget(self.tabs)
         self.overallLayout.addWidget(self.ticketManagementGroupbox)
 
-    def create_status_bar(self):
+    def create_status_bar(self) -> None:
         '''Create a simple status bar.'''
         self.status_bar = QStatusBar(self.centralWidget)
         self.status_bar.showMessage("Supervisor GUI")
         self.setStatusBar(self.status_bar)
 
-    def create_ticket_management_layout(self):
+    def create_ticket_management_layout(self) -> None:
         '''Create the ticket management layout.'''
         buttonLayout = QVBoxLayout()
 
         self.ticketManagementGroupbox = QGroupBox("Ticket Management")
-        
-        # Buttons for bulk adding, adding, and editing tickets;
+
+        # Buttons for bulk adding, single adding, and editing tickets;
         # and editing jobs.
         importTixButton = QPushButton("Bulk Add Tickets")
         addTicketButton = QPushButton("Add Ticket")
@@ -221,10 +221,10 @@ class SupervisorGUI(QMainWindow):
         editJobButton = QPushButton("Edit Job")
 
         # Methods when each button is clicked.
-        importTixButton.clicked.connect(self._createImportTixDialog)
-        addTicketButton.clicked.connect(self._createNewTicketDialog)
-        editTicketButton.clicked.connect(self._createEditTicketDialog)
-        editJobButton.clicked.connect(self._createEditJobDialog)
+        importTixButton.clicked.connect(self.create_import_tix_dialog)
+        addTicketButton.clicked.connect(self.create_new_ticket_dialog)
+        editTicketButton.clicked.connect(self.create_edit_ticket_dialog)
+        editJobButton.clicked.connect(self.create_edit_job_dialog)
 
         # Add the buttons to the layout.
         buttonLayout.addWidget(importTixButton)
@@ -235,11 +235,11 @@ class SupervisorGUI(QMainWindow):
         # Add stretch, so buttons stay at the top when resizing.
         buttonLayout.addStretch()
 
-        # Set the layout on the group box
+        # Set the layout on the group box.
         self.ticketManagementGroupbox.setLayout(buttonLayout)
         self.ticketManagementGroupbox.setCheckable(False)
 
-    def create_job_list_layout(self):
+    def create_job_list_layout(self) -> None:
         '''Create the layout for the job list tab.'''
         # Create a layout to hold the scroll area.
         self.jobScrollLayout = QVBoxLayout()
@@ -254,26 +254,20 @@ class SupervisorGUI(QMainWindow):
         self.jobScrollArea.setWidget(self.jobScrollWidget)
         self.jobScrollArea.setWidgetResizable(True)
         self.jobScrollArea.setMaximumHeight(self.height())
-        
-        # # Layout for the column names.
-        # labelWidth = self.tabs.width()//8 # Currently 7 columns.
-        # print(f"Create width: {labelWidth}")
 
-        # self.jobScrollLayout.addLayout(titleLayout)
         self.jobScrollLayout.addWidget(self.jobScrollArea)
 
-        # # Update the job list and add the elements to the layout.
-        # self.update_job_list_layout()
-
-    def create_schedule_canvas(self):
-        '''Creates the canvas we will draw the schedule on.'''
+    def create_schedule_canvas(self) -> Tuple[FigureCanvas, plt.Axes]:
+        '''Creates the canvas for the schedule.'''
         figure = plt.figure()
 
-        self.scheduleCanvas = FigureCanvas(figure)
-        self.ax = figure.add_subplot(111)
+        scheduleCanvas = FigureCanvas(figure)
+        ax = figure.add_subplot(111)
 
-    def _drawSchedule(self, schedule):
-        '''.'''
+        return scheduleCanvas, ax
+
+    def draw_schedule(self, schedule: pd.DataFrame) -> None:
+        '''Draw the given schedule.'''
         # Clear the old figure.
         self.ax.clear()
 
@@ -287,14 +281,14 @@ class SupervisorGUI(QMainWindow):
         # Refresh the canvas.
         self.scheduleCanvas.draw()
 
-    def _createImportTixDialog(self):
+    def create_import_tix_dialog(self) -> None:
         '''Create a dialog for importing a set of new tickets.'''
         importTicketsDialog = ImportTicketsDialog(
             self, self.min_ticket_id, self.machine_type_names
         )
-        importTicketsDialog.dataEntered.connect(self._processImportedTickets)
+        importTicketsDialog.dataEntered.connect(self.process_imported_tickets)
 
-    def _processImportedTickets(self, data):
+    def process_imported_tickets(self, data) -> None:
         '''Process the imported tickets.
 
         Gets the ticket IDs, machine types, parents, and durations, and
@@ -308,6 +302,9 @@ class SupervisorGUI(QMainWindow):
             ticket.duration = ticket_row[2]
             ticket.machine_type = ticket_row[3]
 
+            if len(ticket.parents) == 0:
+                ticket.num_robots = ticket_row[4]
+
             ticket_list.append(ticket)
 
         # Create the Tickets msg and publish it.
@@ -316,15 +313,15 @@ class SupervisorGUI(QMainWindow):
         self.add_ticket_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Imported new ticket(s).")
 
-    def _createNewTicketDialog(self):
+    def create_new_ticket_dialog(self) -> None:
         '''Create a dialog for creating a new ticket.'''
         newTicketDialog = NewTicketDialog(
             self, self.min_ticket_id, self.job_ticket_ids,
             self.machine_type_names
         )
-        newTicketDialog.dataEntered.connect(self._processAddedTicket)
+        newTicketDialog.dataEntered.connect(self.process_added_ticket)
 
-    def _processAddedTicket(self, data):
+    def process_added_ticket(self, data) -> None:
         '''Process the ticket that was added.'''
         ticket = Ticket()
         ticket.ticket_id = data[0]
@@ -332,40 +329,49 @@ class SupervisorGUI(QMainWindow):
         ticket.duration = data[2]
         ticket.machine_type = data[3]
 
+        if len(ticket.parents) == 0:
+            ticket.num_robots = data[4]
+
         # Create the Tickets() msg and publish it.
         msg = Tickets()
         msg.tickets = [ticket]
         self.add_ticket_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Added new ticket.")
 
-    def _createEditTicketDialog(self):
+    def create_edit_ticket_dialog(self) -> None:
         '''Create a dialog for editing a specific ticket.'''
         editTicketDialog = EditTicketDialog(
             self, self.job_ticket_ids, self.all_tickets, self.ongoing,
             self.machine_type_names
         )
-        editTicketDialog.dataEntered.connect(self._processEditedTicket)
+        editTicketDialog.dataEntered.connect(self.process_edited_ticket)
 
-    def _processEditedTicket(self, data):
+    def process_edited_ticket(self, data) -> None:
         '''Process the edits made to the ticket.'''
         ticket = Ticket()
         ticket.ticket_id = data[0]
         ticket.duration = data[1]
         ticket.machine_type = data[2]
 
-        self.edit_ticket_pub.publish(ticket)
+        if len(self.all_tickets[ticket.ticket_id]["parents"]) == 0:
+            ticket.num_robots = data[3]
+
+        # Create the Tickets msg and publish it.
+        msg = Tickets()
+        msg.tickets = [ticket]
+        self.edit_ticket_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Published edited ticket.")
 
-    def _createEditJobDialog(self):
+    def create_edit_job_dialog(self) -> None:
         '''Create a dialog for editing a specific job.'''
         editJobDialog = EditJobDialog(
             self, self.job_ticket_ids, self.all_tickets, self.ongoing,
             self.machine_type_names
         )
-        editJobDialog.dataEntered.connect(self._processEditedJob)
-        editJobDialog.deleteJobID.connect(self._processDeletedJob)
+        editJobDialog.dataEntered.connect(self.process_edited_job)
+        editJobDialog.deleteJobID.connect(self.process_deleted_job)
 
-    def _processEditedJob(self, data):
+    def process_edited_job(self, data) -> None:
         '''Process the edits made to the job.
 
         Args:
@@ -381,6 +387,9 @@ class SupervisorGUI(QMainWindow):
             ticket.duration = ticket_row[2]
             ticket.machine_type = ticket_row[3]
 
+            if len(ticket.parents) == 0:
+                ticket.num_robots = ticket_row[4]
+
             ticket_list.append(ticket)
             edited_ticket_ids.append(ticket_row[0])
 
@@ -390,9 +399,8 @@ class SupervisorGUI(QMainWindow):
         self.edit_ticket_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Edited ticket(s) {edited_ticket_ids}.")
 
-    def _processDeletedJob(self, deleted_job_id):
+    def process_deleted_job(self, deleted_job_id) -> None:
         '''Deletes the specified job.'''
-        # ticket_list = []
         deleted_ticket_ids = []
         for ticket_id in self.job_ticket_ids[deleted_job_id]:
             ticket = Ticket()
@@ -401,8 +409,6 @@ class SupervisorGUI(QMainWindow):
             deleted_ticket_ids.append(ticket_id)
 
         # Create the Tickets msg and publish it.
-        # msg = Tickets()
-        # msg.tickets = ticket_list
         msg = UInt32()
         msg.data = deleted_job_id
         self.delete_job_pub.publish(msg)
@@ -526,13 +532,13 @@ class SupervisorGUI(QMainWindow):
 
     def update_schedule_display(self):
         '''Update the schedule shown to the user.'''
-        # print(self.all_tickets[38])
-        schedule = convert_task_list_to_schedule(self.all_tickets, self.machine_type_names)
-        # print(schedule)
+        schedule = convert_task_list_to_schedule(
+            self.all_tickets, self.machine_type_names
+        )
 
-        # Check if schedule
+        # Check if the schedule is real.
         if schedule is not None and schedule["end"].max() != 0:
-            self._drawSchedule(schedule)
+            self.draw_schedule(schedule)
         else:
             # Clear the old figure.
             self.ax.clear()

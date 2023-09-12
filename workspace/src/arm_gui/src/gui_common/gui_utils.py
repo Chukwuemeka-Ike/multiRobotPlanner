@@ -49,3 +49,29 @@ def clear_layout(layout):
             clear_layout(item)
         else:
             layout.removeItem(item)
+
+def lists_have_same_values(list1, list2):
+    '''
+    Checks if two lists have all the same values unordered.
+
+    Args:
+        list1: The first list.
+        list2: The second list.
+
+    Returns:
+        True if the two lists have all the same values, False otherwise.
+    '''
+    set1 = set(list1)
+    set2 = set(list2)
+
+    # If the lengths are different, they can't be same.
+    if len(set1) != len(set2):
+        return False
+
+    # With same lengths, iterate through one, and if it has a value not in
+    # the other, they aren't same.
+    for value in set1:
+        if value not in set2:
+            return False
+
+    return True
