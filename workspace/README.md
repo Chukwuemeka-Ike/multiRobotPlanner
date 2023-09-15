@@ -32,7 +32,7 @@ git clone https://github.com/burakaksoy/Swarm-Robotics-2.git
 
 ### Project Dependencies
 #### System-Level Packages
-First, we start by installing the system-level package dependencies. The list of packages required to run this project are listed in *[apt_requirements.txt](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/apt_requirements.txt)*. The *[install_apt_packages](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/blob/master/workspace/install_apt_packages.bash)* bash script installs all the packages in that file.
+First, we start by installing the system-level package dependencies. The list of packages required to run this project are listed in *[apt_requirements.txt](apt_requirements.txt)*. The *[install_apt_packages](install_apt_packages.bash)* bash script installs all the packages in that file.
 
 ```bash
 cd workspace
@@ -106,6 +106,8 @@ With the high-level components, the user interfaces, and the robot simulations r
 The SG can be used to add and edit tickets in the high-level system, and to delete entire jobs from the system. It also allows the user monitor the overall workspace and schedule progression.
 
 The OG can be used to work on tickets, which involves starting the tickets, controlling the robots assigned to the tickets, and ending those tickets. Starting and ending tickets steps through the schedule until there are no tickets left.
+
+
 
 ## High-Level Descriptions
 In this section, we describe different implementation pieces of the high-level system - ROS messages, services, nodes, etc.

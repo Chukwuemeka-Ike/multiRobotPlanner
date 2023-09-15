@@ -20,16 +20,16 @@ Each major folder in this repo represents a specific iteration of the task sched
 ### Finegrained
 The finegrained planner was the first iteration for robot planning. It used an optimization tool and a constraint solver to generate feasible paths for mobile robots in a 2D plane.
 
-The approach was not used because it was not suitable for the overall problem. It planned paths, but provided a tedious input mechanism to sequence multiple visits in the manner needed for creation of a product. More details and documentation can be found [here](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/tree/master/Finegrained).
+The approach was not used because it was not suitable for the overall problem. It planned paths, but provided a tedious input mechanism to sequence multiple visits in the manner needed for creation of a product. More details and documentation can be found [here](Finegrained).
 
 ### Metric
-The metric planner was designed to generate task schedules and paths for multiple robots in a mapped environment while accounting for the robot's physical capabilities - movement speed and planning time-step. The approach required too much computational effort in the initial setup stage, and it was forgone in favor of a Topological representation of the map. More details and documentation can be found [here](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/tree/master/Metric).
+The metric planner was designed to generate task schedules and paths for multiple robots in a mapped environment while accounting for the robot's physical capabilities - movement speed and planning time-step. The approach required too much computational effort in the initial setup stage, and it was forgone in favor of a Topological representation of the map. More details and documentation can be found [here](Metric).
 
 ### Topological
-The topological planner was designed to overcome the Metric planner's computational inefficiency, and it provided a 60% speedup on average on the same tasks. The robot's physical capabilities were ignored, and the entire workspace was converted to a graph representation. It was eventually understood that the modularity this approach provided did not completely fit the intended use, and thus the planning time became a disadvantage. More details and documentation can be found [here](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/tree/master/Topological).
+The topological planner was designed to overcome the Metric planner's computational inefficiency, and it provided a 60% speedup on average on the same tasks. The robot's physical capabilities were ignored, and the entire workspace was converted to a graph representation. It was eventually understood that the modularity this approach provided did not completely fit the intended use, and thus the planning time became a disadvantage. More details and documentation can be found [here](Topological).
 
 ### Operations
-This version of scheduler was eventually chosen to be part of the high-level system. In this iteration, we separated the task scheduling, robot assignment, and path planning into three distinct parts unlike in its predecessors where they were combined. Doing so sped up the entire scheduling and planning system and fit the company's use case significantly better. More details and documentation can be found [here](https://github.com/Chukwuemeka-Ike/multiRobotPlanner/tree/master/Operations).
+This version of scheduler was eventually chosen to be part of the high-level system. In this iteration, we separated the task scheduling, robot assignment, and path planning into three distinct parts unlike in its predecessors where they were combined. Doing so sped up the entire scheduling and planning system and fit the company's use case significantly better. More details and documentation can be found [here](Operations).
 
 
 ## Links
