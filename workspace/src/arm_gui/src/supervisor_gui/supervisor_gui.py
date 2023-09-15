@@ -24,6 +24,7 @@ from std_msgs.msg import UInt32
 
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import MachinesOverview, MachinesOverviewRequest,\
+    RobotAssignments, RobotAssignmentsRequest,\
     TicketList, TicketListRequest
 
 # from arm_utils.display_utils import *
@@ -99,6 +100,9 @@ class SupervisorGUI(QMainWindow):
         # Updated every time a ticket list is requested.
         self.min_ticket_id = 1
 
+        # Robots assigned to every ticket
+        self.robot_assignments = {}
+
         # Set the central widget and window layout.
         self.centralWidget = QWidget(self)
         self.setCentralWidget(self.centralWidget)
@@ -155,6 +159,7 @@ class SupervisorGUI(QMainWindow):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         self.request_ticket_list()
         self.request_machine_overview()
+        self.request_robot_assignments()
         self.update_job_list_layout()
         self.update_schedule_display()
 
@@ -470,6 +475,42 @@ class SupervisorGUI(QMainWindow):
 
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
+
+    def request_assigned_robot_information(self, ticket_id: int) -> Tuple:
+        '''Requests info about the robots assigned to the ticket.'''
+        rospy.wait_for_service('robot_assignments_service')
+        try:
+            request = RobotAssignmentsRequest()
+            request.ticket_id = ticket_id
+            robot_assignments = rospy.ServiceProxy(
+                'robot_assignments_service',
+                RobotAssignments
+            )
+            response = robot_assignments(request)
+
+            # num_assigned_robots = response.num_assigned_robots
+            assigned_robot_ids = response.assigned_robot_ids
+
+            # # Robot IDs start at 1, so subtract 1 to get the indices for
+            # # accessing their info from the robot info lists.
+            # assigned_robot_indices = [id-1 for id in assigned_robot_ids]
+
+            # team_id = response.team_id
+            # team_command_topic = response.team_command_topic
+            # team_frame_command_topic = response.team_frame_command_topic
+            # team_footprint_topic = response.team_footprint_topic
+            # team_tf_frame_name = response.team_tf_frame_name
+
+            return assigned_robot_ids
+        except rospy.ServiceException as e:
+            rospy.logerr(f"{log_tag}: Robot assignment request failed: {e}.")
+
+    def request_robot_assignments(self):
+        '''Requests the robot assignments for every ticket in all_tickets.'''
+        for ticket_id, _ in self.all_tickets.items():
+            assigned_robot_ids = \
+                self.request_assigned_robot_information(ticket_id)
+            self.robot_assignments[ticket_id] = assigned_robot_ids
 
     def update_job_list_layout(self):
         '''Update the list of jobs and their ticket states.'''
