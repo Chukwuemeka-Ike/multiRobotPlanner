@@ -41,7 +41,7 @@ class BasicDialog(QDialog):
         '''Centers the dialog on its parent.'''
         # Get the parent's geometry.
         parent = self.parent()
-        print(parent) # Debugging.
+        # print(parent) # Debugging.
 
         if parent is not None:
             parent_rect = parent.geometry()
