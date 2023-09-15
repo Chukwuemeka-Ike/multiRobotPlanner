@@ -4,7 +4,7 @@ ARM Project
 Author - Chukwuemeka Osaretin Ike
 
 Description:
-    Job sets.
+    Different job sets that were used during development.
 '''
 # Job set template.
 # jobs = [

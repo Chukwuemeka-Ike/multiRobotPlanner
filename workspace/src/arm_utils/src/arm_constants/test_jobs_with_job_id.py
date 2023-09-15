@@ -1,4 +1,12 @@
-anchor_complete_ticket_list = {
+'''
+Rensselaer Polytechnic Institute - Julius Lab
+ARM Project
+Author - Chukwuemeka Osaretin Ike
+
+Description:
+    Job sets with job ID manually added (obsolete).
+'''
+complete_ticket_list = {
     0: {"job_id": 0, "ticket_id": 0, "machine_type": 0, "actual_duration": 5, "duration": 10, "parents": []},
     1: {"job_id": 0, "ticket_id": 1, "machine_type": 1, "actual_duration": 95.7, "duration": 85, "parents": [0]},
     2: {"job_id": 0, "ticket_id": 2, "machine_type": 2, "actual_duration": 44.8, "duration": 47.2, "parents": [1]},
@@ -76,25 +84,4 @@ anchor_complete_ticket_list = {
     63: {"job_id": 11, "ticket_id": 63, "machine_type": 3, "actual_duration": 84.7, "duration": 65, "parents": [62]},
     64: {"job_id": 11, "ticket_id": 64, "machine_type": 6, "actual_duration": 19.4, "duration": 30, "parents": [63]},
     65: {"job_id": 11, "ticket_id": 65, "machine_type": 7, "actual_duration": 53.8, "duration": 55, "parents": [64]},
-}
-
-
-test_data_1_info = {
-    'num_ticket_adds': 4
-}
-test_data_1 = {
-    'complete_ticket_list': 
-    anchor_complete_ticket_list.copy(),
-}
-test_data_1["ticket_add_0"] = {  
-    ticket_id: test_data_1["complete_ticket_list"][ticket_id] for ticket_id in range(39)
-}
-test_data_1["ticket_add_1"] = {
-    39: test_data_1["complete_ticket_list"][39]
-}
-test_data_1["ticket_add_2"] = {
-    ticket_id: test_data_1["complete_ticket_list"][ticket_id] for ticket_id in range(40, 55)
-}
-test_data_1["ticket_add_3"] = {
-    ticket_id: test_data_1["complete_ticket_list"][ticket_id] for ticket_id in range(55, 66)
 }
