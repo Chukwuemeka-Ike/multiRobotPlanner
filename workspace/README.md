@@ -91,7 +91,7 @@ With the high level background components running, we can now run the GUI's.
 ```bash
 roslaunch arm_gui both_guis.launch
 ```
-To have the underlying simulations show up in both UI's RViz windows, open another terminal and run the following command.
+To have the underlying simulations show up in both UI's RViz windows, open another terminal and run the following commands.
 ```bash
 cd multiRobotPlanner/workspace
 chmod +x robot_sim.bash
@@ -110,11 +110,27 @@ The OG can be used to work on tickets, which involves starting the tickets, cont
 ## High-Level Descriptions
 In this section, we describe different implementation pieces of the high-level system - ROS messages, services, nodes, etc.
 
+### Machines
+Each machine in the workspace is given a unique identifier by the Machine Manager. The scheduler assigns tickets to machines using their ID's, and instances of the Operator GUI are bound to specific machine IDs to determine which tickets they can work on.
+
 ### Messages
-#### Tickets
-A Ticket is the atomic component of the high-level system. It represents a task that needs to be completed towards building a piece. Jobs can be built using multiple tickets. The Ticket message template is shown below.
-```bash
-# Ticket message.
+---
+#### IntList
+List of integers. Used in [MachinesOverview.srv](src/arm_msgs/srv/MachinesOverview.srv) for a list of lists of integers.
+
+#### RobotEnableStatus
+When an **Operator GUI** is working on a ticket with assigned robots, the operator can disable or enable individual robots based on their needs. This message is sent whenever the robot enable statuses change, so swarm_control.py can update which robots in that team are enabled/disabled.
+
+The message definition is shown below.
+```
+int32[] enabled_ids
+uint32[] disabled_ids
+```
+#### Ticket
+A Ticket is the atomic component of the high-level system. It represents a task that needs to be completed towards building a piece. Jobs can be built using multiple tickets. 
+
+The message definition is shown below.
+```
 Header header
 uint32 job_id
 uint32 ticket_id
@@ -137,10 +153,12 @@ Each Ticket starts with basic information about the task that is needed for sche
 
 When the scheduler generates a schedule, it adds information for the task's start and end times, and assigns the task a machine_id.
 
-### Machines
-Each machine in the workspace is given a unique identifier by the Machine Manager. The scheduler assigns tickets to machines using their ID's, and instances of the Operator GUI are bound to specific machine IDs to determine which tickets they can work on.
+When a ticket is ongoing, its time_left field is updated every few seconds by the Ticket Manager. As the ticket goes from waiting to ready to ongoing to done, the Ticket manager updates its status.
+#### Tickets
+List of Ticket messages.
 
 ### Services
+---
 #### FleetInformation
 The FleetInformation service from the **Robot Assigner** provides information about the robot fleet that does not change during runtime. This information includes the number of robots in the fleet, the names of each robot, names of their real and virtual TF frames, and multiple ROS topic names.
 
