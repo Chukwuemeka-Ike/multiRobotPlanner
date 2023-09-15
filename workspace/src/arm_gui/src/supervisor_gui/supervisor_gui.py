@@ -221,8 +221,8 @@ class SupervisorGUI(QMainWindow):
         editJobButton = QPushButton("Edit Job")
 
         # Methods when each button is clicked.
-        importTixButton.clicked.connect(self.create_import_tix_dialog)
-        addTicketButton.clicked.connect(self.create_new_ticket_dialog)
+        importTixButton.clicked.connect(self.create_bulk_add_tix_dialog)
+        addTicketButton.clicked.connect(self.create_add_ticket_dialog)
         editTicketButton.clicked.connect(self.create_edit_ticket_dialog)
         editJobButton.clicked.connect(self.create_edit_job_dialog)
 
@@ -281,14 +281,14 @@ class SupervisorGUI(QMainWindow):
         # Refresh the canvas.
         self.scheduleCanvas.draw()
 
-    def create_import_tix_dialog(self) -> None:
+    def create_bulk_add_tix_dialog(self) -> None:
         '''Create a dialog for importing a set of new tickets.'''
         importTicketsDialog = ImportTicketsDialog(
             self, self.min_ticket_id, self.machine_type_names
         )
-        importTicketsDialog.dataEntered.connect(self.process_imported_tickets)
+        importTicketsDialog.dataEntered.connect(self.process_bulk_added_tix)
 
-    def process_imported_tickets(self, data) -> None:
+    def process_bulk_added_tix(self, data) -> None:
         '''Process the imported tickets.
 
         Gets the ticket IDs, machine types, parents, and durations, and
@@ -313,7 +313,7 @@ class SupervisorGUI(QMainWindow):
         self.add_ticket_pub.publish(msg)
         rospy.loginfo(f"{log_tag}: Imported new ticket(s).")
 
-    def create_new_ticket_dialog(self) -> None:
+    def create_add_ticket_dialog(self) -> None:
         '''Create a dialog for creating a new ticket.'''
         newTicketDialog = NewTicketDialog(
             self, self.min_ticket_id, self.job_ticket_ids,
