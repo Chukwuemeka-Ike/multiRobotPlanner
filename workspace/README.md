@@ -108,7 +108,10 @@ The SG can be used to add and edit tickets in the high-level system, and to dele
 The OG can be used to work on tickets, which involves starting the tickets, controlling the robots assigned to the tickets, and ending those tickets. Starting and ending tickets steps through the schedule until there are no tickets left.
 
 ## High-Level Descriptions
-### Tickets
+In this section, we describe different implementation pieces of the high-level system - ROS messages, services, nodes, etc.
+
+### Messages
+#### Tickets
 A Ticket is the atomic component of the high-level system. It represents a task that needs to be completed towards building a piece. Jobs can be built using multiple tickets. The Ticket message template is shown below.
 ```bash
 # Ticket message.
@@ -136,3 +139,127 @@ When the scheduler generates a schedule, it adds information for the task's star
 
 ### Machines
 Each machine in the workspace is given a unique identifier by the Machine Manager. The scheduler assigns tickets to machines using their ID's, and instances of the Operator GUI are bound to specific machine IDs to determine which tickets they can work on.
+
+### Services
+#### FleetInformation
+The FleetInformation service from the **Robot Assigner** provides information about the robot fleet that does not change during runtime. This information includes the number of robots in the fleet, the names of each robot, names of their real and virtual TF frames, and multiple ROS topic names.
+
+Service users:
+1. Operator GUI
+2. Modified [swarm_control.py](https://github.com/Chukwuemeka-Ike/Swarm-Robotics-2/blob/dev/src/swarm_control/src/swarm_control.py)
+
+The service definition is shown below.
+```
+# No request data
+---
+uint32 fleet_size                       #
+string[] robot_names                    #
+string[] robot_command_topics           # used by OG to command the physical robots
+string[] robot_frame_command_topics     # used by OG to command the virtual robot frames
+string[] real_robot_frame_names         #
+string[] virtual_robot_frame_names      #
+string[] robot_desired_state_topics     # used by swarm_control.py to send robot desired poses
+StringList[] robot_node_names           #
+string tf_changer_topic                 # used by OG to update specific TF frames
+string robot_enable_status_topic        # used by OG to enable and disable robots while on tasks
+```
+#### MachinesOverview
+The MachinesOverview service from the **Machine Manager** provides information about all available machines at startup.
+
+Service users:
+1. Supervisor GUI - used for the schedule visualization and for ticket management dialogs
+2. Task Scheduler - used to know which machines can be assigned tasks
+
+The service definition is shown below.
+```
+# No request data
+---
+uint32[] machine_ids            # all unique machine IDs.
+IntList[] grouped_machine_ids   # machine IDs grouped by machine type.
+uint32[] machine_type_indices   # indices of each machine type.
+string[] machine_type_names     # names of each machine type.
+string[] machine_type_abvs      # abbreviations of each machine type name.
+```
+#### MachineStatus
+The MachineStatus service from the **Machine Manager** provides information about a specific machine.
+
+Service users:
+1. Operator GUI - used to know which tickets are assigned to the machine it is currently bound to.
+
+The service definition is shown below.
+```
+uint32 machine_id           # ID of the machine we want info about.
+---
+string status               # status of the machine.
+uint32[] assigned_ids       # tickets assigned to the machine.
+uint32[] ready_assigned_ids # ready tickets assigned to the machine.
+float32[] machine_location  # pose near the machine for calling robots.
+```
+#### RobotAssignments
+The RobotAssignments service from the **Robot Assigner** provides robot assignment information for a specific ticket. Primarily allows an operator GUI populate the robot control buttons.
+
+Service users:
+1. Operator GUI - used to know which robots the operator has control over during a task
+2. Modified [swarm_control.py](https://github.com/Chukwuemeka-Ike/Swarm-Robotics-2/blob/dev/src/swarm_control/src/swarm_control.py)
+
+The service definition is shown below.
+```
+uint32 ticket_id                    # ticket whose assignments we want.
+---
+uint32 num_assigned_robots          # number of robots assigned to the ticket.
+uint32[] assigned_robot_ids         # IDs of the robots assigned to the ticket.
+uint32 team_id                      # ID of the team on that ticket.
+string team_command_topic           # topic for commanding the physical team.
+string team_frame_command_topic     # topic for commanding the team's frame.
+string team_footprint_topic         # topic for publishing the team's footprint.
+string team_tf_frame_name           #
+```
+#### RobotReplacement
+The RobotReplacement service from the **Robot Assigner** allows the **Operator GUI** request a replacement for a specific robot while they are working on a ticket.
+
+The service definition is shown below.
+```
+int32 robot_id                  # robot that needs replacement.
+---
+int32 replacement_id            # ID of the replacement if successful.
+bool replacement_successful     #
+```
+#### Schedule
+The Schedule service from the **Task Scheduler** allows the **Ticket Manager** request a schedule whenever its ticket list changes or an ongoing ticket runs over time.
+
+The service definition is shown below.
+```
+Ticket[] tickets    # all unfinished tickets.
+Ticket[] ongoing    # set of ongoing tickets.
+---
+Ticket[] tickets    # tickets updated with the newest schedule.
+```
+#### TicketList
+The TicketList service from the **Ticket Manager** provides all tickets that are currently in the system.
+
+Service users:
+1. Machine Manager - monitors changes to the ticket list to keep track of tickets assigned to machines
+2. Operator GUI - looks at the information about a ticket currently being worked on
+3. Robot Assigner - monitors changes to the ticket list to keep track of tickets' robot requirements. Maintains robot assignments as long as jobs are ongoing and removes them when jobs are deleted/completed. Edits those assignments if the number of robots needed changes.
+4. Supervisor GUI - shows the job list and allows the supervisor edit tickets as long as they're not done.
+
+The service definition is shown below.
+```
+# No request data.
+---
+Ticket[] all_tickets    # set of all tickets.
+uint32[] waiting        # IDs of waiting tickets.
+uint32[] ready          # IDs of ready tickets.
+uint32[] ongoing        # IDs of ongoing tickets.
+uint32[] done           # IDs of done tickets.
+```
+#### UnboundMachines
+The UnboundMachines service from the **Machine Manager** provides the list of machines that are not yet bound to an **Operator GUI**. This info is useful when an operator wants to set the GUI to the machine they're working at.
+
+The service definition is shown below.
+```
+# No request data.
+---
+uint32[] machine_ids    # IDs of machines not bound to any Operator GUI.
+string[] machine_names  # names of the machines.
+```

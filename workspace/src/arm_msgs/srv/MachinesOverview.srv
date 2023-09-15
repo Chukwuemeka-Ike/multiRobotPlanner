@@ -1,7 +1,7 @@
 # No request data
 ---
-uint32[] machine_ids
-IntList[] grouped_machine_ids
-uint32[] machine_type_indices
-string[] machine_type_names
-string[] machine_type_abvs
+uint32[] machine_ids            # all unique machine IDs.
+IntList[] grouped_machine_ids   # machine IDs grouped by machine type.
+uint32[] machine_type_indices   # indices of each machine type.
+string[] machine_type_names     # names of each machine type.
+string[] machine_type_abvs      # abbreviations of each machine type name.

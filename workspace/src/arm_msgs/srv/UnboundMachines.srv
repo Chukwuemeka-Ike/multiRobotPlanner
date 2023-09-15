@@ -1,4 +1,4 @@
-# No request data
+# No request data.
 ---
-uint32[] machine_ids
-string[] machine_names
+uint32[] machine_ids    # IDs of machines not bound to any Operator GUI.
+string[] machine_names  # names of the machines.

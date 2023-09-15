@@ -1,4 +1,4 @@
-int32 robot_id
+int32 robot_id                  # robot that needs replacement.
 ---
-int32 replacement_id
-bool replacement_successful
+int32 replacement_id            # ID of the replacement if successful.
+bool replacement_successful     #

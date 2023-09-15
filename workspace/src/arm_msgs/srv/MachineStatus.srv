@@ -1,6 +1,6 @@
-uint32 machine_id
+uint32 machine_id           # ID of the machine we want info about.
 ---
-string status
-uint32[] assigned_ids
-uint32[] ready_assigned_ids
-float32[] machine_location
+string status               # status of the machine.
+uint32[] assigned_ids       # tickets assigned to the machine.
+uint32[] ready_assigned_ids # ready tickets assigned to the machine.
+float32[] machine_location  # pose near the machine for calling robots.
