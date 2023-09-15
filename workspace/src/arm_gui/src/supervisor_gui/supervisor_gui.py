@@ -518,40 +518,62 @@ class SupervisorGUI(QMainWindow):
 
         # Clear the layout first.
         clear_layout(self.jobListLayout)
-        labelWidth = self.tabs.width()//8 # Currently 7 columns.
+        labelWidth = self.tabs.width()//10 # Currently 9 columns.
         # print(f"Update width: {labelWidth}")
+
         titleLayout = QHBoxLayout()
-        titleLayout.addWidget(FixedWidthLabel("Job", labelWidth))
-        titleLayout.addWidget(FixedWidthLabel("Ticket", labelWidth))
-        titleLayout.addWidget(FixedWidthLabel("Parents", labelWidth))
-        titleLayout.addWidget(FixedWidthLabel("Duration", labelWidth))
-        titleLayout.addWidget(FixedWidthLabel("Machine Type", labelWidth))
-        titleLayout.addWidget(FixedWidthLabel("Status", labelWidth))
-        titleLayout.addWidget(FixedWidthLabel("Time Left", labelWidth))
-        self.jobListLayout.addLayout(titleLayout)
+        titleFrame = QFrame()
+        titleFrame.setLayout(titleLayout)
+        titleFrame.setFrameStyle(QFrame.Box | QFrame.Plain)
+        titleFrame.setStyleSheet("background-color: darkgray;")
+        titleLayout.addWidget(FixedWidthLabel("<h3>Job ID</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Ticket ID</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Parents</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Duration</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Machine Type</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Number of Robots</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Assigned Robots</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Status</h3>", labelWidth))
+        titleLayout.addWidget(FixedWidthLabel("<h3>Time Left</h3>", labelWidth))
+        # self.jobListLayout.addLayout(titleLayout)
+        self.jobListLayout.addWidget(titleFrame)
 
         # Iterate through the jobs and display each in its own layout.
         for job in self.job_list:
+            # Create the jobLayout and put a frame around it to give it a
+            # border. Should make the list slightly easier to read.
             jobLayout = QHBoxLayout()
+            jobFrame = QFrame()
+            jobFrame.setLayout(jobLayout)
+            jobFrame.setFrameStyle(QFrame.Box | QFrame.Plain)
 
             # Job ID.
             jobIDLayout = QVBoxLayout()
-            jobIDLayout.addWidget(FixedWidthLabel(f"{job[0]['job_id']}", labelWidth))
+            jobIDLayout.addWidget(FixedWidthLabel(
+                f"<h2>{job[0]['job_id']}</h2>", labelWidth)
+            )
             jobIDLayout.addStretch()
             jobLayout.addLayout(jobIDLayout)
+            # jobLayout.addWidget(FixedWidthLabel(
+            #     f"<h2>{job[0]['job_id']}</h2>", labelWidth)
+            # )
 
             # Ticket information.
             ticketListLayout = QVBoxLayout()
             for ticket in job:
+                ticket_id = ticket['ticket_id']
+
                 # Need a widget, so we can color it according to ticket status.
                 ticketWidget = QWidget()
 
                 # The layout holding the labels.
                 ticketLayout = QHBoxLayout()
-                ticketLayout.addWidget(FixedWidthLabel(f"{ticket['ticket_id']}", labelWidth))
+                ticketLayout.addWidget(FixedWidthLabel(f"{ticket_id}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['parents']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['duration']: .2f}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.machine_type_names[ticket['machine_type']]}", labelWidth))
+                ticketLayout.addWidget(FixedWidthLabel(f"{len(self.robot_assignments[ticket_id])}", labelWidth))
+                ticketLayout.addWidget(FixedWidthLabel(f"{self.robot_assignments[ticket_id]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['status']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['time_left']: .2f}", labelWidth))
 
@@ -565,10 +587,10 @@ class SupervisorGUI(QMainWindow):
 
                 # Add the ticket to the ticket list.
                 ticketListLayout.addWidget(ticketWidget)
-
             ticketListLayout.addStretch()
+
             jobLayout.addLayout(ticketListLayout)
-            self.jobListLayout.addLayout(jobLayout)
+            self.jobListLayout.addWidget(jobFrame)
         self.jobListLayout.addStretch()
 
     def update_schedule_display(self):
