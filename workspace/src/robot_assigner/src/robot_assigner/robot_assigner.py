@@ -297,21 +297,22 @@ class RobotAssigner():
 
                 # Go through the new tickets in the job and inherit their
                 # parents' assignments.
-                # TODO: WILL FAIL FOR TREE JOBS.
                 for ticket in job:
                     ticket_id = ticket["ticket_id"]
                     if ticket_id not in self.assignments[job_id]:
                         print("Passing parents' robots on.")
-                        linear_job = [ticket_id]
-                        get_all_parents_from_task_list(
-                            ticket_id, self.all_tickets, linear_job
+                        top_level_tickets = []
+                        get_leaf_locations(
+                            ticket_id, top_level_tickets, self.all_tickets
                         )
-
-                        earliest_parent = linear_job[-1]
-                        for i, ticket_assignments in self.assignments.items():
-                            if earliest_parent in self.assignments[i]:
-                                self.assignments[job_id][ticket_id] = \
-                                    self.assignments[i][earliest_parent].copy()
+                        top_level_assignments = []
+                        top_level_teams = []
+                        for top_level_ticket in top_level_tickets:
+                            top_level_assignments += \
+                                self.get_ticket_assignments(top_level_ticket)
+                            top_level_teams += self.teams[top_level_ticket].copy()
+                        self.assignments[job_id][ticket_id] = top_level_assignments
+                        self.teams[ticket_id] = top_level_teams
 
                 # Check the number of robots needed still matches assigned.
                 self.update_existing_job_assigned_number(job)
@@ -319,8 +320,6 @@ class RobotAssigner():
                 # Only try to assign robots to a job if it hasn't started yet.
                 if not has_job_started(job, self.all_tickets):
                     unassigned_jobs.append(job)
-                else:
-                    print(f"Job {job_id} has started.")
 
         # Attempt to assign robots to the new and unstarted jobs.
         # print(unassigned_jobs)
@@ -330,9 +329,9 @@ class RobotAssigner():
         for job_id, assignments in self.assignments.items():
             print(f"Job {job_id}: {assignments}")
         print(f"Job assigned robots: {self.job_assigned_robots}")
+        print(f"Teams: {self.teams}")
         print(f"Available: {self.available}")
         print(f"Occupied: {self.occupied}")
-        print(f"Teams: {self.teams}")
         print()
 
     def request_ticket_list(self):
@@ -409,8 +408,7 @@ class RobotAssigner():
         if old_num_assigned - new_num_needed != 0:
             print("Updating existing job assigned number.")
             for starter_id in start_points[job_id]:
-                print(f"Starter {starter_id}")
-                old_num = len(self.assignments[job_id][starter_id])
+                old_num = len(self.get_ticket_assignments(starter_id))
                 new_num = self.all_tickets[starter_id]["num_robots"]
                 diff_num = old_num - new_num
 
@@ -420,12 +418,9 @@ class RobotAssigner():
                     starter_id, self.all_tickets, linear_job
                 )
 
-                print(f"Linear job: {linear_job}")
-
                 if diff_num > 0:
                     # Remove the diff from the whole branch.
                     remove_ids = self.assignments[job_id][starter_id][:diff_num]
-                    print(remove_ids)
 
                     # Remove the IDs from assignments, occupied and,
                     # job_assigned_robots.
@@ -439,12 +434,12 @@ class RobotAssigner():
                     # Add the IDs back to available.
                     self.available += remove_ids.copy()
                 elif diff_num < 0:
+                    diff_num = -diff_num # invert for indexing and comparison.
                     # Add the diff to the branch or all if not enough are left.
                     if diff_num <= len(self.available):
                         add_ids = self.available[:diff_num]
                     else:
                         add_ids = self.available[:]
-                    print(add_ids)
 
                     for ticket_id in linear_job:
                         self.assignments[job_id][ticket_id] += add_ids.copy()
@@ -603,6 +598,7 @@ class RobotAssigner():
             return
 
         # Get the job the robot is assigned to.
+        # TODO.
         job_id = self.occupied[remove_id]
 
         # Remove it from job_assigned_robots and occupied, but don't add
