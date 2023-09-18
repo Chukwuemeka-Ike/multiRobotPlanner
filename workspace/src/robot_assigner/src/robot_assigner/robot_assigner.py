@@ -303,7 +303,7 @@ class RobotAssigner():
                         print("Passing parents' robots on.")
                         top_level_tickets = []
                         get_leaf_locations(
-                            ticket_id, top_level_tickets, self.all_tickets
+                            ticket_id, self.all_tickets, top_level_tickets
                         )
                         top_level_assignments = []
                         top_level_teams = []

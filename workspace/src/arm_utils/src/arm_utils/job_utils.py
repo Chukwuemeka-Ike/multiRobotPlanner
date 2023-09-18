@@ -72,10 +72,10 @@ def get_tree_job_start_ids(ticket_id: int, ticket_dict: dict) -> list:
     )
 
     job_leaf_locations = []
-    get_leaf_locations(linear_job[-1], job_leaf_locations, ticket_dict)
+    get_leaf_locations(linear_job[-1], ticket_dict, job_leaf_locations)
     return job_leaf_locations
 
-def get_leaf_locations(ticket_id, leaf_locations, ticket_dict: dict):
+def get_leaf_locations(ticket_id: int, ticket_dict: dict, leaf_locations: list) -> None:
     '''Traverses the tree with DFS and stores the id's of leaves.'''
     parents = ticket_dict[ticket_id]["parents"]
     parents_in_job = get_parents_in_job(parents, ticket_dict)
@@ -83,7 +83,7 @@ def get_leaf_locations(ticket_id, leaf_locations, ticket_dict: dict):
         leaf_locations.append(ticket_id)
     for parent in parents_in_job:
         get_leaf_locations(
-            parent, leaf_locations, ticket_dict
+            parent, ticket_dict, leaf_locations
         )
 
 def get_parents_in_job(parents, ticket_dict):
