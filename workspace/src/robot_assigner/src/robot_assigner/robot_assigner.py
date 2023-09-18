@@ -116,6 +116,9 @@ class RobotAssigner():
         # Lowest team ID that can be given to a new team.
         self.minTeamID = 1
 
+        # Percentage that must be met before robots will be assigned to a job.
+        self.assign_threshold = 0.75
+
         # Subscriber for ticket list updates. Ticket Manager is the publisher.
         self.ticket_list_update_sub = rospy.Subscriber(
             'ticket_list_update', String, self.update_robot_assignments
@@ -406,7 +409,13 @@ class RobotAssigner():
         # If the number needed is no longer correct, make the changes
         # to the relevant branches.
         if old_num_assigned - new_num_needed != 0:
-            print("Updating existing job assigned number.")
+            # If the old number plus number available is less than threshold,
+            # remove all assignments, so the robots can go somewhere else.
+            percentage = (old_num_assigned + len(self.available))/new_num_needed
+            if percentage < self.assign_threshold:
+                self.release_assigned_robots(job_id)
+                return
+
             for starter_id in start_points[job_id]:
                 old_num = len(self.get_ticket_assignments(starter_id))
                 new_num = self.all_tickets[starter_id]["num_robots"]
@@ -508,7 +517,7 @@ class RobotAssigner():
                 largest_percentage = percentages[idx]
                 largest_idx = idx
         # print(f"Largest percentage: {largest_percentage}.")
-        if largest_percentage >= 0.75:
+        if largest_percentage >= self.assign_threshold:
             job_id = second_pass_jobs[largest_idx]
             self.assign_robots_to_job(job_id, start_points[job_id])
 
