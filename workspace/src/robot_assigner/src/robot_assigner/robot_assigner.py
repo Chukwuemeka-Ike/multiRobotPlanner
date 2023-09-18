@@ -116,7 +116,7 @@ class RobotAssigner():
 
         # Subscriber for ticket list updates. Ticket Manager is the publisher.
         self.ticket_list_update_sub = rospy.Subscriber(
-            'ticket_list_update', String, self.request_ticket_list
+            'ticket_list_update', String, self.update_robot_assignments
         )
 
         # Service for robot assignments. Provides the assignment for a
@@ -142,8 +142,8 @@ class RobotAssigner():
             self.send_fleet_information
         )
 
-        # Request the ticket list on startup.
-        self.request_ticket_list(None)
+        # Update the robot assignments on startup.
+        self.update_robot_assignments(None)
 
         rospy.spin()
 
@@ -255,7 +255,7 @@ class RobotAssigner():
             # "/swarm_frame"
         )
 
-    def request_ticket_list(self, _):
+    def request_ticket_list(self):
         '''Requests the current ticket list from the ticket_service.
 
         Called whenever a ticket_list_update message is received.
@@ -276,13 +276,14 @@ class RobotAssigner():
             self.ready = response.ready
             self.ongoing = response.ongoing
             self.done = response.done
-
-            self.update_robot_assignments()
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
-    def update_robot_assignments(self):
+    def update_robot_assignments(self, _):
         '''Updates the robot assignments when the ticket list is updated.'''
+        # First update ticket list.
+        self.request_ticket_list()
+
         # Note that the ticket dict, job list, and start points only have
         # information about tickets that are still in the ticket manager.
         # Anything that was deleted in the most recent update won't be in
