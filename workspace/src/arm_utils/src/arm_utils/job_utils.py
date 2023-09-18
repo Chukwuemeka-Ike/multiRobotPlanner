@@ -7,6 +7,7 @@ Description:
     Utilities for handling data about an individual jobs.
 '''
 import pandas as pd
+from typing import Tuple
 
 
 def get_job_id_ticket_ids(job_list: list) -> dict:
@@ -86,7 +87,7 @@ def get_leaf_locations(ticket_id: int, ticket_dict: dict, leaf_locations: list) 
             parent, ticket_dict, leaf_locations
         )
 
-def get_parents_in_job(parents, ticket_dict):
+def get_parents_in_job(parents: list, ticket_dict: dict) -> list:
     '''Searches the job for the parents.
 
     Checks that the parents are not done and are still in the ticket_dict.
@@ -97,7 +98,7 @@ def get_parents_in_job(parents, ticket_dict):
             parents_in_job.append(parent)
     return parents_in_job
 
-def get_task_idx_in_job(ticket_id: int, job_list: list):
+def get_task_idx_in_job(ticket_id: int, job_list: list) -> Tuple[int, int]:
     '''Gets the ticket's job_idx and task_idx in the job list.'''
     for job_idx, job in enumerate(job_list):
         for task_idx, task in enumerate(job):
