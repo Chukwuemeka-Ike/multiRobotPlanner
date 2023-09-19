@@ -12,7 +12,6 @@ from typing import List
 
 from std_msgs.msg import String
 
-from arm_msgs.msg import StringList
 from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
     FleetInformationResponse, RobotAssignments, RobotAssignmentsRequest,\
     RobotAssignmentsResponse, RobotReplacement, RobotReplacementRequest,\
@@ -58,7 +57,6 @@ class RobotAssigner():
         self.real_robot_frame_name = rospy.get_param("real_robot_frame_name")
         self.virtual_robot_frame_name = rospy.get_param("virtual_robot_frame_name")
         self.robot_desired_state_topic = rospy.get_param("robot_desired_state_topic")
-        self.robot_node_names = rospy.get_param("robot_node_names")
 
         # Create lists for each parameter.
         # The number of robots determines the length of each list.
@@ -172,12 +170,6 @@ class RobotAssigner():
         so other nodes can get all topics at once and subsequently index using
         relevant IDs.
         '''
-        robot_node_names = []
-        for idx in range(len(self.robot_names)):
-
-            nodes = StringList()
-            nodes.string_list = self.robot_node_names[idx]
-            robot_node_names.append(nodes)
 
         return FleetInformationResponse(
             self.fleet_size,
@@ -187,7 +179,6 @@ class RobotAssigner():
             self.real_robot_frame_names,
             self.virtual_robot_frame_names,
             self.robot_desired_state_topics,
-            robot_node_names,
             self.tf_changer_topic,
             self.robot_enable_status_topic
         )
@@ -219,7 +210,6 @@ class RobotAssigner():
         robot_command_topics = []
         virtual_robot_frame_names = []
         real_robot_frame_names = []
-        robot_node_names = []
         robot_desired_state_topics = []
 
         for idx in indices:
@@ -229,10 +219,6 @@ class RobotAssigner():
             virtual_robot_frame_names.append(self.virtual_robot_frame_names[idx])
             real_robot_frame_names.append(self.real_robot_frame_names[idx])
             robot_desired_state_topics.append(self.robot_desired_state_topics[idx])
-
-            nodes = StringList()
-            nodes.string_list = self.robot_node_names[idx]
-            robot_node_names.append(nodes)
 
         team_id = 0
         team_command_topic = ""

@@ -6,6 +6,5 @@ string[] robot_frame_command_topics     # used by OG to command the virtual robo
 string[] real_robot_frame_names
 string[] virtual_robot_frame_names
 string[] robot_desired_state_topics     # used by swarm_control.py to send robot desired poses.
-StringList[] robot_node_names
 string tf_changer_topic                 # used by OG to update specific TF frames.
 string robot_enable_status_topic        # used by OG to enable and disable robots while on tasks.

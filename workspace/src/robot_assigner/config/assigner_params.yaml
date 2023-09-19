@@ -46,12 +46,3 @@ robot_desired_state_topic: "/d_/desired_state"
 
 # Name of each robot. Used in the GUI.
 robot_name: "D_"
-
-# Robot node names.
-robot_node_names:
-  - ["/uwb_front_oarbot_silver","/uwb_back_oarbot_silver","/sensor_fusion_oarbot_silver","/oarbot_silver_ctrl"]
-  - ["/uwb_front_oarbot_blue","/uwb_back_oarbot_blue","/sensor_fusion_oarbot_blue","/oarbot_blue_ctrl"]
-  - []
-  - []
-  - []
-  - []

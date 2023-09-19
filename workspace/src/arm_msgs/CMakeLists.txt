@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
 set(MSG_FILES 
     IntList.msg
     RobotEnableStatus.msg
-    StringList.msg
     Ticket.msg
     Tickets.msg
 )
