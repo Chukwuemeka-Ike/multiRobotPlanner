@@ -391,13 +391,13 @@ class RobotAssigner():
         new_num_needed = 0
         for starter_id in start_points[job_id]:
             new_num_needed += self.all_tickets[starter_id]["num_robots"]
-
+        
         # If the number needed is no longer correct, make the changes
         # to the relevant branches.
         if old_num_assigned - new_num_needed != 0:
             # If the old number plus number available is less than threshold,
             # remove all assignments, so the robots can go somewhere else.
-            percentage = (old_num_assigned + len(self.available))/new_num_needed
+            percentage = (old_num_assigned + len(self.available))/new_num_needed if new_num_needed else 0
             if percentage < self.assign_threshold:
                 self.release_assigned_robots(job_id)
                 return
