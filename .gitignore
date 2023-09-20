@@ -9,6 +9,10 @@ build/
 devel/
 saves/
 
+# Contents of the scheduler and ticket manager log folders.
+schedule*.csv
+ticket_log*.csv
+
 # Scheduler save directories.
 Constraints/
 Operations/Images/
