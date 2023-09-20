@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-    <node name="task_scheduler" pkg="task_scheduler" type="task_scheduler_node">
+    <param name="scheduler_log_dir" value="$(find task_scheduler)/log"/>
+    <node name="task_scheduler" pkg="task_scheduler" type="task_scheduler_node" output="screen">
     </node>
 
+    <param name="ticket_log_dir" value="$(find ticket_manager)/log"/>
     <node name="ticket_manager" pkg="ticket_manager" type="ticket_manager_node" output="screen">
     </node>
 
