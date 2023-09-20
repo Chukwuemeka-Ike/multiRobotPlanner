@@ -32,7 +32,7 @@ from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
         convert_task_list_to_schedule, convert_task_list_to_job_list,\
         convert_list_of_int_lists_to_list_of_lists
 from arm_utils.draw_utils import draw_tree_schedule
-from arm_utils.job_utils import get_job_id_ticket_ids
+from arm_utils.job_utils import get_job_id_ticket_ids, get_leaf_locations
 from arm_utils.sched_utils import *
 
 from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketDialog, EditJobDialog
@@ -566,13 +566,21 @@ class SupervisorGUI(QMainWindow):
                 # Need a widget, so we can color it according to ticket status.
                 ticketWidget = QWidget()
 
+                # Number of robots needed for a ticket is the sum of all its
+                # top-level parents' num_robots.
+                top_level_parents = []
+                get_leaf_locations(ticket_id, self.all_tickets, top_level_parents)
+                num_robots_needed = sum(
+                    self.all_tickets[id]["num_robots"] for id in top_level_parents
+                )
+
                 # The layout holding the labels.
                 ticketLayout = QHBoxLayout()
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket_id}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['parents']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['duration']: .2f}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.machine_type_names[ticket['machine_type']]}", labelWidth))
-                ticketLayout.addWidget(FixedWidthLabel(f"{len(self.robot_assignments[ticket_id])}", labelWidth))
+                ticketLayout.addWidget(FixedWidthLabel(f"{num_robots_needed}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.robot_assignments[ticket_id]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['status']}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['time_left']: .2f}", labelWidth))
