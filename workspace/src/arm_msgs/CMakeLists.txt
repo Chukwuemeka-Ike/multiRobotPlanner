@@ -31,6 +31,7 @@ add_service_files(
     RobotReplacement.srv
     Schedule.srv
     TicketList.srv
+    TicketLog.srv
     UnboundMachines.srv
 )
 
