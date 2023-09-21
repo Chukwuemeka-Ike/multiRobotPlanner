@@ -6,19 +6,27 @@ Author - Chukwuemeka Osaretin Ike
 
 Description:
     Defines the Ticket Manager class, which maintains ticket states and
-    provides their information over a service to the GUIs. It requests
-    schedules from the Task Scheduler as needed.
+    provides their information over a service to the rest of the system.
+    It requests schedules from the Task Scheduler as needed.
 '''
+import csv
 import math
+import os
 import rospy
 
+from datetime import datetime
 from std_msgs.msg import String, UInt32
 
 from arm_msgs.msg import Ticket, Tickets
-from arm_msgs.srv import Schedule, ScheduleRequest, TicketList, TicketListResponse
+from arm_msgs.srv import RobotAssignments, RobotAssignmentsRequest,\
+    Schedule, ScheduleRequest, TicketList, TicketListRequest,\
+    TicketListResponse, TicketLog, TicketLogRequest,\
+    TicketLogResponse
 
-from arm_utils.conversion_utils import convert_task_dict_to_ticket_list, convert_ticket_list_to_task_dict
-from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list, get_job_last_ticket_status, get_tree_job_start_ids
+from arm_utils.conversion_utils import convert_task_dict_to_ticket_list,\
+    convert_ticket_list_to_task_dict
+from arm_utils.job_utils import get_all_children_from_task_list,\
+    get_job_last_ticket_status, get_tree_job_start_ids, get_leaf_locations
 
 
 log_tag = "Ticket Manager"
@@ -51,6 +59,17 @@ class TicketManager():
         self.waiting = []
         self.ready = []
         self.ongoing = []
+
+        # Dictionary for logging ticket actual runtimes and other info.
+        self.ticket_log = {}
+
+        # Log filename includes to the date and time the node starts up.
+        self.ticket_log_dir = rospy.get_param("ticket_log_dir", "~/.ros")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.ticket_log_filename = f"ticket_log_{timestamp}.csv"
+        self.ticket_log_filename = os.path.join(
+            self.ticket_log_dir, self.ticket_log_filename
+        )
 
         # When a ticket is done or deleted, it's removed from ticket_dict
         # and placed in done or deleted. It is no longer relevant for
@@ -112,10 +131,22 @@ class TicketManager():
             'ticket_service', TicketList, self.send_ticket_lists
         )
 
+        # Service for ticket_log.
+        self.ticket_log_service = rospy.Service(
+            "ticket_log_service", TicketLog, self.send_ticket_log
+        )
+
         self.time_left_update_interval = 5
         self.time_left_update_timer = rospy.Timer(
             rospy.Duration(self.time_left_update_interval),
             self.update_time_left,
+            oneshot=False
+        )
+
+        # Timer for saving the ticket_log every 5 minutes.
+        self.ticket_log_timer = rospy.Timer(
+            rospy.Duration(300),
+            self.on_log_timer_trigger,
             oneshot=False
         )
 
@@ -125,6 +156,10 @@ class TicketManager():
     def shutdown_ticket_manager(self):
         '''Gracefully shutdown ticket manager.'''
         # TODO: Save the current ticket list, so we can pick up where we stopped.
+        # Save the ticket_log.
+        self.save_ticket_log(self.ticket_log_filename)
+        rospy.loginfo(f"{log_tag}: Ticket log saved.")
+
         rospy.loginfo(f"{log_tag}: Node shutdown.")
 
     def add_ticket_message_callback(self, msg):
@@ -302,14 +337,14 @@ class TicketManager():
         self.request_schedule()
 
         # Update ticket and job statuses.
-        self.update_jobs
+        self.update_jobs()
         self.update_ticket_statuses()
         self.update_job_statuses()
 
         self.announce_ticket_list_update()
 
-        # # Add the ticket to the executed schedule.
-        # self.add_started_ticket_to_schedule(ticket_id, self.ticket_dict[ticket_id])
+        # Add the started ticket to the ticket_log.
+        self.log_started_ticket(ticket_id)
 
     def end_ticket_message_callback(self, msg):
         '''Callback when a done signal is received.'''
@@ -334,8 +369,8 @@ class TicketManager():
 
             self.announce_ticket_list_update()
 
-            # Add the done ticket to executed schedule?
-            # self.add_done_ticket_to_schedule(msg.ticket_id)
+            # Add the ended ticket to ticket_log.
+            self.log_ended_ticket(msg.ticket_id)
 
             # If the ticket had more than 5 minutes left, we re-schedule.
             # Otherwise, we let it run down.
@@ -346,7 +381,7 @@ class TicketManager():
             rospy.logerr(f"Error ending ticket with ID {msg.ticket_id}.")
             rospy.logerr(e)
 
-    def send_ticket_lists(self, request):
+    def send_ticket_lists(self, _: TicketListRequest) -> TicketListResponse:
         '''Returns the complete list of tickets and the different subsets.'''
         rospy.logdebug(f"{log_tag}: Returning current ticket information.")
 
@@ -367,6 +402,30 @@ class TicketManager():
             self.ongoing,
             self.done.keys()
         )
+
+    def send_ticket_log(self, _: TicketLogRequest) -> TicketLogResponse:
+        '''Sends the most updated ticket log.'''
+        ticket_log_list = convert_task_dict_to_ticket_list(self.ticket_log)
+        return TicketLogResponse(
+            ticket_log_list
+        )
+
+    def request_assigned_robot_information(self, ticket_id: int) -> list:
+        '''Requests info about the robots assigned to the ticket.'''
+        rospy.wait_for_service('robot_assignments_service')
+        try:
+            request = RobotAssignmentsRequest()
+            request.ticket_id = ticket_id
+            robot_assignments = rospy.ServiceProxy(
+                'robot_assignments_service',
+                RobotAssignments
+            )
+            response = robot_assignments(request)
+            assigned_robot_ids = response.assigned_robot_ids
+
+            return list(assigned_robot_ids)
+        except rospy.ServiceException as e:
+            rospy.logerr(f"{log_tag}: Robot assignment request failed: {e}.")
 
     def request_schedule(self):
         '''Requests a new schedule from the schedule service.
@@ -670,6 +729,73 @@ class TicketManager():
             rospy.loginfo(f"{log_tag}: Ticket {ticket_id} not in the"
                           " ticket list. Might have ended on time.")
             rospy.logwarn(e)
+
+    def log_started_ticket(self, ticket_id: int) -> None:
+        '''Adds the ticket's information and absolute start time to the log.'''
+        ticket = self.ticket_dict[ticket_id]
+
+        self.ticket_log[ticket_id] = {}
+        self.ticket_log[ticket_id]["ticket_id"] = ticket_id
+        self.ticket_log[ticket_id]["job_id"] = ticket["job_id"]
+        self.ticket_log[ticket_id]["parents"] = ticket["parents"]
+        self.ticket_log[ticket_id]["duration"] = ticket["duration"]
+        self.ticket_log[ticket_id]["machine_type"] = ticket["machine_type"]
+        self.ticket_log[ticket_id]["machine_id"] = ticket["machine_id"]
+        self.ticket_log[ticket_id]["start"] = int(rospy.get_time())
+        self.ticket_log[ticket_id]["end"] = 0
+        self.ticket_log[ticket_id]["status"] = ticket["status"]
+        self.ticket_log[ticket_id]["assigned_bots_start"] = \
+            self.request_assigned_robot_information(ticket_id)
+
+        # Number of robots needed for a ticket is the sum of all its
+        # top-level parents' num_robots.
+        top_level_parents = []
+        all_tickets = {**self.ticket_dict, **self.done}
+        get_leaf_locations(ticket_id, all_tickets, top_level_parents)
+        num_robots_needed = sum(
+            all_tickets[id]["num_robots"] for id in top_level_parents
+        )
+        self.ticket_log[ticket_id]["num_robots"] = num_robots_needed
+
+        # TODO: Get robot assignments from RA.
+
+    def log_ended_ticket(self, ticket_id: int) -> None:
+        '''Saves the absolute end time when the ticket is ended.'''
+        self.ticket_log[ticket_id]["end"] = int(rospy.get_time())
+        self.ticket_log[ticket_id]["assigned_bots_end"] = \
+            self.request_assigned_robot_information(ticket_id)
+        if ticket_id in self.ticket_dict:
+            self.ticket_log[ticket_id]["status"] = \
+                self.ticket_dict[ticket_id]["status"]
+        else:
+            self.ticket_log[ticket_id]["status"] = self.done[ticket_id]["status"]
+
+    def save_ticket_log(self, filename: str) -> None:
+        '''Saves the ticket log to a csv file.'''
+        if len(self.ticket_log) == 0:
+            return
+
+        any_id = list(self.ticket_log.keys())[0]
+        column_names = self.ticket_log[any_id].keys()
+
+        # Write the dictionary to the file.
+        with open(filename, 'w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=column_names)
+
+            # Write the header (column names).
+            writer.writeheader()
+
+            # Write the log.
+            for _, ticket in self.ticket_log.items():
+                writer.writerow(ticket)
+
+    def on_log_timer_trigger(self, _: rospy.timer.TimerEvent) -> None:
+        '''Timer callback for saving the ticket logs.
+
+        Currently just wraps the save function and passes the save filename.
+        This function can be expanded to do more if necessary.
+        '''
+        self.save_ticket_log(self.ticket_log_filename)
 
     def update_jobs(self):
         '''Updates the jobs data structure.
