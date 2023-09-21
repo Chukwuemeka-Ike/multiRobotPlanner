@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import pandas as pd
 
+from dateutil import tz
 from matplotlib.dates import DateFormatter
 
 from arm_utils.conversion_utils import convert_schedule_to_task_list
@@ -77,19 +78,18 @@ def draw_job_id(
         fontsize=fontsize, ha='center', va='center'
     )
 
-def draw_env(bounds: list, fontSize: int, ax: plt.axes) -> None:
+def draw_env(
+        bounds: list, fontSize: int, timezone: tz.tzlocal, ax: plt.axes
+    ) -> None:
     '''Draw the base environment for the schedule to be graphed.'''
     ax.axis([bounds[0], bounds[1], bounds[2], bounds[3]])
 
     # Format to hour and minute only.
-    dfmt = DateFormatter("%H:%M")
-    ax.xaxis.set_major_formatter(dfmt)
-
-    # try:
-    ax.set_yticks([])
-    # except:
-    #     pass
+    formatter = DateFormatter("%H:%M", tz=timezone)
+    ax.xaxis.set_major_formatter(formatter)
     ax.set_xlabel('Time', fontsize=fontSize)
+
+    ax.set_yticks([])
     ax.set_ylabel('Job', fontsize=fontSize)
     ax.grid(axis='both')
 
@@ -139,9 +139,10 @@ def draw_schedule(
     for i in range(num_jobs):
         maxY += sizes[i]
 
-    schedule["start"] = pd.to_datetime(schedule["start"], unit='s')
-    schedule["end"] = pd.to_datetime(schedule["end"], unit='s')
-    current_time = pd.to_datetime(current_time, unit='s')
+    local_timezone = tz.tzlocal()
+    schedule["start"] = pd.to_datetime(schedule["start"], unit='s', utc=True).dt.tz_convert(local_timezone)
+    schedule["end"] = pd.to_datetime(schedule["end"], unit='s', utc=True).dt.tz_convert(local_timezone)
+    current_time = pd.to_datetime(current_time, unit='s', utc=True).tz_convert(local_timezone)
 
     if not draw_full_schedule:
         bounds = [
@@ -165,7 +166,7 @@ def draw_schedule(
     bounds[0] = bounds[0] - job_id_width
 
     # Draw the base graph.
-    draw_env(bounds, fontSize, ax)
+    draw_env(bounds, fontSize, local_timezone, ax)
 
     # Draw rectangles for every task in the schedule.
     j = 0
