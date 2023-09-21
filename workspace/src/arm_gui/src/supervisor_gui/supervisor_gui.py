@@ -13,7 +13,9 @@ import rospy
 import rospkg
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import FigureCanvas
+from matplotlib.backends.backend_qtagg import \
+    NavigationToolbar2QT as NavigationToolbar
 
 from typing import Tuple
 
@@ -25,13 +27,13 @@ from std_msgs.msg import UInt32
 from arm_msgs.msg import Ticket, Tickets
 from arm_msgs.srv import MachinesOverview, MachinesOverviewRequest,\
     RobotAssignments, RobotAssignmentsRequest,\
-    TicketList, TicketListRequest
+    TicketList, TicketListRequest, TicketLog, TicketLogRequest
 
 # from arm_utils.display_utils import *
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
         convert_task_list_to_schedule, convert_task_list_to_job_list,\
         convert_list_of_int_lists_to_list_of_lists
-from arm_utils.draw_utils import draw_tree_schedule
+from arm_utils.draw_utils import draw_no_schedule, draw_schedule
 from arm_utils.job_utils import get_job_id_ticket_ids, get_leaf_locations
 from arm_utils.sched_utils import *
 
@@ -87,6 +89,7 @@ class SupervisorGUI(QMainWindow):
         self.ready = []
         self.ongoing = []
         self.done = []
+        self.ticket_log = {}
 
         # List of jobs, where each job is a list of tickets.
         # job_list: [[{}, ...], ...]
@@ -158,6 +161,7 @@ class SupervisorGUI(QMainWindow):
     def update_gui(self) -> None:
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
         self.request_ticket_list()
+        self.request_ticket_log()
         self.request_machine_overview()
         self.request_robot_assignments()
         self.update_job_list_layout()
@@ -170,9 +174,13 @@ class SupervisorGUI(QMainWindow):
     def create_ui(self) -> None:
         '''Create the basic UI.'''
 
-        # Create the matplotlib canvas for the schedule and the RViz widget.
+        # Create the matplotlib canvases for the schedule and the RViz widget.
         self.mapWidget = MapWidget(self.rviz_path)
-        self.scheduleCanvas, self.ax = self.create_schedule_canvas()
+        self.miniScheduleCanvas, self.miniScheduleAxes = \
+            self.create_schedule_canvas()
+        self.fullScheduleCanvas, self.fullScheduleAxes = \
+            self.create_schedule_canvas()
+        NavigationToolbar
 
         # Tabs for going between map and schedule, job list, and full schedule.
         self.tabs = QTabWidget()
@@ -188,17 +196,23 @@ class SupervisorGUI(QMainWindow):
         self.create_job_list_layout()
 
         # Vertical layout for the map and schedule.
-        mapSchedLayout = QVBoxLayout(self.tabs)
-        # spacer = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        mapSchedLayout = QVBoxLayout(tab2)
+        spacer = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         # Add widgets and spacer to the layout.
         mapSchedLayout.addWidget(self.mapWidget)
-        # mapSchedLayout.addItem(spacer)
-        mapSchedLayout.addWidget(self.scheduleCanvas)
+        mapSchedLayout.addItem(spacer)
+        mapSchedLayout.addWidget(self.miniScheduleCanvas)
+
+        fullMapLayout = QVBoxLayout(tab3)
+        # # Full schedule needs a toolbar, so we can zoom in and out.
+        # fullMapLayout.addWidget(NavigationToolbar(self.fullScheduleCanvas, tab3))
+        fullMapLayout.addWidget(self.fullScheduleCanvas)
 
         # Set the tabs' layouts.
         tab1.setLayout(mapSchedLayout)
         tab2.setLayout(self.jobScrollLayout)
+        tab3.setLayout(fullMapLayout)
 
         self.create_ticket_management_layout()
 
@@ -264,27 +278,65 @@ class SupervisorGUI(QMainWindow):
 
     def create_schedule_canvas(self) -> Tuple[FigureCanvas, plt.Axes]:
         '''Creates the canvas for the schedule.'''
-        figure = plt.figure()
-
-        scheduleCanvas = FigureCanvas(figure)
-        ax = figure.add_subplot(111)
+        # figure, ax = plt.subplots()
+        # scheduleCanvas = FigureCanvas(figure)
+        scheduleCanvas = FigureCanvas(plt.figure())
+        ax = scheduleCanvas.figure.subplots()
 
         return scheduleCanvas, ax
 
-    def draw_schedule(self, schedule: pd.DataFrame) -> None:
-        '''Draw the given schedule.'''
-        # Clear the old figure.
-        self.ax.clear()
+    def draw_no_schedules(self, current_time: int) -> None:
+        '''Draws empty graphs with the current time and windows.'''
+        # Clear the old figures.
+        self.miniScheduleAxes.clear()
+        self.fullScheduleAxes.clear()
 
-        draw_tree_schedule(
+        draw_no_schedule(self.miniScheduleAxes, current_time)
+        draw_no_schedule(self.fullScheduleAxes, current_time)
+
+        # Refresh the canvases.
+        self.miniScheduleCanvas.draw()
+        self.fullScheduleCanvas.draw()
+
+    def draw_schedules(self, schedule: pd.DataFrame, current_time: int) -> None:
+        '''Draw the given schedule.'''
+        # # Store the current view limits in case the user is interacting.
+        # current_xlim = self.fullScheduleAxes.get_xlim()
+        # current_ylim = self.fullScheduleAxes.get_ylim()
+
+        # print(current_xlim)
+        # print(current_ylim)
+
+        # Clear the old figures.
+        self.miniScheduleAxes.clear()
+        self.fullScheduleAxes.clear()
+
+        draw_schedule(
             schedule,
-            self.ax,
+            self.ongoing,
             self.machine_type_indices,
-            self.machine_type_abvs
+            self.machine_type_abvs,
+            self.miniScheduleAxes,
+            current_time,
+            False
         )
 
-        # Refresh the canvas.
-        self.scheduleCanvas.draw()
+        draw_schedule(
+            schedule,
+            self.ongoing,
+            self.machine_type_indices,
+            self.machine_type_abvs,
+            self.fullScheduleAxes,
+            current_time,
+            True
+        )
+
+        # Refresh the canvases.
+        self.miniScheduleCanvas.draw()
+        self.fullScheduleCanvas.draw()
+
+        # self.fullScheduleAxes.set_xlim(current_xlim)
+        # self.fullScheduleAxes.set_ylim(current_ylim)
 
     def create_bulk_add_tix_dialog(self) -> None:
         '''Create a dialog for importing a set of new tickets.'''
@@ -499,6 +551,19 @@ class SupervisorGUI(QMainWindow):
                 self.request_assigned_robot_information(ticket_id)
             self.robot_assignments[ticket_id] = assigned_robot_ids
 
+    def request_ticket_log(self) -> None:
+        '''.'''
+        rospy.wait_for_service('ticket_log_service')
+        try:
+            request = TicketLogRequest()
+            ticket_log = rospy.ServiceProxy('ticket_log_service', TicketLog)
+            response = ticket_log(request)
+            self.ticket_log = convert_ticket_list_to_task_dict(
+                response.ticket_log
+            )
+        except rospy.ServiceException as e:
+            print(f"{log_tag}: Ticket log request failed: {e}.")
+
     def update_job_list_layout(self):
         '''Update the list of jobs and their ticket states.'''
         # TODO: Fix the inconsistent labelWidth btw titleLayout and jobLayouts.
@@ -590,13 +655,28 @@ class SupervisorGUI(QMainWindow):
 
     def update_schedule_display(self):
         '''Update the schedule shown to the user.'''
+        # TODO: This logic probably should be in Ticket Manager and SG
+        # just requests an absolute ticket list over a service. This is
+        # less work for crunch time dev.
+        absolute_ticket_dict = {}
+        current_time = int(rospy.get_time())
+        for ticket_id, ticket in self.all_tickets.items():
+            ticket_copy = ticket.copy()
+            ticket_copy["start"] += current_time
+            ticket_copy["end"] += current_time
+
+            if ticket_id in self.ticket_log:
+                ticket_copy["start"] = self.ticket_log[ticket_id]["start"]
+                if ticket_id in self.done:
+                    ticket_copy["end"] = self.ticket_log[ticket_id]["end"]
+            absolute_ticket_dict[ticket_id] = ticket_copy.copy()
+
         schedule = convert_task_list_to_schedule(
-            self.all_tickets, self.machine_type_names
+            absolute_ticket_dict, self.machine_type_names
         )
 
         # Check if the schedule is real.
         if schedule is not None and schedule["end"].max() != 0:
-            self.draw_schedule(schedule)
+            self.draw_schedules(schedule, current_time)
         else:
-            # Clear the old figure.
-            self.ax.clear()
+            self.draw_no_schedules(current_time)
