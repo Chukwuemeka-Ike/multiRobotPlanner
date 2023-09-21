@@ -45,6 +45,10 @@ from gui_common.gui_utils import clear_layout
 log_tag = "Supervisor GUI"
 
 
+class CustomNavigationToolbar(NavigationToolbar):
+    toolitems = [t for t in NavigationToolbar.toolitems if t[0] == 'Save']
+
+
 class SupervisorGUI(QMainWindow):
     '''Supervisor GUI class.'''
 
@@ -207,6 +211,7 @@ class SupervisorGUI(QMainWindow):
         fullMapLayout = QVBoxLayout(tab3)
         # # Full schedule needs a toolbar, so we can zoom in and out.
         # fullMapLayout.addWidget(NavigationToolbar(self.fullScheduleCanvas, tab3))
+        fullMapLayout.addWidget(CustomNavigationToolbar(self.fullScheduleCanvas, tab3))
         fullMapLayout.addWidget(self.fullScheduleCanvas)
 
         # Set the tabs' layouts.
