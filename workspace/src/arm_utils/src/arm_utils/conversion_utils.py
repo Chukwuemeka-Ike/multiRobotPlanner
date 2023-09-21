@@ -19,6 +19,7 @@ from arm_msgs.msg import IntList, Ticket, Tickets
 
 from arm_utils.job_utils import get_all_children_from_task_list, get_all_parents_from_task_list
 
+
 def convert_list_of_int_lists_to_list_of_lists(list_of_int_lists: list):
     '''.'''
     list_of_lists = []
@@ -36,21 +37,20 @@ def convert_task_dict_to_ticket_list(ticket_dict: dict) -> list:
             msg.machine_type = ticket["machine_type"]
             msg.duration = ticket["duration"]
             msg.parents = ticket["parents"]
-
-            # These only exist once a schedule has been created.
-            # Failing shouldn't stop the workflow.
-            try:
+            if "num_robots" in ticket and len(ticket["parents"]) == 0:
+                msg.num_robots = ticket["num_robots"]
+            if "time_left" in ticket:
                 msg.time_left = ticket["time_left"]
-                msg.start = ticket["start"]
-                msg.end = ticket["end"]
-                msg.machine_id = ticket["machine_id"]
+            if "status" in ticket:
                 msg.status = ticket["status"]
 
-                if len(ticket["parents"]) == 0:
-                    msg.num_robots = ticket["num_robots"]
-            except KeyError as e:
-                pass
-                # print(f"Warning: {e}")
+            # These are only valid once a schedule has been created.
+            if "start" in ticket:
+                msg.start = ticket["start"]
+            if "end" in ticket:
+                msg.end = ticket["end"]
+            if "machine_id" in ticket:
+                msg.machine_id = ticket["machine_id"]
 
             ticket_list.append(msg)
         return ticket_list
@@ -69,25 +69,18 @@ def convert_ticket_list_to_task_dict(tickets: Tickets) -> dict:
         tix["machine_type"] = ticket.machine_type
         tix["duration"] = ticket.duration
         tix["parents"] = ticket.parents
-
-        # These only exist once a schedule has been created.
-        # Failing shouldn't stop the workflow.
-        try:
-            tix["time_left"] = ticket.time_left
-            tix["start"] = ticket.start
-            tix["end"] = ticket.end
-            tix["machine_id"] = ticket.machine_id
-            tix["status"] = ticket.status
-
-            if len(ticket.parents) == 0:
+        if len(ticket.parents) == 0:
                 tix["num_robots"] = ticket.num_robots
-        except AttributeError as e:
-            pass
-            # print(f"Warning: {e}")
+        tix["time_left"] = ticket.time_left
+        tix["status"] = ticket.status
+
+        # These are only valid once a schedule has been created.
+        tix["start"] = ticket.start
+        tix["end"] = ticket.end
+        tix["machine_id"] = ticket.machine_id
 
         task_dict[ticket.ticket_id] = tix
     return task_dict
-
 
 def convert_schedule_to_task_list(schedule: pd.DataFrame):
     '''Converts a given schedule to a task list.
@@ -177,7 +170,6 @@ def convert_task_list_to_schedule(task_dict: dict, machine_type_names: list) -> 
         return schedule
     else:
         return None
-
 
 def convert_job_list_to_task_list(job_list: list):
     '''Converts a list of jobs to a dictionary of tickets.'''
