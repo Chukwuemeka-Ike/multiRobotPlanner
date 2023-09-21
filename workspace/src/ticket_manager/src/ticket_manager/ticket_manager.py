@@ -136,7 +136,7 @@ class TicketManager():
             "ticket_log_service", TicketLog, self.send_ticket_log
         )
 
-        self.time_left_update_interval = 5
+        self.time_left_update_interval = 1
         self.time_left_update_timer = rospy.Timer(
             rospy.Duration(self.time_left_update_interval),
             self.update_time_left,
