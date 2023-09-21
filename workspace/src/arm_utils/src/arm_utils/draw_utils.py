@@ -108,7 +108,8 @@ def draw_no_schedule(ax: plt.Axes, current_time: int) -> None:
     fontSize = 10
 
     # Draw the base graph.
-    draw_env(bounds, fontSize, ax)
+    local_timezone = tz.tzlocal()
+    draw_env(bounds, fontSize, local_timezone, ax)
     
     # Draw the "now" line.
     ax.axvline(x=current_time, color='r', linestyle='-', lw=5)
@@ -139,10 +140,9 @@ def draw_schedule(
     for i in range(num_jobs):
         maxY += sizes[i]
 
-    local_timezone = tz.tzlocal()
-    schedule["start"] = pd.to_datetime(schedule["start"], unit='s', utc=True).dt.tz_convert(local_timezone)
-    schedule["end"] = pd.to_datetime(schedule["end"], unit='s', utc=True).dt.tz_convert(local_timezone)
-    current_time = pd.to_datetime(current_time, unit='s', utc=True).tz_convert(local_timezone)
+    schedule["start"] = pd.to_datetime(schedule["start"], unit='s')
+    schedule["end"] = pd.to_datetime(schedule["end"], unit='s')
+    current_time = pd.to_datetime(current_time, unit='s')
 
     if not draw_full_schedule:
         bounds = [
@@ -165,7 +165,8 @@ def draw_schedule(
     job_id_width = pd.Timedelta(seconds=15)
     bounds[0] = bounds[0] - job_id_width
 
-    # Draw the base graph.
+    # Draw the base graph with the computer's local timezone.
+    local_timezone = tz.tzlocal()
     draw_env(bounds, fontSize, local_timezone, ax)
 
     # Draw rectangles for every task in the schedule.
