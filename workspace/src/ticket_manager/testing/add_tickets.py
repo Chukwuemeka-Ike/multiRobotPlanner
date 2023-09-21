@@ -14,8 +14,9 @@ from arm_msgs.msg import Tickets, Ticket
 # Different sets of jobs for testing different functions.
 # from arm_constants.test_jobs_anchor import complete_ticket_list
 from arm_constants.test_jobs_demo_physical import complete_ticket_list
-# from arm_constants.test_job_single import complete_ticket_list
+# from arm_constants.test_jobs_single import complete_ticket_list
 # from arm_constants.test_jobs_small import complete_ticket_list
+# from arm_constants.test_jobs_tree import complete_ticket_list
 
 
 def add_tickets(publisher, tickets: dict):
@@ -43,6 +44,10 @@ if __name__ == "__main__":
     add_ticket_pub = rospy.Publisher(
         'add_ticket', Tickets, queue_size=100
     )
+
+    # # Multiply by 60 to change durations to minutes moving forward.
+    # for _, ticket in complete_ticket_list.items():
+    #     ticket["duration"] = int(ticket["duration"]*60)
 
     # Wait 1 second, or the message won't publish.
     time.sleep(1)
