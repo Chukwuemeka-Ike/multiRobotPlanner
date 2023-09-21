@@ -476,7 +476,7 @@ class SupervisorGUI(QMainWindow):
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
-    def request_assigned_robot_information(self, ticket_id: int) -> Tuple:
+    def request_assigned_robot_information(self, ticket_id: int) -> list:
         '''Requests info about the robots assigned to the ticket.'''
         rospy.wait_for_service('robot_assignments_service')
         try:
@@ -487,21 +487,8 @@ class SupervisorGUI(QMainWindow):
                 RobotAssignments
             )
             response = robot_assignments(request)
-
-            # num_assigned_robots = response.num_assigned_robots
             assigned_robot_ids = response.assigned_robot_ids
-
-            # # Robot IDs start at 1, so subtract 1 to get the indices for
-            # # accessing their info from the robot info lists.
-            # assigned_robot_indices = [id-1 for id in assigned_robot_ids]
-
-            # team_id = response.team_id
-            # team_command_topic = response.team_command_topic
-            # team_frame_command_topic = response.team_frame_command_topic
-            # team_footprint_topic = response.team_footprint_topic
-            # team_tf_frame_name = response.team_tf_frame_name
-
-            return assigned_robot_ids
+            return list(assigned_robot_ids)
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Robot assignment request failed: {e}.")
 
