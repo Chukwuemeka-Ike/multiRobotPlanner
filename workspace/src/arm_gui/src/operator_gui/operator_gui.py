@@ -261,11 +261,28 @@ class OperatorGUI(QMainWindow):
         self.create_ticket_layout()
         self.create_control_layout()
         self.mapWidget = MapWidget(self.rviz_path)
+        self.mapLayout = QHBoxLayout()
+        self.mapLayout.addWidget(self.mapWidget)
+
+        # Frames are for placing borders around the layouts.
+        mapFrame = QFrame()
+        mapFrame.setLayout(self.mapLayout)
+        mapFrame.setFrameStyle(QFrame.Box | QFrame.Plain)
+
+        controlFrame = QFrame()
+        controlFrame.setLayout(self.controlLayout)
+        controlFrame.setFrameStyle(QFrame.Box | QFrame.Plain)
+
+        # Splitter to allow the user resize the boundary between rviz
+        # view and control layout.
+        splitter = QSplitter()
+        splitter.setOrientation(Qt.Vertical)
+        splitter.addWidget(controlFrame)
+        splitter.addWidget(mapFrame)
 
         self.overallLayout.addLayout(self.machineLayout)
         self.overallLayout.addLayout(self.ticketLayout)
-        self.overallLayout.addLayout(self.controlLayout)
-        self.overallLayout.addWidget(self.mapWidget)
+        self.overallLayout.addWidget(splitter)
 
         # Disable the ticket and control layouts.
         disable_layout(self.ticketLayout)
