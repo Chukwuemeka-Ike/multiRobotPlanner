@@ -19,7 +19,7 @@ from matplotlib.backends.backend_qtagg import \
 
 from typing import Tuple
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import *
 
 from std_msgs.msg import UInt32
@@ -29,7 +29,6 @@ from arm_msgs.srv import MachinesOverview, MachinesOverviewRequest,\
     RobotAssignments, RobotAssignmentsRequest,\
     TicketList, TicketListRequest, TicketLog, TicketLogRequest
 
-# from arm_utils.display_utils import *
 from arm_utils.conversion_utils import convert_ticket_list_to_task_dict,\
         convert_task_list_to_schedule, convert_task_list_to_job_list,\
         convert_list_of_int_lists_to_list_of_lists
@@ -200,13 +199,14 @@ class SupervisorGUI(QMainWindow):
         self.create_job_list_layout()
 
         # Vertical layout for the map and schedule.
-        mapSchedLayout = QVBoxLayout(tab2)
-        spacer = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        splitter = QSplitter()
+        splitter.setOrientation(Qt.Vertical)
+        splitter.addWidget(self.mapWidget)
+        splitter.addWidget(self.miniScheduleCanvas)
 
         # Add widgets and spacer to the layout.
-        mapSchedLayout.addWidget(self.mapWidget)
-        mapSchedLayout.addItem(spacer)
-        mapSchedLayout.addWidget(self.miniScheduleCanvas)
+        mapSchedLayout = QVBoxLayout(tab2)
+        mapSchedLayout.addWidget(splitter)
 
         fullMapLayout = QVBoxLayout(tab3)
         # # Full schedule needs a toolbar, so we can zoom in and out.
