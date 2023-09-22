@@ -1,34 +1,16 @@
 # Number of robots in the fleet at startup.
 fleet_size: 4
 
-# Team-level parameters.
-# Topic where the team's footprint will be published by swarm_control.
-team_footprint_topic: "team_footprint"
-
-# 
-
-# If "Move Swarm" button is pressed, commands the whole swarm with this topic
-# with actually moving the robots with the spacemouse input
-team_command_topic: "team_vel"
-
-# If "Move Swarm Frame" button is pressed, allows to virtually adjust the desired pose of the whole swarm 
-# (?, or just the swarm frame) without actually moving the robots with the spacemouse input
-team_frame_command_topic: "team_frame_vel"
-
-# Virtual (desired) swarm frame name.
-team_tf_frame_name: "team_frame"
-
 # Publishes PoseStamped message for each robot to expand/shrink/load the swarm structure
 tf_changer_topic: "tf_changer"
 
 # Robot enable status topic.
 robot_enable_status_topic: "robot_enable_status"
 
-
 # Robot-level parameters.
 # Frame topics for each robot. Controlling these controls the TF frame
 # and not the physical robot.
-robot_frame_command_topic: "robot_frame_vel"
+robot_frame_command_topic: "/robot_frame_vel"
 
 # Command topics for each robot. Controlling these controls the phyiscal robot.
 robot_command_topic: "/d_/cmd_vel"
