@@ -305,6 +305,156 @@ class OperatorGUI(QMainWindow):
         self.machineLayout.addWidget(self.machineIDSelectButton)
         self.machineLayout.addWidget(self.machineIDReleaseButton)
 
+    def create_ticket_layout(self):
+        '''Layout for selecting, starting, and ending a ticket.'''
+        self.ticketLayout = QHBoxLayout()
+        self.ticketIDLabel = QLabel("Current Ticket")
+        self.ticketIDLabel.setAlignment(Qt.AlignCenter)
+
+        self.ticketIDComboBox = QComboBox()
+        self.update_ticket_dropdown()
+        self.ticketIDComboBox.currentIndexChanged.connect(
+            self.on_ticket_dropdown_changed
+        )
+
+        self.detailsButton = QPushButton("Details")
+        self.detailsButton.clicked.connect(self.display_ticket_details)
+
+        self.startButton = QPushButton("Start")
+        self.startButton.clicked.connect(self.start_ticket)
+
+        self.endButton = QPushButton("End")
+        self.endButton.setStyleSheet("background-color : green")
+        self.endButton.clicked.connect(self.end_ticket)
+
+        self.ticketLayout.addWidget(self.ticketIDLabel)
+        self.ticketLayout.addWidget(self.ticketIDComboBox)
+        self.ticketLayout.addWidget(self.detailsButton)
+        self.ticketLayout.addWidget(self.startButton)
+        self.ticketLayout.addWidget(self.endButton)
+
+    def create_control_layout(self):
+        '''Layout for working on a task with robots.'''
+        self.controlLayout = QVBoxLayout()
+        self.controlLayoutHor = QHBoxLayout()
+        self.create_task_layout()
+        self.create_robot_control_layout()
+
+        controlLabel = QLabel("<h3>Robot Controls</h3>")
+        controlLabel.setAlignment(Qt.AlignCenter)
+        self.controlLayout.addWidget(controlLabel)
+        self.controlLayout.addLayout(self.controlLayoutHor)
+        self.controlLayoutHor.addLayout(self.taskLayout)
+        self.controlLayoutHor.addLayout(self.robotControlLayout)
+
+    def create_task_layout(self):
+        '''Layout for task motion controls and calling the robots.'''
+        self.taskLayout = QVBoxLayout()
+
+        # Button for calling robots to the workstation.
+        self.callRobotsButton = QPushButton("Call for Robots")
+        self.callRobotsButton.clicked.connect(self.call_robots)
+
+        # Task motion controls. Start, pause, and adjust.
+        self.taskMotionGroupBox = QGroupBox("Task Motion")
+        self.taskMotionGroupBox.setCheckable(False)
+        self.taskMotionLayout = QHBoxLayout()
+
+        self.startMotionButton = QPushButton("Start Motion")
+        self.startMotionButton.clicked.connect(self.start_task_motion)
+        self.pauseMotionButton = QPushButton("Pause Motion")
+        self.pauseMotionButton.clicked.connect(self.pause_task_motion)
+
+        self.taskMotionLayout.addWidget(self.startMotionButton)
+        self.taskMotionLayout.addWidget(self.pauseMotionButton)
+
+        self.taskMotionGroupBox.setLayout(self.taskMotionLayout)
+
+        # For replacing robots.
+        self.replaceRobotGroupBox = QGroupBox("Robot Replacement")
+        self.replaceRobotGroupBox.setCheckable(False)
+        self.replaceRobotLayout = QHBoxLayout()
+
+        self.replaceRobotButton = QPushButton("Request Replacement")
+        self.replaceRobotButton.clicked.connect(self.replace_robot)
+        self.replaceRobotDropdown = QComboBox()
+        self.replaceRobotDropdown.addItem("Select Robot ID")
+
+        self.replaceRobotLayout.addWidget(self.replaceRobotButton)
+        self.replaceRobotLayout.addWidget(self.replaceRobotDropdown)
+
+        self.replaceRobotGroupBox.setLayout(self.replaceRobotLayout)
+
+        self.taskLayout.addWidget(self.callRobotsButton)
+        self.taskLayout.addWidget(self.taskMotionGroupBox)
+        self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
+        self.taskLayout.addWidget(self.replaceRobotGroupBox)
+        self.taskLayout.addStretch()
+
+    def create_robot_control_layout(self):
+        '''Layout for manually controlling the robots.
+
+        Contains buttons for enabling individual robots, frames, and their
+        team as applicable. Also contains structure controls - expand, shrink,
+        save, load. Sync frames.
+        '''
+        self.robotControlLayout = QVBoxLayout()
+
+        structureSizeLayout = QHBoxLayout()
+        self.shrinkButton = QPushButton("-")
+        self.shrinkButton.setFont(QFont('Times', structureButtonFontSize))
+        self.shrinkButton.clicked.connect(self.shrink_structure)
+
+        self.expandButton = QPushButton("+")
+        self.expandButton.setFont(QFont('Times', structureButtonFontSize))
+        self.expandButton.clicked.connect(self.expand_structure)
+
+        adjustStructure = QLabel("<h3>Adjust Structure Size</h3>")
+        adjustStructure.setAlignment(Qt.AlignCenter)
+
+        structureSizeLayout.addWidget(self.shrinkButton)
+        structureSizeLayout.addWidget(adjustStructure)
+        structureSizeLayout.addWidget(self.expandButton)
+
+        saveLoadLayout = QHBoxLayout()
+        self.saveStructureButton = QPushButton("Save Structure")
+        self.saveStructureButton.clicked.connect(self.save_structure)
+        self.loadStructureButton = QPushButton("Load Structure")
+        self.loadStructureButton.clicked.connect(self.load_structure)
+        saveLoadLayout.addWidget(self.saveStructureButton)
+        saveLoadLayout.addWidget(self.loadStructureButton)
+
+        # Sync frame and rotation disable buttons.
+        syncRotateLayout = QHBoxLayout()
+        self.syncFramesButton = QPushButton("Sync Frames")
+        self.syncFramesButton.clicked.connect(self.sync_frames)
+        syncRotateLayout.addWidget(self.syncFramesButton)
+        self.disableRotationButton = ToggleButton("Disable Rotation")
+        self.disableRotationButton.clicked.connect(self.toggle_rotation)
+        syncRotateLayout.addWidget(self.disableRotationButton)
+
+        # Team control buttons.
+        self.teamLayout = QHBoxLayout()
+
+        # Individual robot control buttons and labels.
+        self.robotLabelLayout = QHBoxLayout()
+        self.robotButtonLayout = QHBoxLayout()
+        self.robotFrameButtonLayout = QHBoxLayout()
+        self.robotLEDLayout = QHBoxLayout()
+
+        self.update_robot_control_layout()
+
+        # Add all the layouts to the control layout.
+        self.robotControlLayout.addLayout(structureSizeLayout)
+        self.robotControlLayout.addLayout(saveLoadLayout)
+        self.robotControlLayout.addLayout(syncRotateLayout)
+        self.robotControlLayout.addLayout(self.teamLayout)
+        self.robotControlLayout.addLayout(self.robotLabelLayout)
+        self.robotControlLayout.addLayout(self.robotButtonLayout)
+        self.robotControlLayout.addLayout(self.robotFrameButtonLayout)
+        self.robotControlLayout.addLayout(self.robotLEDLayout)
+        self.robotControlLayout.addStretch()
+
     def on_machine_dropdown_changed(self):
         '''Updates machine ID, name, and button when dropdown is updated.'''
         # Check the current dropdown text. If it's empty or no machine is
@@ -605,34 +755,6 @@ class OperatorGUI(QMainWindow):
             QMessageBox.information(self, "No Replacement Available", message)
             return
 
-    def create_ticket_layout(self):
-        '''Layout for selecting, starting, and ending a ticket.'''
-        self.ticketLayout = QHBoxLayout()
-        self.ticketIDLabel = QLabel("Current Ticket")
-        self.ticketIDLabel.setAlignment(Qt.AlignCenter)
-
-        self.ticketIDComboBox = QComboBox()
-        self.update_ticket_dropdown()
-        self.ticketIDComboBox.currentIndexChanged.connect(
-            self.on_ticket_dropdown_changed
-        )
-
-        self.detailsButton = QPushButton("Details")
-        self.detailsButton.clicked.connect(self.display_ticket_details)
-
-        self.startButton = QPushButton("Start")
-        self.startButton.clicked.connect(self.start_ticket)
-
-        self.endButton = QPushButton("End")
-        self.endButton.setStyleSheet("background-color : green")
-        self.endButton.clicked.connect(self.end_ticket)
-
-        self.ticketLayout.addWidget(self.ticketIDLabel)
-        self.ticketLayout.addWidget(self.ticketIDComboBox)
-        self.ticketLayout.addWidget(self.detailsButton)
-        self.ticketLayout.addWidget(self.startButton)
-        self.ticketLayout.addWidget(self.endButton)
-
     def on_ticket_dropdown_changed(self):
         '''Updates the ticket buttons when the dropdown is updated.'''
         # Check the current dropdown text. If empty or no ticket is selected,
@@ -754,59 +876,6 @@ class OperatorGUI(QMainWindow):
 
         self.update_ticket_dropdown()
 
-    def create_control_layout(self):
-        '''Layout for working on a task with robots.'''
-        self.controlLayout = QHBoxLayout()
-        self.create_task_layout()
-        self.create_robot_control_layout()
-
-        self.controlLayout.addLayout(self.taskLayout)
-        self.controlLayout.addLayout(self.robotControlLayout)
-
-    def create_task_layout(self):
-        '''Layout for task motion controls and calling the robots.'''
-        self.taskLayout = QVBoxLayout()
-
-        # Button for calling robots to the workstation.
-        self.callRobotsButton = QPushButton("Call for Robots")
-        self.callRobotsButton.clicked.connect(self.call_robots)
-
-        # Task motion controls. Start, pause, and adjust.
-        self.taskMotionGroupBox = QGroupBox("Task Motion")
-        self.taskMotionGroupBox.setCheckable(False)
-        self.taskMotionLayout = QHBoxLayout()
-
-        self.startMotionButton = QPushButton("Start Motion")
-        self.startMotionButton.clicked.connect(self.start_task_motion)
-        self.pauseMotionButton = QPushButton("Pause Motion")
-        self.pauseMotionButton.clicked.connect(self.pause_task_motion)
-
-        self.taskMotionLayout.addWidget(self.startMotionButton)
-        self.taskMotionLayout.addWidget(self.pauseMotionButton)
-
-        self.taskMotionGroupBox.setLayout(self.taskMotionLayout)
-
-        # For replacing robots.
-        self.replaceRobotGroupBox = QGroupBox("Robot Replacement")
-        self.replaceRobotGroupBox.setCheckable(False)
-        self.replaceRobotLayout = QHBoxLayout()
-
-        self.replaceRobotButton = QPushButton("Request Replacement")
-        self.replaceRobotButton.clicked.connect(self.replace_robot)
-        self.replaceRobotDropdown = QComboBox()
-        self.replaceRobotDropdown.addItem("Select Robot ID")
-
-        self.replaceRobotLayout.addWidget(self.replaceRobotButton)
-        self.replaceRobotLayout.addWidget(self.replaceRobotDropdown)
-
-        self.replaceRobotGroupBox.setLayout(self.replaceRobotLayout)
-
-        self.taskLayout.addWidget(self.callRobotsButton)
-        self.taskLayout.addWidget(self.taskMotionGroupBox)
-        self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
-        self.taskLayout.addWidget(self.replaceRobotGroupBox)
-        self.taskLayout.addStretch()
-
     def call_robots(self):
         '''Calls the robots to the station when clicked.'''
         msg = PoseStamped()
@@ -825,70 +894,6 @@ class OperatorGUI(QMainWindow):
 
     def pause_task_motion(self):
         '''.'''
-
-    def create_robot_control_layout(self):
-        '''Layout for manually controlling the robots.
-
-        Contains buttons for enabling individual robots, frames, and their
-        team as applicable. Also contains structure controls - expand, shrink,
-        save, load. Sync frames.
-        '''
-        self.robotControlLayout = QVBoxLayout()
-
-        structureSizeLayout = QHBoxLayout()
-        self.shrinkButton = QPushButton("-")
-        self.shrinkButton.setFont(QFont('Times', structureButtonFontSize))
-        self.shrinkButton.clicked.connect(self.shrink_structure)
-
-        self.expandButton = QPushButton("+")
-        self.expandButton.setFont(QFont('Times', structureButtonFontSize))
-        self.expandButton.clicked.connect(self.expand_structure)
-
-        adjustStructure = QLabel("<h2>Adjust Structure Size</h2>")
-        adjustStructure.setAlignment(Qt.AlignCenter)
-
-        structureSizeLayout.addWidget(self.shrinkButton)
-        structureSizeLayout.addWidget(adjustStructure)
-        structureSizeLayout.addWidget(self.expandButton)
-
-        saveLoadLayout = QHBoxLayout()
-        self.saveStructureButton = QPushButton("Save Structure")
-        self.saveStructureButton.clicked.connect(self.save_structure)
-        self.loadStructureButton = QPushButton("Load Structure")
-        self.loadStructureButton.clicked.connect(self.load_structure)
-        saveLoadLayout.addWidget(self.saveStructureButton)
-        saveLoadLayout.addWidget(self.loadStructureButton)
-
-        # Sync frame and rotation disable buttons.
-        syncRotateLayout = QHBoxLayout()
-        self.syncFramesButton = QPushButton("Sync Frames")
-        self.syncFramesButton.clicked.connect(self.sync_frames)
-        syncRotateLayout.addWidget(self.syncFramesButton)
-        self.disableRotationButton = ToggleButton("Disable Rotation")
-        self.disableRotationButton.clicked.connect(self.toggle_rotation)
-        syncRotateLayout.addWidget(self.disableRotationButton)
-
-        # Team control buttons.
-        self.teamLayout = QHBoxLayout()
-
-        # Individual robot control buttons and labels.
-        self.robotLabelLayout = QHBoxLayout()
-        self.robotButtonLayout = QHBoxLayout()
-        self.robotFrameButtonLayout = QHBoxLayout()
-        self.robotLEDLayout = QHBoxLayout()
-
-        self.update_robot_control_layout()
-
-        # Add all the layouts to the control layout.
-        self.robotControlLayout.addLayout(structureSizeLayout)
-        self.robotControlLayout.addLayout(saveLoadLayout)
-        self.robotControlLayout.addLayout(syncRotateLayout)
-        self.robotControlLayout.addLayout(self.teamLayout)
-        self.robotControlLayout.addLayout(self.robotLabelLayout)
-        self.robotControlLayout.addLayout(self.robotButtonLayout)
-        self.robotControlLayout.addLayout(self.robotFrameButtonLayout)
-        self.robotControlLayout.addLayout(self.robotLEDLayout)
-        self.robotControlLayout.addStretch()
 
     def clear_robot_control_layout(self):
         '''Clears the robot-specific control layout and parameters.'''
