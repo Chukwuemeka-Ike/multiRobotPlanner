@@ -83,7 +83,7 @@ class OperatorGUI(QMainWindow):
         )
 
         # *********************************************************************
-        # Swarm Version 1 Code.
+        # Swarm Version 1-inspired Code.
         # Control setup.
         self.get_control_params()
 
@@ -223,20 +223,17 @@ class OperatorGUI(QMainWindow):
     def get_control_params(self):
         '''Get the ROS parameters for controlling robots when on a task.'''
         # Parameters saved in gui_params.yaml.
-        self.resize_scaling_factor = float(rospy.get_param('resize_scaling_factor'))
-        self.input_command_topic = rospy.get_param('input_command_topic')
+        self.resize_scaling_factor = float(rospy.get_param("resize_scaling_factor"))
+        self.input_command_topic = rospy.get_param("input_command_topic")
+        self.team_command_topic = rospy.get_param("team_command_topic")
+        self.team_frame_command_topic = rospy.get_param("team_frame_command_topic")
+        self.team_tf_frame_name = rospy.get_param("team_tf_frame_name")
 
         # These parameters are task-specific, so they're empty on startup.
         # They get updated whenever a task is started.
         self.num_assigned_robots = 0
         self.assigned_robot_ids = []
         self.assigned_robot_indices = []
-
-        self.team_command_topic = ""
-        self.team_frame_command_topic = ""
-        self.team_footprint_topic = ""
-        self.team_tf_frame_name = ""
-        
 
         # Information about the robot fleet that does not change. Robot names,
         # command topics, tf frame names, enable status topic, and tf changer
@@ -678,12 +675,6 @@ class OperatorGUI(QMainWindow):
             # Robot IDs start at 1, so subtract 1 to get the indices for
             # accessing their info from the robot info lists.
             self.assigned_robot_indices = [id-1 for id in self.assigned_robot_ids]
-
-            self.team_id = response.team_id
-            self.team_command_topic = response.team_command_topic
-            self.team_frame_command_topic = response.team_frame_command_topic
-            self.team_footprint_topic = response.team_footprint_topic
-            self.team_tf_frame_name = response.team_tf_frame_name
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Robot assignment request failed: {e}.")
 
@@ -922,11 +913,6 @@ class OperatorGUI(QMainWindow):
         self.assigned_robot_ids = []
         self.assigned_robot_indices = []
 
-        self.team_command_topic = ""
-        self.team_frame_command_topic = ""
-        self.team_footprint_topic = ""
-        self.team_tf_frame_name = ""
-
         # Unregister the publishers for the buttons.
         for button in self.team_buttons:
             button.publisher.unregister()
@@ -962,7 +948,7 @@ class OperatorGUI(QMainWindow):
         self.labels = []
         self.leds = []
 
-        if len(self.team_command_topic) and len(self.team_frame_command_topic):
+        if self.num_assigned_robots != 0:
             self.moveTeamButton = RobotButton("Team", self.team_command_topic)
             self.moveTeamFrameButton = RobotButton(
                 "Team Frame",
@@ -979,7 +965,6 @@ class OperatorGUI(QMainWindow):
 
             # Create the LED Indicator with the robot's ID.
             led = LEDIndicator(self.assigned_robot_ids[idx])
-            # led.led_change(False)
             self.robotLEDLayout.addWidget(led)
             self.leds.append(led)
 
