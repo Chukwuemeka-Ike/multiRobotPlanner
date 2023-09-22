@@ -79,17 +79,9 @@ class RobotAssigner():
             self.robot_desired_state_topic.replace("/d_", f"/d{i}") for i in self.available
         ]
 
-        # print(f"Desired state topics: {self.robot_desired_state_topics}")
         # These topics are constant across robots and teams.
         self.tf_changer_topic = rospy.get_param("tf_changer_topic")
         self.robot_enable_status_topic = rospy.get_param("robot_enable_status_topic")
-
-        # Get the per-team parameters.
-        # Whenever a ticket's assignments are requested, these are also sent.
-        self.team_command_topic = rospy.get_param("team_command_topic")
-        self.team_frame_command_topic = rospy.get_param("team_frame_command_topic")
-        self.team_footprint_topic = rospy.get_param("team_footprint_topic")
-        self.team_tf_frame_name = rospy.get_param("team_tf_frame_name")
 
         # Assignments is a dictionary with job IDs as keys and dictionaries
         # of the jobs' ticket-robot assignments as values.
@@ -104,15 +96,6 @@ class RobotAssigner():
         # Ticket dict and job list. These come from the Ticket Manager.
         self.all_tickets = {}
         self.job_list = []
-
-        # Team. Dictionary mapping tickets to the team IDs that are associated
-        # with them. When we send this information over, it is the lowest ID
-        # that is given to that team.
-        # {ticket_id: [team_ids], ...}.
-        self.teams = {}
-
-        # Lowest team ID that can be given to a new team.
-        self.minTeamID = 1
 
         # Percentage that must be met before robots will be assigned to a job.
         self.assign_threshold = 0.75
@@ -184,7 +167,7 @@ class RobotAssigner():
         )
 
     def send_robot_assignments(self, request: RobotAssignmentsRequest):
-        '''Sends info about the robots and team assigned to a requested ticket ID.
+        '''Sends info about the robots assigned to a requested ticket ID.
 
         If the job_id isn't in assignments, there are no assigned robots, and
         we return empty lists and strings.
@@ -202,48 +185,9 @@ class RobotAssigner():
 
         num_assigned_robots = len(assigned_ids)
 
-        # Robot IDs start at 1, so subtract 1 to get the indices for
-        # accessing their info from the robot info lists.
-        indices = [id-1 for id in assigned_ids]
-        robot_names = []
-        robot_frame_command_topics = []
-        robot_command_topics = []
-        virtual_robot_frame_names = []
-        real_robot_frame_names = []
-        robot_desired_state_topics = []
-
-        for idx in indices:
-            robot_names.append(self.robot_names[idx])
-            robot_frame_command_topics.append(self.robot_frame_command_topics[idx])
-            robot_command_topics.append(self.robot_command_topics[idx])
-            virtual_robot_frame_names.append(self.virtual_robot_frame_names[idx])
-            real_robot_frame_names.append(self.real_robot_frame_names[idx])
-            robot_desired_state_topics.append(self.robot_desired_state_topics[idx])
-
-        team_id = 0
-        team_command_topic = ""
-        team_frame_command_topic = ""
-        team_footprint_topic = ""
-        team_tf_frame_name = ""
-        if ticket_id in self.teams:
-            team_id = min(self.teams[ticket_id])
-            team_command_topic = self.team_command_topic.replace("team_", f"team_{team_id}_")
-            team_frame_command_topic = self.team_frame_command_topic.replace("team_", f"team_{team_id}_")
-            team_footprint_topic = self.team_footprint_topic.replace("team_", f"team_{team_id}_")
-            team_tf_frame_name = self.team_tf_frame_name.replace("team_", f"team_{team_id}_")
-
         return RobotAssignmentsResponse(
             num_assigned_robots,
             assigned_ids,
-            team_id,
-            team_command_topic,
-            team_frame_command_topic,
-            team_footprint_topic,
-            team_tf_frame_name,
-            # "desired_swarm_vel",
-            # "just_swarm_vel",
-            # "/swarm_footprint",
-            # "/swarm_frame"
         )
 
     def update_robot_assignments(self, _):
@@ -295,13 +239,10 @@ class RobotAssigner():
                             ticket_id, self.all_tickets, top_level_tickets
                         )
                         top_level_assignments = []
-                        top_level_teams = []
                         for top_level_ticket in top_level_tickets:
                             top_level_assignments += \
                                 self.get_ticket_assignments(top_level_ticket)
-                            top_level_teams += self.teams[top_level_ticket].copy()
                         self.assignments[job_id][ticket_id] = top_level_assignments
-                        self.teams[ticket_id] = top_level_teams
 
                 # Check the number of robots needed still matches assigned.
                 self.update_existing_job_assigned_number(job)
@@ -318,7 +259,6 @@ class RobotAssigner():
         for job_id, assignments in self.assignments.items():
             print(f"Job {job_id}: {assignments}")
         print(f"Job assigned robots: {self.job_assigned_robots}")
-        print(f"Teams: {self.teams}")
         print(f"Available: {self.available}")
         print(f"Occupied: {self.occupied}")
         print()
@@ -357,10 +297,6 @@ class RobotAssigner():
         for robot in self.job_assigned_robots[job_id]:
             del(self.occupied[robot])
         self.available += self.job_assigned_robots[job_id].copy()
-
-        # Remove the tickets from teams.
-        for ticket_id, _ in self.assignments[job_id].items():
-            del(self.teams[ticket_id])
 
         # Delete the job from assignments and job_assigned_robots.
         del(self.assignments[job_id])
@@ -515,8 +451,6 @@ class RobotAssigner():
         children. That way, the same number of robots is assigned at every
         level of the tree.
 
-        Also assigns team IDs to each level of the job tree.
-
         Args:
             job_id:
             job_start_points:
@@ -549,10 +483,6 @@ class RobotAssigner():
             #       f"Assigned: {assigned_robots}. "
             #       f"Job branch: {linear_job}.")
 
-            # Create a team ID for the robots assigned to the branch.
-            team_id = self.minTeamID
-            self.minTeamID += 1
-
             # Add the assignments to each ticket in that branch.
             for ticket in linear_job:
                 # Add the assignments to that ticket if it's already in 
@@ -563,13 +493,6 @@ class RobotAssigner():
                             job_assignments[ticket].append(robot)
                 else:
                     job_assignments[ticket] = assigned_robots.copy()
-
-                # Add the team ID to that ticket's list if it's already
-                # in the dict. Otherwise, create a new entry.
-                if ticket in self.teams:
-                    self.teams[ticket].append(team_id)
-                else:
-                    self.teams[ticket] = [team_id]
 
             # Add the assignments to the assigned_ids.
             assigned_ids += assigned_robots.copy()
@@ -633,7 +556,6 @@ class RobotAssigner():
             print(f"Job ID: {job_id}: {assignments}")
         print(f"Available: {self.available}")
         print(f"Occupied: {self.occupied}")
-        print(f"Teams: {self.teams}")
         print()
         return RobotReplacementResponse(
             replacement_id,
