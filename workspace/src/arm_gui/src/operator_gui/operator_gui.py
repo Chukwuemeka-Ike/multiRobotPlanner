@@ -828,9 +828,11 @@ class OperatorGUI(QMainWindow):
         # Request the assigned robot information.
         self.request_assigned_robot_information()
 
-        # If there are no assigned robots, ask the operator if they want to
-        # work on the task manually. If they choose no, exit the function.
-        if self.num_assigned_robots == 0:
+        # If there are no assigned robots and it's a top-level ticket, ask the
+        # operator if they want to work on the task manually.
+        # If they choose no, exit the function.
+        if self.num_assigned_robots == 0 and \
+            len(self.all_tickets[self.ticket_id]["parents"]) == 0:
             message = "There are no robots assigned to this ticket." +\
                 "\nWould you like to continue manually?"
             popup_dialog = BasicConfirmDialog(
