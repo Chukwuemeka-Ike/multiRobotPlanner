@@ -227,11 +227,6 @@ uint32 ticket_id                    # ticket whose assignments we want.
 ---
 uint32 num_assigned_robots          # number of robots assigned to the ticket.
 uint32[] assigned_robot_ids         # IDs of the robots assigned to the ticket.
-uint32 team_id                      # ID of the team on that ticket.
-string team_command_topic           # topic for commanding the physical team.
-string team_frame_command_topic     # topic for commanding the team's frame.
-string team_footprint_topic         # topic for publishing the team's footprint.
-string team_tf_frame_name           #
 ```
 #### RobotReplacement
 The RobotReplacement service from the **Robot Assigner** allows the **Operator GUI** request a replacement for a specific robot while they are working on a ticket.
