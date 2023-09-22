@@ -1,10 +1,20 @@
-# When expanding/shrinking the formation structre with "+" and "-" buttons, specifies the change ratio
+# When expanding/shrinking the formation structre with "+" and "-" buttons,
+# specifies the change ratio.
 resize_scaling_factor: 0.05
 
-## Subscriber Topics
-# Topic that subscribes to a Twist msg (Deadman switch muxed Space mouse velocity command)
+## Subscriber Topics.
+# Topic that subscribes to a Twist msg (Deadman switch muxed Space mouse
+# velocity command).
 input_command_topic: "deadman_switch_spacenav_twist"
 
-## Publisher Topics
-# The LED button that enables or disables the robot from the swarm structure
-robot_enable_status_topic: "robot_enable_status"
+## Publisher Topics.
+# If "Team Motion" button is pressed, commands the whole team with this topic
+# and moves the physical robots with the spacemouse input.
+team_command_topic: "team_vel"
+
+# If "Team Motion Frame" button is pressed, commands only the team's virtual
+# frame without actually moving the robots with the spacemouse input.
+team_frame_command_topic: "team_frame_vel"
+
+# Virtual (desired) team frame name.
+team_tf_frame_name: "team_frame"
