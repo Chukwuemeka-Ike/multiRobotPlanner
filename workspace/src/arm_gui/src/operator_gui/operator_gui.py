@@ -85,6 +85,9 @@ class OperatorGUI(QMainWindow):
         # *********************************************************************
         # Swarm Version 1-inspired Code.
         # Control setup.
+        self.tf = TransformListener()
+        # self.tf_changer = None
+
         self.get_control_params()
 
         self.team_buttons = []
@@ -95,9 +98,6 @@ class OperatorGUI(QMainWindow):
         self.synced_control_enabled = False
         self.rotation_disabled = False
         self.translation_disabled = False
-
-        self.tf = TransformListener()
-        self.tf_changer = None
 
         # Subscribe to the input command topic.
         rospy.Subscriber(self.input_command_topic, Twist, self.offset_callback)
@@ -1043,7 +1043,7 @@ class OperatorGUI(QMainWindow):
 
                 poseMsg = PoseStamped()
                 poseMsg.header.frame_id = self.virtual_robot_frame_names[robot_idx]
-                
+
                 poseMsg.pose.position.x = float(trans[0])
                 poseMsg.pose.position.y = float(trans[1])
                 poseMsg.pose.position.z = float(trans[2])
