@@ -874,6 +874,12 @@ class OperatorGUI(QMainWindow):
 
         self.is_ongoing = False
 
+        # Disable all robots before clearing the robot controls.
+        for led in self.leds:
+            led.active = False
+            led.setChecked(led.active)
+        self.status_manager.publish_enable_status()
+
         # Clear the robot control layout.
         self.clear_robot_control_layout()
 
