@@ -14,6 +14,7 @@ set(MSG_FILES
     IntList.msg
     RobotEnableStatus.msg
     Ticket.msg
+    TicketMotionParams.msg
     Tickets.msg
 )
 
