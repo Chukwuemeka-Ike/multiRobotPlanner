@@ -32,7 +32,8 @@ from arm_utils.conversion_utils import convert_ticket_list_to_task_dict
 
 from gui_common.dialogs import BasicConfirmDialog, TicketDetailsDialog
 from gui_common.gui_elements import ToggleButton, FixedWidthLabel,\
-        LEDIndicator, LEDManager, MapWidget, RobotButton
+        LEDIndicator, LEDManager, MapWidget, RobotButton, ServiceButton,\
+        ToggleServiceButton
 from gui_common.gui_utils import clear_layout, disable_layout, enable_layout
 
 
@@ -365,31 +366,48 @@ class OperatorGUI(QMainWindow):
         '''Layout for task motion controls and calling the robots.'''
         self.taskLayout = QVBoxLayout()
 
+        # Task motion controls. Start, pause, adjust, and cancel.
+        self.automatedMotionGroupBox = QGroupBox("Automated Motion")
+        self.automatedMotionGroupBox.setCheckable(False)
+        self.automatedMotionLayout = QGridLayout()
+
         # Button for calling robots to the workstation.
-        self.callRobotsButton = QPushButton("Call for Robots")
-        self.callRobotsButton.clicked.connect(self.call_robots)
+        self.callRobotsButton = QPushButton("Call Robots to Workstation")
+        self.callRobotsButton.clicked.connect(self.call_robots_to_station)
 
-        # Task motion controls. Start, pause, and adjust.
-        self.taskMotionGroupBox = QGroupBox("Task Motion")
-        self.taskMotionGroupBox.setCheckable(False)
-        self.taskMotionLayout = QHBoxLayout()
+        # Button for starting task-specific motion.
+        self.startTaskMotion = QPushButton("Start Task Motion")
+        self.startTaskMotion.clicked.connect(self.start_task_motion)
 
-        self.startMotionButton = QPushButton("Start Motion")
-        self.startMotionButton.clicked.connect(self.start_task_motion)
-        self.pauseMotionButton = QPushButton("Pause Motion")
-        self.pauseMotionButton.clicked.connect(self.pause_task_motion)
+        # Buttons for pausing, continuing, cancelling, and adjusting
+        # automated robot motions.
+        self.enableMotionButton = ServiceButton(
+            "Enable Execution", "enable_path_execution", log_tag
+        )
+        self.disableMotionButton = ServiceButton(
+            "Disable Execution", "disable_path_execution", log_tag
+        )
+        self.cancelMotionButton = ServiceButton(
+            "Cancel Execution", "cancel_path_execution", log_tag
+        )
+        self.adjustMotionButton = ToggleServiceButton(
+            "Adjust Path", "toggle_adjust_path", log_tag
+        )
 
-        self.taskMotionLayout.addWidget(self.startMotionButton)
-        self.taskMotionLayout.addWidget(self.pauseMotionButton)
+        self.automatedMotionLayout.addWidget(self.callRobotsButton, 0, 0)
+        self.automatedMotionLayout.addWidget(self.startTaskMotion, 0, 1)
+        self.automatedMotionLayout.addWidget(self.enableMotionButton, 1, 0)
+        self.automatedMotionLayout.addWidget(self.disableMotionButton, 1, 1)
+        self.automatedMotionLayout.addWidget(self.cancelMotionButton, 2, 0)
+        self.automatedMotionLayout.addWidget(self.adjustMotionButton, 2, 1)
+        self.automatedMotionGroupBox.setLayout(self.automatedMotionLayout)
 
-        self.taskMotionGroupBox.setLayout(self.taskMotionLayout)
-
-        # For replacing robots.
+        # Robot replacement.
         self.replaceRobotGroupBox = QGroupBox("Robot Replacement")
         self.replaceRobotGroupBox.setCheckable(False)
         self.replaceRobotLayout = QHBoxLayout()
 
-        self.replaceRobotButton = QPushButton("Request Replacement")
+        self.replaceRobotButton = QPushButton("Request a Replacement")
         self.replaceRobotButton.clicked.connect(self.replace_robot)
         self.replaceRobotDropdown = QComboBox()
         self.replaceRobotDropdown.addItem("Select Robot ID")
@@ -399,9 +417,7 @@ class OperatorGUI(QMainWindow):
 
         self.replaceRobotGroupBox.setLayout(self.replaceRobotLayout)
 
-        self.taskLayout.addWidget(self.callRobotsButton)
-        self.taskLayout.addWidget(self.taskMotionGroupBox)
-        self.taskLayout.addWidget(FixedWidthLabel("Placeholder for Task Specific Controls", 300))
+        self.taskLayout.addWidget(self.automatedMotionGroupBox)
         self.taskLayout.addWidget(self.replaceRobotGroupBox)
         self.taskLayout.addStretch()
 
@@ -892,9 +908,13 @@ class OperatorGUI(QMainWindow):
 
         self.update_ticket_dropdown()
 
-    def call_robots(self):
+    def call_robots_to_station(self):
         '''Calls the robots to the station when clicked.'''
         msg = PoseStamped()
+
+        # Header and map frame.
+        msg.header.stamp = rospy.Time.now()
+        msg.header.frame_id = "map"
 
         # Get the machine's location.
         msg.pose.position.x = self.machine_location[0]
@@ -903,13 +923,8 @@ class OperatorGUI(QMainWindow):
 
         print(msg)
 
-        # self.call_robots_pub.publish(msg)
+        self.call_robots_pub.publish(msg)
 
-    def start_task_motion(self):
-        '''.'''
-
-    def pause_task_motion(self):
-        '''.'''
 
     def clear_robot_control_layout(self):
         '''Clears the robot-specific control layout and parameters.'''
@@ -1023,7 +1038,6 @@ class OperatorGUI(QMainWindow):
                 if(self.buttons[i].enabled):
                     self.buttons[i].publisher.publish(msg)
 
-# TODO: Cross-check structure mechanisms. Do they make sense?
     def sync_frames(self):
         '''Copies real robot frame to virtual robot frame.
 
