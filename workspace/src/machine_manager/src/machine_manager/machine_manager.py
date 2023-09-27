@@ -40,6 +40,7 @@ class MachineManager():
         # Number of each machine type.
         self.machine_type_nums = rospy.get_param('machine_type_nums')
         self.machine_location_list = rospy.get_param('machine_locations')
+        self.needle_location_list = rospy.get_param('needle_locations')
 
         # Create machine IDs based on how many there are of each type.
         # Grouped machine IDs is a list of lists where each list is the set
@@ -152,7 +153,8 @@ class MachineManager():
             self.machine_states[machine_id],
             self.assigned_tickets[machine_id],
             self.ready_assigned_tickets[machine_id],
-            self.machine_locations[machine_id]
+            self.machine_locations[machine_id],
+            self.needle_location_list[machine_id]
         )
 
     def send_unbound_machines(self, request):
