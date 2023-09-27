@@ -18,6 +18,7 @@ from rviz import bindings as rviz
 
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int32
+from std_srvs.srv import SetBool, SetBoolRequest, Trigger, TriggerRequest
 
 from arm_msgs.msg import RobotEnableStatus
 
@@ -45,6 +46,57 @@ class RobotButton(ToggleButton):
         self.buttonName = button_name + "\n Motion Enable"
         super().__init__(self.buttonName)
         self.publisher = rospy.Publisher(button_topic, Twist, queue_size=0)
+
+
+class ServiceButton(QPushButton):
+    '''A push button that calls a service when clicked.'''
+    def __init__(self, label: str, button_service: str, log_tag: str) -> None:
+        '''.'''
+        super().__init__(label)
+        self.buttonService = button_service
+        self.logTag = log_tag # Tag to use when sending logs.
+        self.pressed.connect(self._buttonPressed)
+
+    def _buttonPressed(self):
+        '''Calls the service .'''
+        rospy.wait_for_service(self.buttonService, timeout=1)
+        try:
+            request = TriggerRequest()
+            service = rospy.ServiceProxy(self.buttonService, Trigger)
+            service(request)
+        except rospy.ServiceException as e:
+            rospy.logerr(f'{self.logTag}: Service call failed: {e}.')
+
+
+class ToggleServiceButton(ToggleButton):
+    '''Push button that calls a service and changes color based on response.'''
+    def __init__(self, label: str, button_service: str, log_tag: str) -> None:
+        '''.'''
+        super().__init__(label)
+        self.buttonService = button_service
+        self.logTag = log_tag
+
+    def _buttonPressed(self):
+        '''Toggles the button color when pressed.'''
+        # Desired state is opposite of button's enable when it was pressed.
+        desired_state = not(self.enabled)
+        rospy.wait_for_service(self.buttonService, timeout=1)
+        try:
+            request = SetBoolRequest()
+            request.data = desired_state
+            service = rospy.ServiceProxy(self.buttonService, SetBool)
+            result = service(request)
+
+            # Only toggle the enable state if call succeeds.
+            if result:
+                self.enabled = not(self.enabled)
+        except rospy.ServiceException as e:
+            rospy.logerr(f'{self.logTag}: Service call failed: {e}.')
+
+        if(self.enabled):
+            self.setStyleSheet("QPushButton {background-color: blue; color: white;}")
+        else:
+            self.setStyleSheet("QPushButton {background-color: light gray; color: black;}")
 
 
 class FixedWidthLabel(QLabel):
