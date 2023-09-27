@@ -634,7 +634,7 @@ class SupervisorGUI(QMainWindow):
                 # The layout holding the labels.
                 ticketLayout = QHBoxLayout()
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket_id}", labelWidth))
-                ticketLayout.addWidget(FixedWidthLabel(f"{ticket['parents']}", labelWidth))
+                ticketLayout.addWidget(FixedWidthLabel(f"{list(ticket['parents'])}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['duration']: .2f}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.machine_type_names[ticket['machine_type']]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{num_robots_needed}", labelWidth))
