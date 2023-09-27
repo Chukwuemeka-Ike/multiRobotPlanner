@@ -355,17 +355,18 @@ class OperatorGUI(QMainWindow):
 
     def create_control_layout(self):
         '''Layout for working on a task with robots.'''
-        self.controlLayout = QVBoxLayout()
-        self.controlLayoutHor = QHBoxLayout()
+        self.controlLayout = QGridLayout()
         self.create_task_layout()
         self.create_robot_control_layout()
 
         controlLabel = QLabel("<h3>Robot Controls</h3>")
         controlLabel.setAlignment(Qt.AlignCenter)
-        self.controlLayout.addWidget(controlLabel)
-        self.controlLayout.addLayout(self.controlLayoutHor)
-        self.controlLayoutHor.addLayout(self.taskLayout)
-        self.controlLayoutHor.addLayout(self.robotControlLayout)
+        controlLabel.setFrameStyle(QFrame.Box | QFrame.Plain)
+        controlLabel.setStyleSheet("background-color: darkgray;")
+
+        self.controlLayout.addWidget(controlLabel, 0, 0, 1, 2)
+        self.controlLayout.addLayout(self.taskLayout, 1, 0)
+        self.controlLayout.addLayout(self.robotControlLayout, 1, 1)
 
     def create_task_layout(self):
         '''Layout for task motion controls and calling the robots.'''
@@ -451,22 +452,34 @@ class OperatorGUI(QMainWindow):
         structureSizeLayout.addWidget(adjustStructure)
         structureSizeLayout.addWidget(self.expandButton)
 
-        saveLoadLayout = QHBoxLayout()
-        self.saveStructureButton = QPushButton("Save Structure")
-        self.saveStructureButton.clicked.connect(self.save_structure)
-        self.loadStructureButton = QPushButton("Load Structure")
-        self.loadStructureButton.clicked.connect(self.load_structure)
-        saveLoadLayout.addWidget(self.saveStructureButton)
-        saveLoadLayout.addWidget(self.loadStructureButton)
+        # Version 2 no longer had a need for saving and loading team
+        # structures. Keeping these commented out for the next person.
+        # saveLoadLayout = QHBoxLayout()
+        # self.saveStructureButton = QPushButton("Save Structure")
+        # self.saveStructureButton.clicked.connect(self.save_structure)
+        # self.loadStructureButton = QPushButton("Load Structure")
+        # self.loadStructureButton.clicked.connect(self.load_structure)
+        # saveLoadLayout.addWidget(self.saveStructureButton)
+        # saveLoadLayout.addWidget(self.loadStructureButton)
 
-        # Sync frame and rotation disable buttons.
-        syncRotateLayout = QHBoxLayout()
-        self.syncFramesButton = QPushButton("Sync Frames")
-        self.syncFramesButton.clicked.connect(self.sync_frames)
-        syncRotateLayout.addWidget(self.syncFramesButton)
+        # Translation and rotation disable buttons.
+        rotationTranslationLayout = QHBoxLayout()
         self.disableRotationButton = ToggleButton("Disable Rotation")
         self.disableRotationButton.clicked.connect(self.toggle_rotation)
-        syncRotateLayout.addWidget(self.disableRotationButton)
+        self.disableTranslationButton = ToggleButton("Disable Translation")
+        self.disableTranslationButton.clicked.connect(self.toggle_translation)
+        rotationTranslationLayout.addWidget(self.disableRotationButton)
+        rotationTranslationLayout.addWidget(self.disableTranslationButton)
+
+        # Center Team Frame and Sync Robot Frames buttons.
+        syncCenterLayout = QHBoxLayout()
+        self.centerTeamFrameButton = ServiceButton(
+            "Center Team Frame", "send_swarm_frame_to_centroid", log_tag
+        )
+        self.syncFramesButton = QPushButton("Sync Robot Frames")
+        self.syncFramesButton.clicked.connect(self.sync_frames)
+        syncCenterLayout.addWidget(self.centerTeamFrameButton)
+        syncCenterLayout.addWidget(self.syncFramesButton)
 
         # Team control buttons.
         self.teamLayout = QHBoxLayout()
@@ -481,8 +494,9 @@ class OperatorGUI(QMainWindow):
 
         # Add all the layouts to the control layout.
         self.robotControlLayout.addLayout(structureSizeLayout)
-        self.robotControlLayout.addLayout(saveLoadLayout)
-        self.robotControlLayout.addLayout(syncRotateLayout)
+        # self.robotControlLayout.addLayout(saveLoadLayout)
+        self.robotControlLayout.addLayout(rotationTranslationLayout)
+        self.robotControlLayout.addLayout(syncCenterLayout)
         self.robotControlLayout.addLayout(self.teamLayout)
         self.robotControlLayout.addLayout(self.robotLabelLayout)
         self.robotControlLayout.addLayout(self.robotButtonLayout)
@@ -1029,6 +1043,10 @@ class OperatorGUI(QMainWindow):
     def toggle_rotation(self):
         '''.'''
         self.rotation_disabled = not(self.rotation_disabled)
+
+    def toggle_translation(self):
+        '''.'''
+        self.translation_disabled = not(self.translation_disabled)
 
     def offset_callback(self, msg):
         '''Alters the received input command, then publishes to enabled bots.'''
