@@ -11,7 +11,7 @@ saves/
 
 # Contents of the scheduler and ticket manager log folders.
 schedule*.csv
-ticket_log*.csv
+ticket_log*
 
 # Scheduler save directories.
 Constraints/
