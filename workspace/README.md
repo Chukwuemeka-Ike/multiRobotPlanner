@@ -156,6 +156,16 @@ Each Ticket starts with basic information about the task that is needed for sche
 When the scheduler generates a schedule, it adds information for the task's start and end times, and assigns the task a machine_id.
 
 When a ticket is ongoing, its time_left field is updated every few seconds by the Ticket Manager. As the ticket goes from waiting to ready to ongoing to done, the Ticket manager updates its status.
+
+#### TicketMotionParams
+This is the message sent from the Operator GUI to the Swarm Path Executer whenever the operator wants to start a ticket's pre-planned team motion with the enabled robots.
+
+The machine and needle locations are collected from the Machine Manager when the OG is bound to that machine.
+```
+string path_csv_filename    # name of the file containing the ticket's path.
+float32[] machine_location  # [x, y, theta] location of the machine.
+float32[] needle_location   # [x, y, theta] location of the machine's needle.
+```
 #### Tickets
 List of Ticket messages.
 
@@ -213,6 +223,7 @@ string status               # status of the machine.
 uint32[] assigned_ids       # tickets assigned to the machine.
 uint32[] ready_assigned_ids # ready tickets assigned to the machine.
 float32[] machine_location  # pose near the machine for calling robots.
+float32[] needle_location  # machine's needle pose for automated task motion.
 ```
 #### RobotAssignments
 The RobotAssignments service from the **Robot Assigner** provides robot assignment information for a specific ticket. Primarily allows an operator GUI populate the robot control buttons.
