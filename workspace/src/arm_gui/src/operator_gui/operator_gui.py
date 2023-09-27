@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import *
 
-from arm_msgs.msg import Ticket
+from arm_msgs.msg import Ticket, TicketMotionParams
 from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
         MachineStatus, MachineStatusRequest,\
         RobotAssignments, RobotAssignmentsRequest,\
@@ -81,6 +81,11 @@ class OperatorGUI(QMainWindow):
         # Publisher for calling robots to the station.
         self.call_robots_pub = rospy.Publisher(
             "move_base_simple/goal", PoseStamped, queue_size=10
+        )
+
+        # Publisher for starting ticket-specific motion.
+        self.start_task_motion_pub = rospy.Publisher(
+            "path_csv_filename", TicketMotionParams, queue_size=10
         )
 
         # *********************************************************************
@@ -619,7 +624,7 @@ class OperatorGUI(QMainWindow):
             self.ready_assigned_tickets = response.ready_assigned_ids
             self.machine_status = response.status
             self.machine_location = response.machine_location
-            # print(f"Ready assigned tickets: {self.ready_assigned_tickets}")
+            self.needle_location = response.needle_location
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Machine assigned tickets "
                          f"request failed: {e}."
@@ -925,6 +930,13 @@ class OperatorGUI(QMainWindow):
 
         self.call_robots_pub.publish(msg)
 
+    def start_task_motion(self) -> None:
+        '''Sends a TicketMotionParams message.'''
+        msg = TicketMotionParams()
+        msg.path_csv_filename = f"ticket_{self.ticket_id}.csv"
+        msg.machine_location = self.machine_location
+        msg.needle_location = self.needle_location
+        self.start_task_motion_pub.publish(msg)
 
     def clear_robot_control_layout(self):
         '''Clears the robot-specific control layout and parameters.'''
