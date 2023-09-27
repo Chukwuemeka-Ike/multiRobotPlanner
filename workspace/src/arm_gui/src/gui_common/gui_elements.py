@@ -148,17 +148,19 @@ class MapWidget(QWidget):
         mapLayout = QVBoxLayout()
         mapLayout.addWidget(self.frame)
 
-        h_layout = QHBoxLayout()
+        # Removed top and side view buttons to save real estate.
+        # Keeping because they were cool.
+        # h_layout = QHBoxLayout()
 
-        self.top_button = QPushButton("Top View")
-        self.top_button.clicked.connect(self._onTopButtonClick)
-        h_layout.addWidget(self.top_button)
+        # self.top_button = QPushButton("Top View")
+        # self.top_button.clicked.connect(self._onTopButtonClick)
+        # h_layout.addWidget(self.top_button)
 
-        self.side_button = QPushButton("Side View")
-        self.side_button.clicked.connect(self._onSideButtonClick)
-        h_layout.addWidget(self.side_button)
+        # self.side_button = QPushButton("Side View")
+        # self.side_button.clicked.connect(self._onSideButtonClick)
+        # h_layout.addWidget(self.side_button)
 
-        mapLayout.addLayout(h_layout)
+        # mapLayout.addLayout(h_layout)
 
         self.setLayout(mapLayout)
 
