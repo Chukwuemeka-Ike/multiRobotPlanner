@@ -18,7 +18,8 @@ from datetime import datetime
 from std_msgs.msg import String, UInt32
 
 from arm_msgs.msg import Ticket, Tickets
-from arm_msgs.srv import RobotAssignments, RobotAssignmentsRequest,\
+from arm_msgs.srv import  MachinesOverview, MachinesOverviewRequest,\
+    RobotAssignments, RobotAssignmentsRequest,\
     Schedule, ScheduleRequest, TicketList, TicketListRequest,\
     TicketListResponse, TicketLog, TicketLogRequest,\
     TicketLogResponse
@@ -70,6 +71,9 @@ class TicketManager():
         self.ticket_log_filename = os.path.join(
             self.ticket_log_dir, self.ticket_log_filename
         )
+
+        # Get machine overview for the ticket log.
+        self.request_machine_overview()
 
         # When a ticket is done or deleted, it's removed from ticket_dict
         # and placed in done or deleted. It is no longer relevant for
@@ -453,6 +457,18 @@ class TicketManager():
         except rospy.ServiceException as e:
             rospy.logerr(f"{log_tag}: Schedule request failed: {e}.")
 
+    def request_machine_overview(self) -> None:
+        '''.'''
+        rospy.wait_for_service('machine_overview_service')
+        try:
+            request = MachinesOverviewRequest()
+            machines_overview = rospy.ServiceProxy('machine_overview_service', MachinesOverview)
+            response = machines_overview(request)
+            self.machine_ids = response.machine_ids
+            self.machine_type_names = response.machine_type_names
+        except rospy.ServiceException as e:
+            rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
+
     def on_schedule_update(self, tickets: Tickets):
         '''Updates the ticket list based on a new schedule.'''
         updated_task_dict = convert_ticket_list_to_task_dict(tickets)
@@ -738,10 +754,11 @@ class TicketManager():
         self.ticket_log[ticket_id]["ticket_id"] = ticket_id
         self.ticket_log[ticket_id]["job_id"] = ticket["job_id"]
         self.ticket_log[ticket_id]["parents"] = ticket["parents"]
-        self.ticket_log[ticket_id]["duration"] = ticket["duration"]
+        self.ticket_log[ticket_id]["estimated_duration"] = ticket["duration"]
         self.ticket_log[ticket_id]["machine_type"] = ticket["machine_type"]
         self.ticket_log[ticket_id]["machine_id"] = ticket["machine_id"]
-        self.ticket_log[ticket_id]["start"] = int(rospy.get_time())
+        self.ticket_log[ticket_id]["machine_name"] = self.machine_type_names[ticket["machine_type"]]
+        self.ticket_log[ticket_id]["start"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.ticket_log[ticket_id]["end"] = 0
         self.ticket_log[ticket_id]["status"] = ticket["status"]
         self.ticket_log[ticket_id]["assigned_bots_start"] = \
@@ -757,11 +774,16 @@ class TicketManager():
         )
         self.ticket_log[ticket_id]["num_robots"] = num_robots_needed
 
-        # TODO: Get robot assignments from RA.
-
     def log_ended_ticket(self, ticket_id: int) -> None:
         '''Saves the absolute end time when the ticket is ended.'''
-        self.ticket_log[ticket_id]["end"] = int(rospy.get_time())
+        date_format = "%Y-%m-%d %H:%M:%S"
+        self.ticket_log[ticket_id]["end"] = datetime.now().strftime(date_format)
+        startTime = self.ticket_log[ticket_id]["start"]
+        endTime = self.ticket_log[ticket_id]["end"]
+        actual_duration = datetime.strptime(endTime, date_format) -\
+                        datetime.strptime(startTime, date_format)
+        self.ticket_log[ticket_id]["actual_duration"] = \
+            actual_duration.total_seconds()
         self.ticket_log[ticket_id]["assigned_bots_end"] = \
             self.request_assigned_robot_information(ticket_id)
         if ticket_id in self.ticket_dict:
