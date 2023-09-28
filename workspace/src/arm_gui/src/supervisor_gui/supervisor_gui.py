@@ -38,7 +38,7 @@ from arm_utils.sched_utils import *
 
 from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketDialog, EditJobDialog
 from gui_common.gui_elements import FixedWidthLabel, MapWidget, SaveOnlyNavigationToolbar
-from gui_common.gui_utils import clear_layout
+from gui_common.gui_utils import clear_layout, float_minutes_to_minutes_seconds
 
 
 log_tag = "Supervisor GUI"
@@ -635,7 +635,9 @@ class SupervisorGUI(QMainWindow):
                 ticketLayout.addWidget(FixedWidthLabel(f"{num_robots_needed}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.robot_assignments[ticket_id]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['status']}", labelWidth))
-                ticketLayout.addWidget(FixedWidthLabel(f"{ticket['time_left']: .2f}", labelWidth))
+                # ticketLayout.addWidget(FixedWidthLabel(f"{ticket['time_left']: .2f}", labelWidth))
+                time_left = float_minutes_to_minutes_seconds(ticket['time_left'])
+                ticketLayout.addWidget(FixedWidthLabel(f"{time_left}", labelWidth))
 
                 ticketWidget.setLayout(ticketLayout)
 
