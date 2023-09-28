@@ -75,3 +75,13 @@ def lists_have_same_values(list1, list2):
             return False
 
     return True
+
+def float_minutes_to_minutes_seconds(float_minutes):
+    # Extract the integer part as minutes and the fractional part as seconds
+    minutes = int(float_minutes)
+    seconds = int((float_minutes - minutes) * 60)
+
+    # Format as "minute:second"
+    formatted_time = f"{minutes:02}:{seconds:02}"
+    
+    return formatted_time
