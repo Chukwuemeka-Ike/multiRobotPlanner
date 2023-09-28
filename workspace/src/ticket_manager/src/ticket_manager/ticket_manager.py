@@ -52,6 +52,9 @@ class TicketManager():
         rospy.init_node('ticket_manager')
         rospy.on_shutdown(self.shutdown_ticket_manager)
         rospy.loginfo(f"{log_tag}: Node started.")
+        rospy.loginfo(f"{log_tag}: Waiting for services from: "
+                      "Machine Manager, Robot Assigner, and Task Scheduler"
+        )
 
         # Ticket dictionary and its subsets - waiting, ready, ongoing.
         # The dictionary is what is sent to the scheduler repeatedly.
@@ -416,7 +419,7 @@ class TicketManager():
 
     def request_assigned_robot_information(self, ticket_id: int) -> list:
         '''Requests info about the robots assigned to the ticket.'''
-        rospy.wait_for_service('robot_assignments_service')
+        rospy.wait_for_service('robot_assignments_service', timeout=10)
         try:
             request = RobotAssignmentsRequest()
             request.ticket_id = ticket_id
@@ -437,7 +440,7 @@ class TicketManager():
         The request sends the whole ticket list and the ongoing tasks, so the
         scheduler knows which machine assignments to respect.        
         '''
-        rospy.wait_for_service('schedule_service')
+        rospy.wait_for_service('schedule_service', timeout=10)
         try:
             request = ScheduleRequest()
             request.tickets = convert_task_dict_to_ticket_list(self.ticket_dict)
@@ -459,7 +462,7 @@ class TicketManager():
 
     def request_machine_overview(self) -> None:
         '''.'''
-        rospy.wait_for_service('machine_overview_service')
+        rospy.wait_for_service('machine_overview_service', timeout=10)
         try:
             request = MachinesOverviewRequest()
             machines_overview = rospy.ServiceProxy('machine_overview_service', MachinesOverview)

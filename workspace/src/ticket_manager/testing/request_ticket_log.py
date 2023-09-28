@@ -6,7 +6,7 @@ from arm_utils.conversion_utils import convert_ticket_list_to_task_dict
 
 def request_ticket_log() -> dict:
     '''.'''
-    rospy.wait_for_service('ticket_log_service')
+    rospy.wait_for_service('ticket_log_service', timeout=10)
     try:
         request = TicketLogRequest()
         ticket_log = rospy.ServiceProxy('ticket_log_service', TicketLog)

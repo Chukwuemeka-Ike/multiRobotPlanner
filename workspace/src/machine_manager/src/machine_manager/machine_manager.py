@@ -31,6 +31,7 @@ class MachineManager():
         rospy.init_node('machine_manager')
         rospy.on_shutdown(self.shutdown_machine_manager)
         rospy.loginfo(f"{log_tag}: Node started.")
+        rospy.loginfo(f"{log_tag}: Waiting for service from Ticket Manager")
 
         # Machine type information parameters.
         # Names of each machine type.
@@ -179,7 +180,7 @@ class MachineManager():
 
     def request_ticket_list(self, _):
         '''Request the current ticket list from the ticket_service.'''
-        rospy.wait_for_service('ticket_service')
+        rospy.wait_for_service('ticket_service', timeout=10)
         try:
             # TicketListRequest() is empty.
             request = TicketListRequest()

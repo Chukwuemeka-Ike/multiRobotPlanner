@@ -39,6 +39,7 @@ class TaskScheduler():
         rospy.init_node('task_scheduler')
         rospy.on_shutdown(self.shutdown_task_scheduler)
         rospy.loginfo(f"{log_tag}: Node started.")
+        rospy.loginfo(f"{log_tag}: Waiting for service from Machine Manager")
 
         # Path for saving schedules to.
         self.scheduler_log_dir = rospy.get_param("scheduler_log_dir", "~/.ros")
@@ -136,7 +137,7 @@ class TaskScheduler():
 
     def request_machine_overview(self):
         '''.'''
-        rospy.wait_for_service('machine_overview_service')
+        rospy.wait_for_service('machine_overview_service', timeout=10)
         try:
             request = MachinesOverviewRequest()
             machines_overview = rospy.ServiceProxy(

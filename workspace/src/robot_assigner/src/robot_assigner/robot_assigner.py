@@ -41,6 +41,7 @@ class RobotAssigner():
         rospy.init_node('robot_assigner')
         rospy.on_shutdown(self.shutdown_robot_assigner)
         rospy.loginfo(f"{log_tag}: Node started.")
+        rospy.loginfo(f"{log_tag}: Waiting for service from Ticket Manager")
 
         # Get the number of robots in the fleet.
         self.fleet_size = rospy.get_param("fleet_size")
@@ -268,7 +269,7 @@ class RobotAssigner():
 
         Called whenever a ticket_list_update message is received.
         '''
-        rospy.wait_for_service('ticket_service')
+        rospy.wait_for_service('ticket_service', timeout=10)
 
         try:
             # TicketListRequest() is empty.

@@ -58,6 +58,9 @@ class SupervisorGUI(QMainWindow):
         rospy.init_node("supervisor_gui")
         rospy.on_shutdown(self.shutdown_gui)
         rospy.loginfo(f"{log_tag}: Node started.")
+        rospy.loginfo(f"{log_tag}: Waiting for services from: "
+                      "Machine Manager, Robot Assigner, and Ticket Manager"
+        )
 
         # RViz configuration location.
         rviz_folder = os.path.join(
@@ -480,11 +483,7 @@ class SupervisorGUI(QMainWindow):
 
     def request_ticket_list(self):
         '''Request the current ticket list from the ticket_service.'''
-        # TODO: Waiting for service blocks the GUI from startup the way it's
-        # currently set up. But waiting for service might be safer overall.
-        # Make a decision.
-        # rospy.wait_for_service('ticket_service')
-
+        rospy.wait_for_service('ticket_service', timeout=10)
         try:
             # TicketListRequest() is empty.
             request = TicketListRequest()
@@ -512,7 +511,7 @@ class SupervisorGUI(QMainWindow):
 
     def request_machine_overview(self):
         '''.'''
-        rospy.wait_for_service('machine_overview_service')
+        rospy.wait_for_service('machine_overview_service', timeout=10)
         try:
             # MachinesOverviewRequest() is empty.
             request = MachinesOverviewRequest()
@@ -535,7 +534,7 @@ class SupervisorGUI(QMainWindow):
 
     def request_assigned_robot_information(self, ticket_id: int) -> list:
         '''Requests info about the robots assigned to the ticket.'''
-        rospy.wait_for_service('robot_assignments_service')
+        rospy.wait_for_service('robot_assignments_service', timeout=10)
         try:
             request = RobotAssignmentsRequest()
             request.ticket_id = ticket_id
@@ -558,7 +557,7 @@ class SupervisorGUI(QMainWindow):
 
     def request_ticket_log(self) -> None:
         '''.'''
-        rospy.wait_for_service('ticket_log_service')
+        rospy.wait_for_service('ticket_log_service', timeout=10)
         try:
             request = TicketLogRequest()
             ticket_log = rospy.ServiceProxy('ticket_log_service', TicketLog)

@@ -53,6 +53,9 @@ class OperatorGUI(QMainWindow):
         rospy.init_node("operator_gui")
         rospy.on_shutdown(self.shutdown_gui)
         rospy.loginfo(f"{log_tag}: Node started.")
+        rospy.loginfo(f"{log_tag}: Waiting for services from: "
+                      "Machine Manager, Robot Assigner, and Ticket Manager"
+        )
 
         # RViz configuration location.
         rviz_folder = os.path.join(
@@ -93,6 +96,7 @@ class OperatorGUI(QMainWindow):
         # Control setup.
         self.tf = TransformListener()
         # self.tf_changer = None
+        self.guiStartedUp = False
 
         self.get_control_params()
 
@@ -142,6 +146,7 @@ class OperatorGUI(QMainWindow):
 
         # Show the window.
         self.show()
+        self.guiStartedUp = True
 
         # Set the update interval for the GUI in milliseconds.
         self.update_interval = 1000
@@ -195,11 +200,11 @@ class OperatorGUI(QMainWindow):
 
         # If end button is enabled, task is still ongoing. End it and release
         # the machine.
-        if self.endButton.isEnabled():
+        if self.guiStartedUp and self.endButton.isEnabled():
             self.release_machine_id()
             self.end_ticket()
         # If release button is enabled, a machine is still bound. Release it.
-        elif self.machineIDReleaseButton.isEnabled():
+        elif self.guiStartedUp and self.machineIDReleaseButton.isEnabled():
             self.release_machine_id()
 
     def closeEvent(self, event):
@@ -611,7 +616,7 @@ class OperatorGUI(QMainWindow):
 
     def request_unbound_machines(self):
         '''Requests the machines that are not already bound to a GUI.'''
-        rospy.wait_for_service('unbound_machine_service')
+        rospy.wait_for_service('unbound_machine_service', timeout=10)
         try:
             # UnboundMachinesRequest() is empty.
             request = UnboundMachinesRequest()
@@ -625,6 +630,7 @@ class OperatorGUI(QMainWindow):
 
     def request_machine_assigned_tickets(self):
         '''Requests the tickets assigned to the selected machine ID.'''
+        rospy.wait_for_service('machine_status_service', timeout=10)
         try:
             request = MachineStatusRequest()
             request.machine_id = self.machine_id
@@ -646,7 +652,7 @@ class OperatorGUI(QMainWindow):
 
     def request_ticket_list(self):
         '''Request the current ticket list from the ticket_service.'''
-        rospy.wait_for_service('ticket_service')
+        rospy.wait_for_service('ticket_service', timeout=10)
         try:
             # TicketListRequest() is empty.
             request = TicketListRequest()
@@ -667,7 +673,7 @@ class OperatorGUI(QMainWindow):
         The information includes the total number of robots in the fleet,
         robot names, command topics, and frame names.
         '''
-        rospy.wait_for_service('fleet_information_service')
+        rospy.wait_for_service('fleet_information_service', timeout=10)
         try:
             request = FleetInformationRequest()
             fleet_information = rospy.ServiceProxy(
@@ -694,7 +700,7 @@ class OperatorGUI(QMainWindow):
 
     def request_assigned_robot_information(self):
         '''Requests info about the robots assigned to the selected ticket.'''
-        rospy.wait_for_service('robot_assignments_service')
+        rospy.wait_for_service('robot_assignments_service', timeout=10)
         try:
             request = RobotAssignmentsRequest()
             request.ticket_id = self.ticket_id
@@ -724,7 +730,7 @@ class OperatorGUI(QMainWindow):
             replacement_successful: whether or not the replacement
                     was successful.
         '''
-        rospy.wait_for_service('robot_replacement_service')
+        rospy.wait_for_service('robot_replacement_service', timeout=10)
         try:
             request = RobotReplacementRequest()
             request.robot_id = robot_id
