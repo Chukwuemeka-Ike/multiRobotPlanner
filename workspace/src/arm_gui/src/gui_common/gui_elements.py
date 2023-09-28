@@ -10,6 +10,8 @@ Description:
 import rospy
 import time
 
+from matplotlib.backends.backend_qtagg import \
+    NavigationToolbar2QT as NavigationToolbar
 from PyQt5.QtCore import QPointF, Qt, pyqtProperty
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
 from PyQt5.QtWidgets import QAbstractButton, QLabel, QLineEdit, QPushButton
@@ -122,6 +124,11 @@ class FixedWidthPushButton(QPushButton):
         super().__init__()
         if width is not None:
             self.setFixedWidth(width)
+
+
+class SaveOnlyNavigationToolbar(NavigationToolbar):
+    '''NavigationToolbar with only the 'Save' button.'''
+    toolitems = [t for t in NavigationToolbar.toolitems if t[0] == 'Save']
 
 
 class MapWidget(QWidget):

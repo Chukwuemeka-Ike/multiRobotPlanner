@@ -37,15 +37,11 @@ from arm_utils.job_utils import get_job_id_ticket_ids, get_leaf_locations
 from arm_utils.sched_utils import *
 
 from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketDialog, EditJobDialog
-from gui_common.gui_elements import FixedWidthLabel, MapWidget
+from gui_common.gui_elements import FixedWidthLabel, MapWidget, SaveOnlyNavigationToolbar
 from gui_common.gui_utils import clear_layout
 
 
 log_tag = "Supervisor GUI"
-
-
-class CustomNavigationToolbar(NavigationToolbar):
-    toolitems = [t for t in NavigationToolbar.toolitems if t[0] == 'Save']
 
 
 class SupervisorGUI(QMainWindow):
@@ -214,7 +210,7 @@ class SupervisorGUI(QMainWindow):
         fullMapLayout = QVBoxLayout(tab3)
         # # Full schedule needs a toolbar, so we can zoom in and out.
         # fullMapLayout.addWidget(NavigationToolbar(self.fullScheduleCanvas, tab3))
-        fullMapLayout.addWidget(CustomNavigationToolbar(self.fullScheduleCanvas, tab3))
+        fullMapLayout.addWidget(SaveOnlyNavigationToolbar(self.fullScheduleCanvas, tab3))
         fullMapLayout.addWidget(self.fullScheduleCanvas)
 
         # Set the tabs' layouts.
