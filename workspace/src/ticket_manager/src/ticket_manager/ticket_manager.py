@@ -757,11 +757,12 @@ class TicketManager():
         self.ticket_log[ticket_id]["ticket_id"] = ticket_id
         self.ticket_log[ticket_id]["job_id"] = ticket["job_id"]
         self.ticket_log[ticket_id]["parents"] = ticket["parents"]
-        self.ticket_log[ticket_id]["estimated_duration"] = ticket["duration"]
+        self.ticket_log[ticket_id]["duration"] = ticket["duration"]
+        self.ticket_log[ticket_id]["machine_name"] = \
+            self.machine_type_names[ticket["machine_type"]]
         self.ticket_log[ticket_id]["machine_type"] = ticket["machine_type"]
         self.ticket_log[ticket_id]["machine_id"] = ticket["machine_id"]
-        self.ticket_log[ticket_id]["machine_name"] = self.machine_type_names[ticket["machine_type"]]
-        self.ticket_log[ticket_id]["start"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.ticket_log[ticket_id]["start"] = int(rospy.get_time())
         self.ticket_log[ticket_id]["end"] = 0
         self.ticket_log[ticket_id]["status"] = ticket["status"]
         self.ticket_log[ticket_id]["assigned_bots_start"] = \
@@ -779,14 +780,10 @@ class TicketManager():
 
     def log_ended_ticket(self, ticket_id: int) -> None:
         '''Saves the absolute end time when the ticket is ended.'''
-        date_format = "%Y-%m-%d %H:%M:%S"
-        self.ticket_log[ticket_id]["end"] = datetime.now().strftime(date_format)
-        startTime = self.ticket_log[ticket_id]["start"]
-        endTime = self.ticket_log[ticket_id]["end"]
-        actual_duration = datetime.strptime(endTime, date_format) -\
-                        datetime.strptime(startTime, date_format)
+        self.ticket_log[ticket_id]["end"] = int(rospy.get_time())
         self.ticket_log[ticket_id]["actual_duration"] = \
-            actual_duration.total_seconds()
+                        self.ticket_log[ticket_id]["end"] - \
+                            self.ticket_log[ticket_id]["start"]
         self.ticket_log[ticket_id]["assigned_bots_end"] = \
             self.request_assigned_robot_information(ticket_id)
         if ticket_id in self.ticket_dict:
@@ -800,6 +797,7 @@ class TicketManager():
         if len(self.ticket_log) == 0:
             return
 
+        date_format = "%Y-%m-%d %H:%M:%S"
         any_id = list(self.ticket_log.keys())[0]
         column_names = self.ticket_log[any_id].keys()
 
@@ -812,7 +810,15 @@ class TicketManager():
 
             # Write the log.
             for _, ticket in self.ticket_log.items():
-                writer.writerow(ticket)
+                # Using a copy, so we can convert start and end to
+                # human-readable date times without affecting the log.
+                ticket_copy = ticket.copy()
+                ticket_copy["start"] = datetime.fromtimestamp(
+                    ticket_copy["start"]).strftime(date_format)
+                ticket_copy["end"] = datetime.fromtimestamp(
+                    ticket_copy["end"]).strftime(date_format)
+
+                writer.writerow(ticket_copy)
 
     def on_log_timer_trigger(self, _: rospy.timer.TimerEvent) -> None:
         '''Timer callback for saving the ticket logs.
