@@ -141,11 +141,21 @@ class OperatorGUI(QMainWindow):
         self.create_ui()
         self.create_status_bar()
 
+        # Manually making the fonts larger for the tablets' resolutions.
+        self.setStyleSheet("""
+                           QLabel{font-size: 18pt;}
+                           QPushButton{font-size: 18pt;}
+                           QComboBox{font-size: 18pt;}
+                           QGroupBox{font-size: 18pt;}
+                           QTextEdit{font-size: 18pt;}
+                           """)
+
         # Request info once to populate the necessary variables.
         self.update_gui()
 
         # Show the window.
-        self.show()
+        # self.show()
+        self.showMaximized()
         self.guiStartedUp = True
 
         # Set the update interval for the GUI in milliseconds.
@@ -173,13 +183,13 @@ class OperatorGUI(QMainWindow):
         If the initial window size is larger than the screen,
         maximize the window instead.
         '''
-        # screenGeometry = QDesktopWidget().screenGeometry()
-        # if screenGeometry.width() <= self.width() or \
-        #     screenGeometry.height() <= self.height():
-        self.showMaximized()
-        # else:
-        #     # Call the base class method.
-        #     super().show()
+        screenGeometry = QDesktopWidget().screenGeometry()
+        if screenGeometry.width() <= self.width() or \
+            screenGeometry.height() <= self.height():
+            self.showMaximized()
+        else:
+            # Call the base class method.
+            super().show()
 
     def update_gui(self):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
@@ -295,10 +305,6 @@ class OperatorGUI(QMainWindow):
         # Disable the ticket and control layouts.
         disable_layout(self.ticketLayout)
         disable_layout(self.controlLayout)
-
-        # self.setStyleSheet("QLabel{font-size: 18pt;}")
-        # self.setStyleSheet("QPushButton{font-size: 18pt;}")
-        # self.setStyleSheet("QComboBox{font-size: 18pt;}")
 
     def create_status_bar(self):
         '''Create a simple status bar.'''
