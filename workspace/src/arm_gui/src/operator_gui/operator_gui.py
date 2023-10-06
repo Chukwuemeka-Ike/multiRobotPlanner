@@ -143,11 +143,11 @@ class OperatorGUI(QMainWindow):
 
         # Manually making the fonts larger for the tablets' resolutions.
         self.setStyleSheet("""
-                           QLabel{font-size: 18pt;}
-                           QPushButton{font-size: 18pt;}
-                           QComboBox{font-size: 18pt;}
-                           QGroupBox{font-size: 18pt;}
-                           QTextEdit{font-size: 18pt;}
+                           QLabel{font-size: 15pt;}
+                           QPushButton{font-size: 15pt;}
+                           QComboBox{font-size: 15pt;}
+                           QGroupBox{font-size: 15pt;}
+                           QTextEdit{font-size: 15pt;}
                            """)
 
         # Request info once to populate the necessary variables.
