@@ -173,13 +173,13 @@ class OperatorGUI(QMainWindow):
         If the initial window size is larger than the screen,
         maximize the window instead.
         '''
-        screenGeometry = QDesktopWidget().screenGeometry()
-        if screenGeometry.width() <= self.width() or \
-            screenGeometry.height() <= self.height():
-            self.showMaximized()
-        else:
-            # Call the base class method.
-            super().show()
+        # screenGeometry = QDesktopWidget().screenGeometry()
+        # if screenGeometry.width() <= self.width() or \
+        #     screenGeometry.height() <= self.height():
+        self.showMaximized()
+        # else:
+        #     # Call the base class method.
+        #     super().show()
 
     def update_gui(self):
         '''Operations to keep the GUI updated. Triggered by a QTimer.'''
@@ -295,6 +295,10 @@ class OperatorGUI(QMainWindow):
         # Disable the ticket and control layouts.
         disable_layout(self.ticketLayout)
         disable_layout(self.controlLayout)
+
+        # self.setStyleSheet("QLabel{font-size: 18pt;}")
+        # self.setStyleSheet("QPushButton{font-size: 18pt;}")
+        # self.setStyleSheet("QComboBox{font-size: 18pt;}")
 
     def create_status_bar(self):
         '''Create a simple status bar.'''
