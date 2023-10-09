@@ -435,8 +435,8 @@ class OperatorGUI(QMainWindow):
         self.replaceRobotDropdown = QComboBox()
         self.replaceRobotDropdown.addItem("Select Robot ID")
 
-        self.replaceRobotLayout.addWidget(self.replaceRobotButton)
         self.replaceRobotLayout.addWidget(self.replaceRobotDropdown)
+        self.replaceRobotLayout.addWidget(self.replaceRobotButton)
 
         self.replaceRobotGroupBox.setLayout(self.replaceRobotLayout)
 
