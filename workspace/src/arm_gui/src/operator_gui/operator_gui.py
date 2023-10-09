@@ -509,16 +509,32 @@ class OperatorGUI(QMainWindow):
 
         self.update_robot_control_layout()
 
-        # Add all the layouts to the control layout.
-        self.robotControlLayout.addLayout(structureSizeLayout)
-        # self.robotControlLayout.addLayout(saveLoadLayout)
-        self.robotControlLayout.addLayout(rotationTranslationLayout)
-        self.robotControlLayout.addLayout(syncCenterLayout)
-        self.robotControlLayout.addLayout(self.teamLayout)
-        self.robotControlLayout.addLayout(self.robotLabelLayout)
-        self.robotControlLayout.addLayout(self.robotButtonLayout)
-        self.robotControlLayout.addLayout(self.robotFrameButtonLayout)
-        self.robotControlLayout.addLayout(self.robotLEDLayout)
+        # GroupBox for team controls.
+        self.teamControlLayout = QVBoxLayout()
+        self.teamControlGroupBox = QGroupBox("Team Controls")
+        self.teamControlGroupBox.setLayout(self.teamControlLayout)
+
+        # Add the layouts to the team control layout.
+        self.teamControlLayout.addLayout(structureSizeLayout)
+        # self.teamControlLayout.addLayout(saveLoadLayout)
+        self.teamControlLayout.addLayout(rotationTranslationLayout)
+        self.teamControlLayout.addLayout(syncCenterLayout)
+        self.teamControlLayout.addLayout(self.teamLayout)
+        self.teamControlLayout.addLayout(self.robotLEDLayout)
+
+        # GroupBox for individual robot controls.
+        self.IndividualControlLayout = QVBoxLayout()
+        self.IndividualControlGroupBox = QGroupBox("Individual Robot Controls")
+        self.IndividualControlGroupBox.setLayout(self.IndividualControlLayout)
+
+        # Add the layouts to the individual control layout.
+        self.IndividualControlLayout.addLayout(self.robotLabelLayout)
+        self.IndividualControlLayout.addLayout(self.robotButtonLayout)
+        self.IndividualControlLayout.addLayout(self.robotFrameButtonLayout)
+
+        # Add team and individual control group boxes to the control layout.
+        self.robotControlLayout.addWidget(self.teamControlGroupBox)
+        self.robotControlLayout.addWidget(self.IndividualControlGroupBox)
         self.robotControlLayout.addStretch()
 
     def on_machine_dropdown_changed(self):
