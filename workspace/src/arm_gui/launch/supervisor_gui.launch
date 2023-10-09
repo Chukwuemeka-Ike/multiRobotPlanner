@@ -2,7 +2,7 @@
 <launch>
     <arg name="gui_rviz" default="world_one_robot"/>
     <!-- <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/> -->
-    <param name="gui_rviz_path" value="$(find swarm2_launch)/config/rviz/sim_robots.rviz"/>
+    <param name="gui_rviz_path" value="$(find swarm2_launch)/config/rviz/supervisor.rviz"/>
 
     <node name="supervisor_gui" pkg="arm_gui" type="supervisor_gui_node" output="screen"/>
 </launch>
