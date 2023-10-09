@@ -250,6 +250,8 @@ class OperatorGUI(QMainWindow):
         self.team_frame_command_topic = rospy.get_param("team_frame_command_topic")
         self.team_tf_frame_name = rospy.get_param("team_tf_frame_name")
 
+        self.in_dev_mode = rospy.get_param("in_dev_mode", False)
+
         # These parameters are task-specific, so they're empty on startup.
         # They get updated whenever a task is started.
         self.num_assigned_robots = 0
@@ -1041,13 +1043,17 @@ class OperatorGUI(QMainWindow):
             )
             self.robotButtonLayout.addWidget(button)
             self.buttons.append(button)
-
-            button = RobotButton(
-                self.robot_names[robot_idx] + " Frame",
-                self.robot_frame_command_topics[robot_idx]
             )
-            self.robotFrameButtonLayout.addWidget(button)
-            self.buttons.append(button)
+
+            # Individual robot frame control only when in dev mode.
+            # It's just more to confuse the users.
+            if self.in_dev_mode:
+                button = RobotButton(
+                    self.robot_names[robot_idx] + " Frame",
+                    self.robot_frame_command_topics[robot_idx]
+                )
+                self.robotFrameButtonLayout.addWidget(button)
+                self.buttons.append(button)
 
             # Add the robot ID to the replace dropdown.
             self.replaceRobotDropdown.addItem(str(self.assigned_robot_ids[idx]))

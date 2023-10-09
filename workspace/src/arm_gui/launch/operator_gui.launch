@@ -2,12 +2,14 @@
 <launch>
 
     <arg name="gui_rviz" default="world_multi_robot"/>
+    <arg name="in_dev_mode" default="False"/>
     <!-- <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/> -->
-    <param name="gui_rviz_path" value="$(find swarm2_launch)/config/rviz/sim_robots.rviz"/>
+    <param name="gui_rviz_path" value="$(find swarm2_launch)/config/rviz/ws_loading.rviz"/>
+    <param name="in_dev_mode" value="$(arg in_dev_mode)"/>
 
     <node name="operator_gui" pkg="arm_gui" type="operator_gui_node" output="screen"/>
     <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
 
     <!-- RQT EZ Publisher for controlling robots. -->
-    <node type="rqt_ez_publisher" name="rqt_ez_publisher" pkg="rqt_ez_publisher" output="screen"/>
+    <!-- <node type="rqt_ez_publisher" name="rqt_ez_publisher" pkg="rqt_ez_publisher" output="screen"/> -->
 </launch>
