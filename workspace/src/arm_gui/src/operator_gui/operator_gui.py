@@ -1067,7 +1067,7 @@ class OperatorGUI(QMainWindow):
             )
 
             # Individual robot frame control only when in dev mode.
-            # It's just more to confuse the users.
+            # It'll confuse the users more if it's there and never useful.
             if self.in_dev_mode:
                 button = RobotButton(
                     self.robot_names[robot_idx] + " Frame",
