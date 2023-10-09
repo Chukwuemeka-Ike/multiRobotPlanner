@@ -11,6 +11,7 @@ import os
 import pandas as pd
 import rospy
 import rospkg
+import threading
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvas
@@ -22,10 +23,12 @@ from typing import Tuple
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import *
 
+from geometry_msgs.msg import PoseStamped, Twist
 from std_msgs.msg import UInt32
 
 from arm_msgs.msg import Ticket, Tickets
-from arm_msgs.srv import MachinesOverview, MachinesOverviewRequest,\
+from arm_msgs.srv import FleetInformation, FleetInformationRequest,\
+    MachinesOverview, MachinesOverviewRequest,\
     RobotAssignments, RobotAssignmentsRequest,\
     TicketList, TicketListRequest, TicketLog, TicketLogRequest
 
@@ -37,11 +40,12 @@ from arm_utils.job_utils import get_job_id_ticket_ids, get_leaf_locations
 from arm_utils.sched_utils import *
 
 from gui_common.dialogs import ImportTicketsDialog, NewTicketDialog, EditTicketDialog, EditJobDialog
-from gui_common.gui_elements import FixedWidthLabel, MapWidget, SaveOnlyNavigationToolbar
+from gui_common.gui_elements import FixedWidthLabel, MapWidget, RobotButton, SaveOnlyNavigationToolbar
 from gui_common.gui_utils import clear_layout, float_minutes_to_minutes_seconds
 
 
 log_tag = "Supervisor GUI"
+callback_lock = threading.Lock()
 
 
 class SupervisorGUI(QMainWindow):
@@ -65,6 +69,7 @@ class SupervisorGUI(QMainWindow):
         self.rviz_path = rospy.get_param(
             "gui_rviz_path", os.path.join(rviz_folder, "config.rviz")
         )
+        self.in_dev_mode = rospy.get_param("in_dev_mode", False)
 
         # Publishers for ticket management. Add/edit/remove ticket/job.
         self.add_ticket_pub = rospy.Publisher(
@@ -228,6 +233,12 @@ class SupervisorGUI(QMainWindow):
         tab2.setLayout(self.jobScrollLayout)
         tab3.setLayout(fullMapLayout)
 
+        # Add manual robot control tab.
+        tab4 = QWidget()
+        self.tabs.addTab(tab4, "Manual Robot Control")
+        self.setup_robot_control_layout()
+        tab4.setLayout(self.robotControlLayout)
+
         self.create_ticket_management_layout()
 
         # Add the tabs and ticket management layouts to the window's layout.
@@ -298,6 +309,71 @@ class SupervisorGUI(QMainWindow):
         ax = scheduleCanvas.figure.subplots()
 
         return scheduleCanvas, ax
+
+    def setup_robot_control_layout(self) -> None:
+        '''Sets up the layout for controlling individual robots.'''
+        self.buttons = []
+        self.labels = []
+        self.fleet_size = 0
+        self.robot_names = []
+        self.robot_command_topics = []
+        self.robot_frame_command_topics = []
+
+        self.input_command_topic = "/main/deadman_switch_spacenav_twist"
+        self.request_fleet_information()
+
+        # Subscribe to the input command topic.
+        rospy.Subscriber(self.input_command_topic, Twist, self.offset_callback)
+
+        # Layout for controlling robots.
+        self.robotControlLayout = QVBoxLayout()
+        self.robotLabelLayout = QHBoxLayout()
+        self.robotButtonLayout = QHBoxLayout()
+        self.robotFrameButtonLayout = QHBoxLayout()
+
+        for idx in range(self.fleet_size):
+            label = QLabel(self.robot_names[idx])
+            label.setAlignment(Qt.AlignCenter)
+            self.labels.append(label)
+            self.robotLabelLayout.addWidget(label)
+
+            button = RobotButton(
+                self.robot_names[idx], self.robot_command_topics[idx]
+            )
+            self.buttons.append(button)
+            self.robotButtonLayout.addWidget(button)
+            button.clicked.connect(lambda _, i=len(self.buttons)-1:
+                self.robot_enable_clicked(i)
+            )
+
+            # # Individual robot frame control only when in dev mode.
+            # # It's just more to confuse the users.
+            # if self.in_dev_mode:
+            #     button = RobotButton(
+            #         self.robot_names[idx] + " Frame",
+            #         self.robot_frame_command_topics[idx]
+            #     )
+            #     self.robotFrameButtonLayout.addWidget(button)
+            #     self.buttons.append(button)
+            #     button.clicked.connect(lambda _, i=len(self.buttons)-1:
+            #         self.robot_enable_clicked(i)
+            #     )
+
+        # Add another RViz view to make sense.
+        mapWidget = MapWidget(self.rviz_path)
+
+        self.robotControlLayout.addLayout(self.robotLabelLayout)
+        self.robotControlLayout.addLayout(self.robotButtonLayout)
+        self.robotControlLayout.addLayout(self.robotFrameButtonLayout)
+        self.robotControlLayout.addWidget(mapWidget)
+
+    def robot_enable_clicked(self, idx: int) -> None:
+        '''Disables all other enabled buttons when a bot button is clicked.'''
+        if self.buttons[idx].enabled:
+            # Disable all other enabled robot buttons.
+            for i in range(len(self.buttons)):
+                if i != idx and self.buttons[i].enabled:
+                    self.buttons[i].click()
 
     def draw_no_schedules(self, current_time: int) -> None:
         '''Draws empty graphs with the current time and windows.'''
@@ -538,6 +614,28 @@ class SupervisorGUI(QMainWindow):
         except rospy.ServiceException as e:
             rospy.logerr(f'{log_tag}: Ticket list request failed: {e}.')
 
+    def request_fleet_information(self):
+        '''Requests the information about all robots in the fleet.
+
+        The information includes the total number of robots in the fleet,
+        robot names, command topics, and frame names.
+        '''
+        rospy.wait_for_service('fleet_information_service', timeout=10)
+        try:
+            request = FleetInformationRequest()
+            fleet_information = rospy.ServiceProxy(
+                "fleet_information_service",
+                FleetInformation
+            )
+            response = fleet_information(request)
+
+            self.fleet_size = response.fleet_size
+            self.robot_names = response.robot_names
+            self.robot_command_topics = response.robot_command_topics
+            self.robot_frame_command_topics = response.robot_frame_command_topics
+        except rospy.ServiceException as e:
+            rospy.logerr(f"{log_tag}: Fleet information request failed: {e}.")
+
     def request_assigned_robot_information(self, ticket_id: int) -> list:
         '''Requests info about the robots assigned to the ticket.'''
         rospy.wait_for_service('robot_assignments_service', timeout=10)
@@ -692,3 +790,10 @@ class SupervisorGUI(QMainWindow):
             self.draw_schedules(schedule, current_time)
         else:
             self.draw_no_schedules(current_time)
+
+    def offset_callback(self, msg):
+        '''Alters the received input command, then publishes to enabled bots.'''
+        with callback_lock:
+            for i in range(len(self.buttons)):
+                if(self.buttons[i].enabled):
+                    self.buttons[i].publisher.publish(msg)
