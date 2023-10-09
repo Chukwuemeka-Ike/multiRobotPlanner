@@ -495,8 +495,8 @@ class OperatorGUI(QMainWindow):
         )
         self.syncFramesButton = QPushButton("Sync Robot Frames")
         self.syncFramesButton.clicked.connect(self.sync_frames)
-        syncCenterLayout.addWidget(self.centerTeamFrameButton)
         syncCenterLayout.addWidget(self.syncFramesButton)
+        syncCenterLayout.addWidget(self.centerTeamFrameButton)
 
         # Team control buttons.
         self.teamLayout = QHBoxLayout()
