@@ -45,7 +45,7 @@ class ToggleButton(QPushButton):
 class RobotButton(ToggleButton):
     '''.'''
     def __init__(self, button_name, button_topic) -> None:
-        self.buttonName = button_name + "\n Motion Enable"
+        self.buttonName = f"Enable\n{button_name} Motion"
         super().__init__(self.buttonName)
         self.publisher = rospy.Publisher(button_topic, Twist, queue_size=0)
 
