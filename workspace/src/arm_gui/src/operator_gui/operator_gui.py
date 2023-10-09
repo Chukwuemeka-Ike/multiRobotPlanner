@@ -1027,14 +1027,21 @@ class OperatorGUI(QMainWindow):
 
         if self.num_assigned_robots != 0:
             self.moveTeamButton = RobotButton("Team", self.team_command_topic)
+            self.teamLayout.addWidget(self.moveTeamButton)
+            self.team_buttons.append(self.moveTeamButton)
+            self.moveTeamButton.clicked.connect(
+                lambda _, i=len(self.team_buttons)-1: self.team_enable_clicked(i)
+            )
+
             self.moveTeamFrameButton = RobotButton(
                 "Team Frame",
                 self.team_frame_command_topic
             )
-            self.team_buttons.append(self.moveTeamButton)
-            self.team_buttons.append(self.moveTeamFrameButton)
-            self.teamLayout.addWidget(self.moveTeamButton)
             self.teamLayout.addWidget(self.moveTeamFrameButton)
+            self.team_buttons.append(self.moveTeamFrameButton)
+            self.moveTeamFrameButton.clicked.connect(
+                lambda _, i=len(self.team_buttons)-1: self.team_enable_clicked(i)
+            )
 
         for idx in range(self.num_assigned_robots):
             # Get the robot's index, so we select the correct topics and names.
@@ -1055,6 +1062,8 @@ class OperatorGUI(QMainWindow):
             )
             self.robotButtonLayout.addWidget(button)
             self.buttons.append(button)
+            button.clicked.connect(lambda _, i=len(self.buttons)-1:
+                self.robot_enable_clicked(i)
             )
 
             # Individual robot frame control only when in dev mode.
@@ -1066,6 +1075,9 @@ class OperatorGUI(QMainWindow):
                 )
                 self.robotFrameButtonLayout.addWidget(button)
                 self.buttons.append(button)
+                button.clicked.connect(lambda _, i=len(self.buttons)-1:
+                    self.robot_enable_clicked(i)
+                )
 
             # Add the robot ID to the replace dropdown.
             self.replaceRobotDropdown.addItem(str(self.assigned_robot_ids[idx]))
@@ -1073,6 +1085,30 @@ class OperatorGUI(QMainWindow):
         self.status_manager = LEDManager(
             self.leds, self.robot_enable_status_topic
         )
+
+    def team_enable_clicked(self, idx: int) -> None:
+        '''Disables all other enabled buttons when a team button is clicked.'''
+        if self.team_buttons[idx].enabled:
+            # Disable the other team button.
+            for i in range(len(self.team_buttons)):
+                if i != idx and self.team_buttons[i].enabled:
+                    self.team_buttons[i].click()
+            # Disable all enabled robot buttons.
+            for button in self.buttons:
+                if button.enabled:
+                    button.click()
+
+    def robot_enable_clicked(self, idx: int) -> None:
+        '''Disables all other enabled buttons when a bot button is clicked.'''
+        if self.buttons[idx].enabled:
+            # Disable all other enabled robot buttons.
+            for i in range(len(self.buttons)):
+                if i != idx and self.buttons[i].enabled:
+                    self.buttons[i].click()
+            # Disable all team buttons.
+            for button in self.team_buttons:
+                if button.enabled:
+                    button.click()
 
     def toggle_rotation(self):
         '''.'''
