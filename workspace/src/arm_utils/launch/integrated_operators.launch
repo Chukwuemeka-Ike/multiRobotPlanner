@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find swarm2_launch)/launch/workstation_launchers/ws_loading.launch"/>
+    <!-- <include file="$(find swarm2_launch)/launch/workstation_launchers/ws_megastitch.launch"/> -->
+</launch>

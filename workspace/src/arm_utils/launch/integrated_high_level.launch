@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+    <group ns='main'>
+        <include file="$(find arm_utils)/launch/high_level.launch"/>
+        <include file="$(find arm_gui)/launch/supervisor_gui.launch"/>
+        <node name="add_tickets" pkg="ticket_manager" type="add_tickets.py" output="screen">
+            <remap from="add_ticket" to="/main/add_ticket" />
+        </node>
+    </group>
+</launch>
