@@ -757,7 +757,7 @@ class OperatorGUI(QMainWindow):
             return -1, False
 
     def replace_robot(self) -> None:
-        '''.'''
+        '''Replaces the selected robot when the button is pressed.'''
         # If no options or no robot chosen, return.
         if self.replaceRobotDropdown.currentText() == "Select Robot ID" or\
             self.replaceRobotDropdown.currentText() == "":
@@ -784,6 +784,7 @@ class OperatorGUI(QMainWindow):
         for led in self.leds:
             led.active = False
             led.setChecked(led.active)
+        self.status_manager.publish_enable_status()
 
         # Request a replacement from the Robot Assigner.
         replacement_id, replacement_successful = \
@@ -796,11 +797,6 @@ class OperatorGUI(QMainWindow):
         self.clear_robot_control_layout()
         self.request_assigned_robot_information()
         self.update_robot_control_layout()
-
-        # # Disable all robots.
-        # for led in self.leds:
-        #     led.active = False
-        #     led.setChecked(led.active)
 
         if replacement_successful == True:
             # Show a message that we got a replacement.
