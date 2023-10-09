@@ -122,6 +122,16 @@ class SupervisorGUI(QMainWindow):
         self.create_ui()
         self.create_status_bar()
 
+        # # Manually making the fonts larger for the tablets' resolutions.
+        # self.setStyleSheet("""
+        #                    QLabel{font-size: 18pt;}
+        #                    QPushButton{font-size: 18pt;}
+        #                    QComboBox{font-size: 18pt;}
+        #                    QGroupBox{font-size: 18pt;}
+        #                    QTextEdit{font-size: 18pt;}
+        #                    QTabWidget{font-size: 18pt;}
+        #                    """)
+
         # Request info once to populate the necessary variables.
         self.update_gui()
 
