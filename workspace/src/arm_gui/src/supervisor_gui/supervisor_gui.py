@@ -342,9 +342,9 @@ class SupervisorGUI(QMainWindow):
             )
             self.buttons.append(button)
             self.robotButtonLayout.addWidget(button)
-            button.clicked.connect(lambda _, i=len(self.buttons)-1:
-                self.robot_enable_clicked(i)
-            )
+            # button.clicked.connect(lambda _, i=len(self.buttons)-1:
+            #     self.robot_enable_clicked(i)
+            # )
 
             # # Individual robot frame control only when in dev mode.
             # # It's just more to confuse the users.
