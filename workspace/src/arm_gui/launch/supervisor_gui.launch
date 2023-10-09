@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="gui_rviz" default="world_one_robot"/>
+    <arg name="in_dev_mode" default="False"/>
     <!-- <param name="gui_rviz_path" value="$(find arm_gui)/rviz/$(arg gui_rviz).rviz"/> -->
     <param name="gui_rviz_path" value="$(find swarm2_launch)/config/rviz/supervisor.rviz"/>
+    <param name="in_dev_mode" value="$(arg in_dev_mode)"/>
 
     <node name="supervisor_gui" pkg="arm_gui" type="supervisor_gui_node" output="screen"/>
 </launch>
