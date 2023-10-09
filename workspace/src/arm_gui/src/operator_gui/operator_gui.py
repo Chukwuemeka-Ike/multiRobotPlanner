@@ -143,11 +143,11 @@ class OperatorGUI(QMainWindow):
 
         # Manually making the fonts larger for the tablets' resolutions.
         self.setStyleSheet("""
-                           QLabel{font-size: 15pt; height: 35px;}
-                           QPushButton{font-size: 15pt; height: 35px;}
-                           QComboBox{font-size: 15pt; height: 35px;}
+                           QLabel{font-size: 15pt; height: 40px;}
+                           QPushButton{font-size: 15pt; height: 40px;}
+                           QComboBox{font-size: 15pt; height: 40px;}
                            QGroupBox{font-size: 15pt;}
-                           QTextEdit{font-size: 15pt; height: 35px;}
+                           QTextEdit{font-size: 15pt; height: 40px;}
                            """)
 
         # Request info once to populate the necessary variables.
@@ -511,7 +511,7 @@ class OperatorGUI(QMainWindow):
 
         # GroupBox for team controls.
         self.teamControlLayout = QVBoxLayout()
-        self.teamControlGroupBox = QGroupBox("Team Controls")
+        self.teamControlGroupBox = QGroupBox("Manual Team Controls")
         self.teamControlGroupBox.setLayout(self.teamControlLayout)
 
         # Add the layouts to the team control layout.
@@ -524,7 +524,7 @@ class OperatorGUI(QMainWindow):
 
         # GroupBox for individual robot controls.
         self.IndividualControlLayout = QVBoxLayout()
-        self.IndividualControlGroupBox = QGroupBox("Individual Robot Controls")
+        self.IndividualControlGroupBox = QGroupBox("Manual Robot Controls")
         self.IndividualControlGroupBox.setLayout(self.IndividualControlLayout)
 
         # Add the layouts to the individual control layout.
