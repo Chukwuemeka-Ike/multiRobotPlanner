@@ -11,6 +11,7 @@ import os
 import rospy
 import rospkg
 import threading
+import time
 from typing import Tuple
 
 from geometry_msgs.msg import Twist, PoseStamped
@@ -416,6 +417,7 @@ class OperatorGUI(QMainWindow):
         self.adjustMotionButton = ToggleServiceButton(
             "Adjust Path", "toggle_adjust_path", log_tag
         )
+        self.adjustMotionButton.clicked.connect(self.adjust_path_clicked)
 
         # Set the automated buttons taller to make touching them easier.
         # Hardcoded for the tablet resolutions.
@@ -452,6 +454,22 @@ class OperatorGUI(QMainWindow):
         self.taskLayout.addWidget(self.automatedMotionGroupBox)
         self.taskLayout.addWidget(self.replaceRobotGroupBox)
         self.taskLayout.addStretch()
+
+    def adjust_path_clicked(self) -> None:
+        '''Disables cancel execution when adjust path button is clicked. Safety.'''
+        # time.sleep(1)
+        if self.adjustMotionButton.enabled:
+            self.callRobotsButton.setEnabled(False)
+            self.startTaskMotion.setEnabled(False)
+            self.enableMotionButton.setEnabled(False)
+            self.disableMotionButton.setEnabled(False)
+            self.cancelMotionButton.setEnabled(False)
+        else:
+            self.callRobotsButton.setEnabled(True)
+            self.startTaskMotion.setEnabled(True)
+            self.enableMotionButton.setEnabled(True)
+            self.disableMotionButton.setEnabled(True)
+            self.cancelMotionButton.setEnabled(True)
 
     def create_robot_control_layout(self):
         '''Layout for manually controlling the robots.
@@ -953,6 +971,10 @@ class OperatorGUI(QMainWindow):
             led.active = False
             led.setChecked(led.active)
         self.status_manager.publish_enable_status()
+
+        # If adjust path was toggled, disable it by clicking again.
+        if self.adjustMotionButton.enabled:
+            self.adjustMotionButton.click()
 
         # Clear the robot control layout.
         self.clear_robot_control_layout()
