@@ -417,6 +417,15 @@ class OperatorGUI(QMainWindow):
             "Adjust Path", "toggle_adjust_path", log_tag
         )
 
+        # Set the automated buttons taller to make touching them easier.
+        # Hardcoded for the tablet resolutions.
+        self.callRobotsButton.setFixedHeight(94)
+        self.startTaskMotion.setFixedHeight(94)
+        self.enableMotionButton.setFixedHeight(94)
+        self.disableMotionButton.setFixedHeight(94)
+        self.cancelMotionButton.setFixedHeight(94)
+        self.adjustMotionButton.setFixedHeight(94)
+
         self.automatedMotionLayout.addWidget(self.callRobotsButton, 0, 0)
         self.automatedMotionLayout.addWidget(self.startTaskMotion, 0, 1)
         self.automatedMotionLayout.addWidget(self.enableMotionButton, 1, 0)
