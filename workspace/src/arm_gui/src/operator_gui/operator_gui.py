@@ -140,7 +140,7 @@ class OperatorGUI(QMainWindow):
 
         # Create the ui and status bar.
         self.create_ui()
-        self.create_status_bar()
+        # self.create_status_bar()
 
         # Manually making the fonts larger for the tablets' resolutions.
         self.setStyleSheet("""
@@ -282,14 +282,8 @@ class OperatorGUI(QMainWindow):
         self.create_ticket_layout()
         self.create_control_layout()
         self.mapWidget = MapWidget(self.rviz_path)
-        self.mapLayout = QHBoxLayout()
-        self.mapLayout.addWidget(self.mapWidget)
 
         # Frames are for placing borders around the layouts.
-        mapFrame = QFrame()
-        mapFrame.setLayout(self.mapLayout)
-        mapFrame.setFrameStyle(QFrame.Box | QFrame.Plain)
-
         controlFrame = QFrame()
         controlFrame.setLayout(self.controlLayout)
         controlFrame.setFrameStyle(QFrame.Box | QFrame.Plain)
@@ -298,8 +292,9 @@ class OperatorGUI(QMainWindow):
         # view and control layout.
         splitter = QSplitter()
         splitter.setOrientation(Qt.Vertical)
+        splitter.setHandleWidth(12)
         splitter.addWidget(controlFrame)
-        splitter.addWidget(mapFrame)
+        splitter.addWidget(self.mapWidget)
 
         self.overallLayout.addLayout(self.machineLayout)
         self.overallLayout.addLayout(self.ticketLayout)

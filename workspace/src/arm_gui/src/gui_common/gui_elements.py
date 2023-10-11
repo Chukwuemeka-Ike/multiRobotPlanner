@@ -15,7 +15,7 @@ from matplotlib.backends.backend_qtagg import \
 from PyQt5.QtCore import QPointF, Qt, pyqtProperty
 from PyQt5.QtGui import QBrush, QColor, QPainter, QPen, QRadialGradient
 from PyQt5.QtWidgets import QAbstractButton, QLabel, QLineEdit, QPushButton
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QFrame, QWidget, QHBoxLayout, QPushButton, QVBoxLayout
 from rviz import bindings as rviz
 
 from geometry_msgs.msg import Twist
@@ -131,7 +131,7 @@ class SaveOnlyNavigationToolbar(NavigationToolbar):
     toolitems = [t for t in NavigationToolbar.toolitems if t[0] == 'Save']
 
 
-class MapWidget(QWidget):
+class MapWidget(QFrame):
     '''Widget containing an RViz view for map visualization.'''
     def __init__(self, rviz_path: str) -> None:
         super().__init__()
@@ -169,6 +169,7 @@ class MapWidget(QWidget):
 
         # mapLayout.addLayout(h_layout)
 
+        self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setLayout(mapLayout)
 
     def _onTopButtonClick(self):

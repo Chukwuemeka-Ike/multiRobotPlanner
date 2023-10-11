@@ -125,7 +125,7 @@ class SupervisorGUI(QMainWindow):
 
         # Create the ui and status bar.
         self.create_ui()
-        self.create_status_bar()
+        # self.create_status_bar()
 
         # # Manually making the fonts larger for the tablets' resolutions.
         # self.setStyleSheet("""
@@ -215,6 +215,7 @@ class SupervisorGUI(QMainWindow):
         # Vertical layout for the map and schedule.
         splitter = QSplitter()
         splitter.setOrientation(Qt.Vertical)
+        splitter.setHandleWidth(12)
         splitter.addWidget(self.mapWidget)
         splitter.addWidget(self.miniScheduleCanvas)
 
