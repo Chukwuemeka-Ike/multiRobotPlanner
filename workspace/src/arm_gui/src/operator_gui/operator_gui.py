@@ -1051,6 +1051,9 @@ class OperatorGUI(QMainWindow):
         self.labels = []
         self.leds = []
 
+        self.shrinkButton.setEnabled(False)
+        self.expandButton.setEnabled(False)
+
         if self.num_assigned_robots != 0:
             self.moveTeamButton = RobotButton("Team", self.team_command_topic)
             self.teamLayout.addWidget(self.moveTeamButton)
@@ -1123,6 +1126,17 @@ class OperatorGUI(QMainWindow):
             for button in self.buttons:
                 if button.enabled:
                     button.click()
+            # Enable structure adjust buttons if move team is disabled.
+            # moveTeamButton is always first in the current setup.
+            if idx == 0:
+                self.shrinkButton.setEnabled(True)
+                self.expandButton.setEnabled(True)
+        else:
+            # Disable structure adjust buttons if move team is disabled.
+            # moveTeamButton is always first in the current setup.
+            if idx == 0:
+                self.shrinkButton.setEnabled(False)
+                self.expandButton.setEnabled(False)
 
     def robot_enable_clicked(self, idx: int) -> None:
         '''Disables all other enabled buttons when a bot button is clicked.'''
