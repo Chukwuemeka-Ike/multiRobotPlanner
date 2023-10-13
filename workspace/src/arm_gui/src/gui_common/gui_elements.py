@@ -41,6 +41,15 @@ class ToggleButton(QPushButton):
         else:
             self.setStyleSheet("QPushButton {background-color: light gray; color: black;}")
 
+    def setEnabled(self, enabled):
+        '''Ensures the toggle button is toggled off first and looks disabled when disabled.'''
+        if enabled:
+            self.setStyleSheet("QPushButton {background-color: light gray; color: black;}")
+        else:
+            self.enabled = False
+            self.setStyleSheet("QPushButton {background-color: light gray; color: light gray;}")
+        super().setEnabled(enabled)
+
 
 class RobotButton(ToggleButton):
     '''.'''

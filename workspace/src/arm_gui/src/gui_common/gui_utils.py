@@ -16,6 +16,8 @@ def enable_layout(layout):
         if isinstance(item, QWidgetItem):
             widget = item.widget()
             if widget:
+                if widget.layout():
+                    enable_layout(widget.layout())
                 widget.setEnabled(True)
         elif isinstance(item, QLayoutItem):
             sub_layout = item.layout()
@@ -29,6 +31,8 @@ def disable_layout(layout):
         if isinstance(item, QWidgetItem):
             widget = item.widget()
             if widget:
+                if widget.layout():
+                    disable_layout(widget.layout())
                 widget.setEnabled(False)
         elif isinstance(item, QLayoutItem):
             sub_layout = item.layout()
