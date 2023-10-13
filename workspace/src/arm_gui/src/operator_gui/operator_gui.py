@@ -11,10 +11,10 @@ import os
 import rospy
 import rospkg
 import threading
-import time
 from typing import Tuple
 
 from geometry_msgs.msg import Twist, PoseStamped
+from rosgraph_msgs.msg import Log
 from std_msgs.msg import UInt32
 from tf import TransformListener
 
@@ -112,6 +112,11 @@ class OperatorGUI(QMainWindow):
 
         # Subscribe to the input command topic.
         rospy.Subscriber(self.input_command_topic, Twist, self.offset_callback)
+
+        # Subscriber to rosout.
+        self.node_name = rospy.get_name()
+        self.node_prefix = self.node_name.split('/')[1]
+        rospy.Subscriber("/rosout", Log, self.log_callback)
         # *********************************************************************
 
         self.unbound_machines = []
@@ -300,9 +305,22 @@ class OperatorGUI(QMainWindow):
         self.overallLayout.addLayout(self.ticketLayout)
         self.overallLayout.addWidget(splitter)
 
+        # Add a Label to which we'll write the planner progress.
+        self.planProgressLabel = QLabel("")
+        self.planProgressLabel.setFixedHeight(25)
+        self.planProgressLabel.setStyleSheet(
+            "QLabel {background-color: white; color: black;}"
+        )
+        self.overallLayout.addWidget(self.planProgressLabel)
+
         # Disable the ticket and control layouts.
         disable_layout(self.ticketLayout)
         disable_layout(self.controlLayout)
+
+    def log_callback(self, msg: Log) -> None:
+        '''Reads the log and only puts the plan progress in the TextEdit.'''
+        if f"{self.node_prefix}/main/swarm_path_executer" in msg.name:
+            self.planProgressLabel.setText(msg.msg)
 
     def create_status_bar(self):
         '''Create a simple status bar.'''
@@ -452,7 +470,6 @@ class OperatorGUI(QMainWindow):
 
     def adjust_path_clicked(self) -> None:
         '''Disables cancel execution when adjust path button is clicked. Safety.'''
-        # time.sleep(1)
         if self.adjustMotionButton.enabled:
             self.callRobotsButton.setEnabled(False)
             self.startTaskMotion.setEnabled(False)
