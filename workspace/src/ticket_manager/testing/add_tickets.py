@@ -13,8 +13,8 @@ from arm_msgs.msg import Tickets, Ticket
 
 # Different sets of jobs for testing different functions.
 # from arm_constants.test_jobs_anchor import complete_ticket_list
-from arm_constants.test_jobs_demo_physical import complete_ticket_list
-# from arm_constants.test_jobs_user_study import complete_ticket_list
+# from arm_constants.test_jobs_demo_physical import complete_ticket_list
+from arm_constants.test_jobs_user_study import complete_ticket_list
 # from arm_constants.test_jobs_single import complete_ticket_list
 # from arm_constants.test_jobs_small import complete_ticket_list
 # from arm_constants.test_jobs_tree import complete_ticket_list
