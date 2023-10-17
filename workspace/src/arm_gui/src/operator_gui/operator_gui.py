@@ -12,6 +12,7 @@ import rospy
 import rospkg
 import threading
 from typing import Tuple
+import tf_conversions # quaternion stuff
 
 from geometry_msgs.msg import Twist, PoseStamped
 from rosgraph_msgs.msg import Log
@@ -1011,7 +1012,13 @@ class OperatorGUI(QMainWindow):
         # Get the machine's location.
         msg.pose.position.x = self.machine_location[0]
         msg.pose.position.y = self.machine_location[1]
-        # msg.pose.orientation. = self.machine_location[1]
+        q = tf_conversions.transformations.quaternion_from_euler(
+            0, 0, self.machine_location[2]
+        )
+        msg.pose.orientation.x = q[0]
+        msg.pose.orientation.y = q[1]
+        msg.pose.orientation.z = q[2]
+        msg.pose.orientation.w = q[3]
 
         print(msg)
 
