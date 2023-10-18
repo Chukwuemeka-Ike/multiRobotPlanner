@@ -14,7 +14,7 @@ complete_ticket_list = {
     4: {"ticket_id": 4, "machine_type": 4, "actual_duration": 37.6, "duration": 35, "parents": [3]},
 
     # Job 2.
-    5: {"ticket_id": 5, "machine_type": 0, "actual_duration": 30, "duration": 25, "parents": [], "num_robots": 2},
+    5: {"ticket_id": 5, "machine_type": 0, "actual_duration": 30, "duration": 25, "parents": [], "num_robots": 3},
     6: {"ticket_id": 6, "machine_type": 2, "actual_duration": 96, "duration": 85, "parents": [5]},
     7: {"ticket_id": 7, "machine_type": 3, "actual_duration": 65.9, "duration": 65, "parents": [6]},
     8: {"ticket_id": 8, "machine_type": 4, "actual_duration": 42.5, "duration": 50, "parents": [7]},   
