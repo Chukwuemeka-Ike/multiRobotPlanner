@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="in_dev_mode" default="False"/>
+    <group ns='main'>
+        <include file="$(find arm_gui)/launch/supervisor_gui.launch">
+            <arg name="in_dev_mode" value="$(arg in_dev_mode)" />
+        </include>
+    </group>
+</launch>
