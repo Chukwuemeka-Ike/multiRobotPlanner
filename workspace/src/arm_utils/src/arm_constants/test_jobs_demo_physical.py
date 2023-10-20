@@ -8,7 +8,7 @@ Description:
 '''
 complete_ticket_list = {
     # Job 1.
-    1: {"ticket_id": 1, "machine_type": 0, "actual_duration": 5, "duration": 10, "parents": [], "num_robots": 2},
+    1: {"ticket_id": 1, "machine_type": 0, "actual_duration": 5, "duration": 10, "parents": [], "num_robots": 3},
     2: {"ticket_id": 2, "machine_type": 1, "actual_duration": 55, "duration": 60, "parents": [1]},
     3: {"ticket_id": 3, "machine_type": 3, "actual_duration": 44.8, "duration": 47.2, "parents": [2]},
     4: {"ticket_id": 4, "machine_type": 4, "actual_duration": 37.6, "duration": 35, "parents": [3]},
