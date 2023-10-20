@@ -31,15 +31,16 @@ def draw_rectangle(
     ax.add_patch(rectangle)
     return rectangle
 
-def draw_ticket(job_num: int, machine_type_num: int, machine_id: int,
-                   start: int, duration: int, ax: plt.axes,
-                   machine_type_indices: list, machine_type_abvs: list,
-                   fontsize: int
+def draw_ticket(job_num: int, ticket_id: int, machine_type_num: int,
+                machine_id: int, start: int, duration: int, ax: plt.axes,
+                machine_type_indices: list, machine_type_abvs: list,
+                fontsize: int
     ) -> None:
     ''' given by the start-job numbers.
 
     Args:
         job_num:
+        ticket_id:
         machine_type_num:
         machine_id:
         start:
@@ -55,7 +56,8 @@ def draw_ticket(job_num: int, machine_type_num: int, machine_id: int,
     cx = rx + rectangle.get_width()/2.0
     cy = ry + rectangle.get_height()/2.0
     ax.annotate(
-        f"{machine_type_abvs[machine_type_num]} " +
+        f"{ticket_id}: "
+        f"{machine_type_abvs[machine_type_num]}" +
         f"{str(machine_type_indices[machine_id])}",
         (cx, cy),
         color='black', weight='bold',
@@ -189,7 +191,9 @@ def draw_schedule(
                 else:
                     duration = end_time-start_time
                 draw_ticket(
-                    j, ticket["machine_type"],
+                    j,
+                    ticket_id,
+                    ticket["machine_type"],
                     ticket["machine_id"],
                     start_time,
                     duration,
