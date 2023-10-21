@@ -1,5 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-    <include file="$(find swarm2_launch)/launch/sim_highbay.launch"/>
-    <include file="$(find swarm2_launch)/launch/sim_dingos.launch"/>
+    <arg name="helper_laptop" default="False"/>
+    <include file="$(find swarm2_launch)/launch/sim_highbay.launch">
+        <arg name="helper_laptop" value="$(arg helper_laptop)" />
+    </include>
+    <include file="$(find swarm2_launch)/launch/sim_dingos.launch">
+        <arg name="helper_laptop" value="$(arg helper_laptop)" />
+    </include>
 </launch>
