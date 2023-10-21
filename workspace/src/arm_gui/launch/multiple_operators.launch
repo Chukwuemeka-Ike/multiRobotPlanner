@@ -8,7 +8,7 @@
     <node name="operator_gui_1" pkg="arm_gui" type="operator_gui_node" output="screen"/>
     <node name="operator_gui_2" pkg="arm_gui" type="operator_gui_node" output="screen"/>
     <node name="operator_gui_3" pkg="arm_gui" type="operator_gui_node" output="screen"/>
-    <node name="operator_gui_4" pkg="arm_gui" type="operator_gui_node" output="screen"/>
+    <!-- <node name="operator_gui_4" pkg="arm_gui" type="operator_gui_node" output="screen"/> -->
     <rosparam command="load" file="$(find arm_gui)/config/gui_params.yaml"/>
 
     <!-- RQT EZ Publisher for controlling robots. -->
