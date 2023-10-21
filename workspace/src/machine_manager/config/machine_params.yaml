@@ -42,6 +42,61 @@ needle_locations:
 
 
 # # *******************************************************************
+# ## Scheduler demo setup parameters.
+# # Names of each machine type.
+# machine_type_names:
+#   - "Loading"
+#   - "Mega Stitch"
+#   - "RF Weld"
+#   - "Perimeter"
+#   - "Inspection"
+
+# # Abbreviations to use when drawing schedules.
+# machine_type_abvs:
+#   - "L"
+#   - "MS"
+#   - "RF"
+#   - "P"
+#   - "I"
+
+# # Number of each machine type.
+# machine_type_nums:
+#   - 2
+#   - 2
+#   - 2
+#   - 3
+#   - 2
+
+# # Pose for each machine. [x, y, θ].
+# machine_locations:
+#   - [2.0, 1.0, 0.0]
+#   - [2.0, 1.0, 0.0]
+#   - [0.0, 0.0, 0.0]
+#   - [0.0, 0.0, 0.0]
+#   - [0.0, 1.0, 3.1414]
+#   - [0.0, 1.0, 3.1414]
+#   - [-2.3, 0.0, 0.0]
+#   - [-2.3, 0.0, 0.0]
+#   - [-2.3, 0.0, 0.0]
+#   - [2.0, 1.0, 0.0]
+#   - [2.0, 1.0, 0.0]
+
+# # Pose for each needle. [x, y, θ].
+# needle_locations:
+#   - [2.0, 1.0, 0.0]
+#   - [2.0, 1.0, 0.0]
+#   - [1.5, -1.4, 0.0]
+#   - [1.5, -1.4, 0.0]
+#   - [-2.0, 2.3, 3.1414]
+#   - [-2.0, 2.3, 3.1414]
+#   - [-2.3, -2.3, 0.0]
+#   - [-2.3, -2.3, 0.0]
+#   - [-2.3, -2.3, 0.0]
+#   - [2.0, 1.0, 0.0]
+#   - [2.0, 1.0, 0.0]
+
+
+# # *******************************************************************
 # ## Anchor setup parameters.
 # # Names of each machine type.
 # machine_type_names:
