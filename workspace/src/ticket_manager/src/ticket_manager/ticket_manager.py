@@ -381,8 +381,8 @@ class TicketManager():
 
             # If the ticket had more than 5 minutes left, we re-schedule.
             # Otherwise, we let it run down.
-            if ticket_time_left >= 5:
-                self.request_schedule()
+            # if ticket_time_left >= 5:
+            self.request_schedule()
 
         except KeyError as e:
             rospy.logerr(f"Error ending ticket with ID {msg.ticket_id}.")
