@@ -20,7 +20,7 @@ from matplotlib.backends.backend_qtagg import \
 
 from typing import Tuple
 
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import QCoreApplication, Qt, QTimer
 from PyQt5.QtWidgets import *
 
 from geometry_msgs.msg import PoseStamped, Twist
@@ -137,18 +137,42 @@ class SupervisorGUI(QMainWindow):
         #                    QTabWidget{font-size: 18pt;}
         #                    """)
 
-        # Request info once to populate the necessary variables.
-        self.update_gui()
+        # Request info once to populate the necessary variables and update
+        # the job layout and schedule viz.
+        self.update_num = 1
+        self.update_data()
+        self.update_job_list_layout()
+        # self.update_schedule_display()
+        self.update_mini_schedule()
+        self.update_full_schedule()
+
+        # Rospy timers to place schedule updates and data updates
+        # on separate threads. Important to keep the GUI responsive.
+        rospy.Timer(
+            rospy.Duration(1),
+            self.update_data,
+            oneshot=False
+        )
+        rospy.Timer(
+            rospy.Duration(2),
+            self.update_mini_schedule,
+            oneshot=False
+        )
+        rospy.Timer(
+            rospy.Duration(2),
+            self.update_full_schedule,
+            oneshot=False
+        )
+
+        # QTimer for updating the job list layout. This needs to run
+        # on the main thread because it manipulates widgets.
+        self.jobTimer = QTimer(self)
+        self.jobTimer.timeout.connect(self.update_job_list_layout)
+        self.jobTimer.setInterval(2000)
+        self.jobTimer.start()
 
         # Show the window.
         self.show()
-
-        # Set the update interval for the GUI in milliseconds.
-        self.update_interval = 1000
-        self.updateTimer = QTimer()
-        self.updateTimer.timeout.connect(self.update_gui)
-        self.updateTimer.setInterval(self.update_interval)
-        self.updateTimer.start()
 
     def center_window(self) -> None:
         '''Center the window on screen.'''
@@ -175,14 +199,12 @@ class SupervisorGUI(QMainWindow):
         # Call the base class method.
         super().show()
 
-    def update_gui(self) -> None:
-        '''Operations to keep the GUI updated. Triggered by a QTimer.'''
+    def update_data(self, _: rospy.timer.TimerEvent=None) -> None:
+        '''Updates the GUI's data.'''
         self.request_ticket_list()
         self.request_ticket_log()
         self.request_machine_overview()
         self.request_robot_assignments()
-        self.update_job_list_layout()
-        self.update_schedule_display()
 
     def shutdown_gui(self) -> None:
         '''Announce GUI shutdown.'''
@@ -197,7 +219,6 @@ class SupervisorGUI(QMainWindow):
             self.create_schedule_canvas()
         self.fullScheduleCanvas, self.fullScheduleAxes = \
             self.create_schedule_canvas()
-        NavigationToolbar
 
         # Tabs for going between map and schedule, job list, and full schedule.
         self.tabs = QTabWidget()
@@ -220,7 +241,7 @@ class SupervisorGUI(QMainWindow):
         splitter.addWidget(self.miniScheduleCanvas)
 
         # Add widgets and spacer to the layout.
-        mapSchedLayout = QVBoxLayout(tab2)
+        mapSchedLayout = QVBoxLayout(tab1)
         mapSchedLayout.addWidget(splitter)
 
         fullMapLayout = QVBoxLayout(tab3)
@@ -298,7 +319,7 @@ class SupervisorGUI(QMainWindow):
 
         self.jobScrollArea.setWidget(self.jobScrollWidget)
         self.jobScrollArea.setWidgetResizable(True)
-        self.jobScrollArea.setMaximumHeight(self.height())
+        # self.jobScrollArea.setMaximumHeight(self.height())
 
         self.jobScrollLayout.addWidget(self.jobScrollArea)
 
@@ -375,59 +396,6 @@ class SupervisorGUI(QMainWindow):
             for i in range(len(self.buttons)):
                 if i != idx and self.buttons[i].enabled:
                     self.buttons[i].click()
-
-    def draw_no_schedules(self, current_time: int) -> None:
-        '''Draws empty graphs with the current time and windows.'''
-        # Clear the old figures.
-        self.miniScheduleAxes.clear()
-        self.fullScheduleAxes.clear()
-
-        draw_no_schedule(self.miniScheduleAxes, current_time)
-        draw_no_schedule(self.fullScheduleAxes, current_time)
-
-        # Refresh the canvases.
-        self.miniScheduleCanvas.draw()
-        self.fullScheduleCanvas.draw()
-
-    def draw_schedules(self, schedule: pd.DataFrame, current_time: int) -> None:
-        '''Draw the given schedule.'''
-        # # Store the current view limits in case the user is interacting.
-        # current_xlim = self.fullScheduleAxes.get_xlim()
-        # current_ylim = self.fullScheduleAxes.get_ylim()
-
-        # print(current_xlim)
-        # print(current_ylim)
-
-        # Clear the old figures.
-        self.miniScheduleAxes.clear()
-        self.fullScheduleAxes.clear()
-
-        draw_schedule(
-            schedule,
-            self.ongoing,
-            self.machine_type_indices,
-            self.machine_type_abvs,
-            self.miniScheduleAxes,
-            current_time,
-            False
-        )
-
-        draw_schedule(
-            schedule,
-            self.ongoing,
-            self.machine_type_indices,
-            self.machine_type_abvs,
-            self.fullScheduleAxes,
-            current_time,
-            True
-        )
-
-        # Refresh the canvases.
-        self.miniScheduleCanvas.draw()
-        self.fullScheduleCanvas.draw()
-
-        # self.fullScheduleAxes.set_xlim(current_xlim)
-        # self.fullScheduleAxes.set_ylim(current_ylim)
 
     def create_bulk_add_tix_dialog(self) -> None:
         '''Create a dialog for importing a set of new tickets.'''
@@ -680,7 +648,6 @@ class SupervisorGUI(QMainWindow):
         # Clear the layout first.
         clear_layout(self.jobListLayout)
         labelWidth = self.tabs.width()//10 # Currently 9 columns.
-        # print(f"Update width: {labelWidth}")
 
         titleLayout = QHBoxLayout()
         titleFrame = QFrame()
@@ -696,7 +663,6 @@ class SupervisorGUI(QMainWindow):
         titleLayout.addWidget(FixedWidthLabel("<h3>Assigned Robots</h3>", labelWidth))
         titleLayout.addWidget(FixedWidthLabel("<h3>Status</h3>", labelWidth))
         titleLayout.addWidget(FixedWidthLabel("<h3>Time Left</h3>", labelWidth))
-        # self.jobListLayout.addLayout(titleLayout)
         self.jobListLayout.addWidget(titleFrame)
 
         # Iterate through the jobs and display each in its own layout.
@@ -725,7 +691,10 @@ class SupervisorGUI(QMainWindow):
                 ticket_id = ticket['ticket_id']
 
                 # Need a widget, so we can color it according to ticket status.
-                ticketWidget = QWidget()
+                ticketWidget = QFrame()
+                # The ticket info goes in labels in this layout.
+                ticketLayout = QHBoxLayout()
+                ticketWidget.setLayout(ticketLayout)
 
                 # Number of robots needed for a ticket is the sum of all its
                 # top-level parents' num_robots.
@@ -735,20 +704,16 @@ class SupervisorGUI(QMainWindow):
                     self.all_tickets[id]["num_robots"] for id in top_level_parents
                 )
 
-                # The layout holding the labels.
-                ticketLayout = QHBoxLayout()
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket_id}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{list(ticket['parents'])}", labelWidth))
-                ticketLayout.addWidget(FixedWidthLabel(f"{ticket['duration']: .2f}", labelWidth))
+                duration = float_minutes_to_minutes_seconds(ticket['duration'])
+                ticketLayout.addWidget(FixedWidthLabel(f"{duration}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.machine_type_names[ticket['machine_type']]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{num_robots_needed}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{self.robot_assignments[ticket_id]}", labelWidth))
                 ticketLayout.addWidget(FixedWidthLabel(f"{ticket['status']}", labelWidth))
-                # ticketLayout.addWidget(FixedWidthLabel(f"{ticket['time_left']: .2f}", labelWidth))
                 time_left = float_minutes_to_minutes_seconds(ticket['time_left'])
                 ticketLayout.addWidget(FixedWidthLabel(f"{time_left}", labelWidth))
-
-                ticketWidget.setLayout(ticketLayout)
 
                 # Set the color of the ticket based on its status.
                 if ticket['status'] == "Ongoing":
@@ -763,8 +728,93 @@ class SupervisorGUI(QMainWindow):
             jobLayout.addLayout(ticketListLayout)
             self.jobListLayout.addWidget(jobFrame)
         self.jobListLayout.addStretch()
+        QCoreApplication.processEvents()
 
-    def update_schedule_display(self):
+    def update_mini_schedule(self, _: rospy.timer.TimerEvent=None) -> None:
+        '''.'''
+        absolute_ticket_dict = {}
+        current_time = int(rospy.get_time())
+        for ticket_id, ticket in self.all_tickets.items():
+            ticket_copy = ticket.copy()
+            # Convert to minutes first.
+            ticket_copy["start"] *= 60
+            ticket_copy["end"] *= 60
+            ticket_copy["time_left"] *= 60
+            ticket_copy["start"] += current_time
+            ticket_copy["end"] += current_time
+
+            if ticket_id in self.ticket_log:
+                ticket_copy["start"] = self.ticket_log[ticket_id]["start"]
+                if ticket_id in self.done:
+                    ticket_copy["end"] = self.ticket_log[ticket_id]["end"]
+            absolute_ticket_dict[ticket_id] = ticket_copy.copy()
+
+        schedule = convert_task_list_to_schedule(
+            absolute_ticket_dict, self.machine_type_names
+        )
+
+        if schedule is not None and schedule["end"].max() != 0:
+            # Clear, draw, and refresh the mini schedule.
+            self.miniScheduleAxes.clear()
+            draw_schedule(
+                schedule,
+                self.ongoing,
+                self.machine_type_indices,
+                self.machine_type_abvs,
+                self.miniScheduleAxes,
+                current_time,
+                False
+            )
+            self.miniScheduleCanvas.draw()
+        else:
+            # Clear, draw, and refresh the mini schedule.
+            self.miniScheduleAxes.clear()
+            draw_no_schedule(self.miniScheduleAxes, current_time)
+            self.miniScheduleCanvas.draw()
+
+    def update_full_schedule(self, _: rospy.timer.TimerEvent=None) -> None:
+        '''.'''
+        absolute_ticket_dict = {}
+        current_time = int(rospy.get_time())
+        for ticket_id, ticket in self.all_tickets.items():
+            ticket_copy = ticket.copy()
+            # Convert to minutes first.
+            ticket_copy["start"] *= 60
+            ticket_copy["end"] *= 60
+            ticket_copy["time_left"] *= 60
+            ticket_copy["start"] += current_time
+            ticket_copy["end"] += current_time
+
+            if ticket_id in self.ticket_log:
+                ticket_copy["start"] = self.ticket_log[ticket_id]["start"]
+                if ticket_id in self.done:
+                    ticket_copy["end"] = self.ticket_log[ticket_id]["end"]
+            absolute_ticket_dict[ticket_id] = ticket_copy.copy()
+
+        schedule = convert_task_list_to_schedule(
+            absolute_ticket_dict, self.machine_type_names
+        )
+
+        if schedule is not None and schedule["end"].max() != 0:
+            # Clear, draw, and refresh the full schedule.
+            self.fullScheduleAxes.clear()
+            draw_schedule(
+                schedule,
+                self.ongoing,
+                self.machine_type_indices,
+                self.machine_type_abvs,
+                self.fullScheduleAxes,
+                current_time,
+                True
+            )
+            self.fullScheduleCanvas.draw()
+        else:
+            # Clear, draw, and refresh the full schedule.
+            self.fullScheduleAxes.clear()
+            draw_no_schedule(self.fullScheduleAxes, current_time)
+            self.fullScheduleCanvas.draw()
+
+    def update_schedule_display(self, _: rospy.timer.TimerEvent=None) -> None:
         '''Update the schedule shown to the user.'''
         # TODO: This logic probably should be in Ticket Manager and SG
         # just requests an absolute ticket list over a service. This is
@@ -791,6 +841,46 @@ class SupervisorGUI(QMainWindow):
             self.draw_schedules(schedule, current_time)
         else:
             self.draw_no_schedules(current_time)
+
+    def draw_no_schedules(self, current_time: int) -> None:
+        '''Draws empty graphs with the current time and windows.'''
+        # Clear, draw, and refresh the mini schedule.
+        self.miniScheduleAxes.clear()
+        draw_no_schedule(self.miniScheduleAxes, current_time)
+        self.miniScheduleCanvas.draw()
+
+        # Clear, draw, and refresh the full schedule.
+        self.fullScheduleAxes.clear()
+        draw_no_schedule(self.fullScheduleAxes, current_time)
+        self.fullScheduleCanvas.draw()
+
+    def draw_schedules(self, schedule: pd.DataFrame, current_time: int) -> None:
+        '''Draw the given schedule.'''
+        # Clear, draw, and refresh the mini schedule.
+        self.miniScheduleAxes.clear()
+        draw_schedule(
+            schedule,
+            self.ongoing,
+            self.machine_type_indices,
+            self.machine_type_abvs,
+            self.miniScheduleAxes,
+            current_time,
+            False
+        )
+        self.miniScheduleCanvas.draw()
+        
+        # Clear, draw, and refresh the full schedule.
+        self.fullScheduleAxes.clear()
+        draw_schedule(
+            schedule,
+            self.ongoing,
+            self.machine_type_indices,
+            self.machine_type_abvs,
+            self.fullScheduleAxes,
+            current_time,
+            True
+        )
+        self.fullScheduleCanvas.draw()
 
     def offset_callback(self, msg):
         '''Alters the received input command, then publishes to enabled bots.'''
