@@ -102,9 +102,9 @@ def draw_no_schedule(ax: plt.Axes, current_time: int) -> None:
     bounds = [
         # (current_time - pd.Timedelta(hours=1)).to_pydatetime(),
         # (current_time + pd.Timedelta(hours=7)).to_pydatetime(),
-        # Minutes for testing.
-        (current_time - pd.Timedelta(minutes=1)).to_pydatetime(),
-        (current_time + pd.Timedelta(minutes=7)).to_pydatetime(),
+        # Minutes for testing and demos.
+        (current_time - pd.Timedelta(minutes=10)).to_pydatetime(),
+        (current_time + pd.Timedelta(minutes=70)).to_pydatetime(),
         maxY, 0
     ]
     fontSize = 10
@@ -112,7 +112,7 @@ def draw_no_schedule(ax: plt.Axes, current_time: int) -> None:
     # Draw the base graph.
     local_timezone = tz.tzlocal()
     draw_env(bounds, fontSize, local_timezone, ax)
-    
+
     # Draw the "now" line.
     ax.axvline(x=current_time, color='r', linestyle='-', lw=5)
 
@@ -150,21 +150,21 @@ def draw_schedule(
         bounds = [
             # (current_time - pd.Timedelta(hours=1)).to_pydatetime(),
             # (current_time + pd.Timedelta(hours=7)).to_pydatetime(),
-            # Minutes for testing.
-            (current_time - pd.Timedelta(minutes=1)).to_pydatetime(),
-            (current_time + pd.Timedelta(minutes=7)).to_pydatetime(),
+            # Minutes for testing and demos.
+            (current_time - pd.Timedelta(minutes=10)).to_pydatetime(),
+            (current_time + pd.Timedelta(minutes=70)).to_pydatetime(),
             maxY, 0
         ]
         fontSize = 10
     else:
         bounds = [
             schedule["start"].min().to_pydatetime(),
-            schedule["end"].max().to_pydatetime(),
+            max(schedule["end"].max().to_pydatetime(), current_time),
             maxY, 0
         ]
         fontSize = 10
-    # job_id_width = pd.Timedelta(minutes=6)
-    job_id_width = pd.Timedelta(seconds=15)
+    job_id_width = pd.Timedelta(minutes=3)
+    # job_id_width = pd.Timedelta(seconds=15)
     bounds[0] = bounds[0] - job_id_width
 
     # Draw the base graph with the computer's local timezone.
