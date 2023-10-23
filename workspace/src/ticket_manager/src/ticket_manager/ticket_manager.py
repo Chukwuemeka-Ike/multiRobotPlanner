@@ -684,9 +684,10 @@ class TicketManager():
         # Subtract the elapsed time from all ongoing tickets' time_left.
         # TODO: Probable source of the negative values being printed.
         for ticket_id in self.ongoing:
-            self.ticket_dict[ticket_id]["time_left"] =\
-                  max(self.ticket_dict[ticket_id]["time_left"] -\
-                       ongoing_time_elapsed, 0.0)
+            # Set the new time in minutes.
+            time_left = (self.ticket_dict[ticket_id]["time_left"]*60 -\
+                         ongoing_time_elapsed)/60
+            self.ticket_dict[ticket_id]["time_left"] = max(time_left, 0.0)
             # print(f"Ticket {ticket_id} time left: "
             #       f"{self.ticket_dict[ticket_id]['time_left']}")
         return ongoing_time_elapsed
@@ -709,7 +710,7 @@ class TicketManager():
         if self.ongoing_timer is not None:
             self.ongoing_timer.shutdown()
         self.ongoing_timer = rospy.Timer(
-            rospy.Duration(lowest_time_left+0.5), # Add 0.5 because 0 timers cause error.
+            rospy.Duration((lowest_time_left*60)+0.5), # Add 0.5 because 0 timers cause error.
             self.on_ongoing_timer_trigger,
             oneshot=True
         )
@@ -741,7 +742,7 @@ class TicketManager():
     def add_time_to_ticket(self, ticket_id):
         '''Adds 25% of original duration to time left on the given ticket.'''
         try:
-            self.ticket_dict[ticket_id]["time_left"] = math.ceil(0.25*\
+            self.ticket_dict[ticket_id]["time_left"] = math.ceil(0.25*60*\
                                 self.ticket_dict[ticket_id]["duration"])
         except KeyError as e:
             # If the ticket is not in here, it must have finished as scheduled.
@@ -757,7 +758,7 @@ class TicketManager():
         self.ticket_log[ticket_id]["ticket_id"] = ticket_id
         self.ticket_log[ticket_id]["job_id"] = ticket["job_id"]
         self.ticket_log[ticket_id]["parents"] = ticket["parents"]
-        self.ticket_log[ticket_id]["duration"] = ticket["duration"]
+        self.ticket_log[ticket_id]["duration"] = ticket["duration"]*60
         self.ticket_log[ticket_id]["machine_name"] = \
             self.machine_type_names[ticket["machine_type"]]
         self.ticket_log[ticket_id]["machine_type"] = ticket["machine_type"]
