@@ -1,6 +1,6 @@
-# Multi-Robot Task Scheduling and Assignment
+# Multi-Robot Task Planning in Large Structure Manufacturing
 
-This repository holds the high-level components developed in fulfillment of the **ARM-TEC-22-01-F-30** project titled "Multi-Robot Task Planning in Large Structure Manufacturing" and funded by the [Advanced Robotics for Manufacturing Institute](https://arminstitute.org/). The high-level components are responsible for the generation of optimal task schedules and robot assignments to support a manufacturing process, and for providing user interfaces for working on those tasks with the assigned robots.
+This repository holds the high-level components developed in fulfillment of the **ARM-TEC-22-01-F-30** project titled "**Multi-Robot Task Planning in Large Structure Manufacturing**" and funded by the [Advanced Robotics for Manufacturing Institute](https://arminstitute.org/). The high-level components are responsible for the generation of optimal task schedules and robot assignments to support a manufacturing process, and for providing user interfaces for working on those tasks with the assigned robots.
 
 These components are designed to tie into the lower-level control components designed by [Burak Aksoy](https://github.com/burakaksoy) to complete the entire project. Where appropriate, the complementary repositories are described and linked.
 
