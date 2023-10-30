@@ -32,7 +32,7 @@ The packages are listed below:
 6. task_scheduler
 7. ticket_manager
 
-The figures below shows a sample schedule generated for 7 jobs/products and the corresponding list in the Supervisor GUI.
+The figures below show a sample schedule generated for 7 jobs/products and the corresponding list in the Supervisor GUI.
 ![Supervisor GUI Job List](Images/supervisorGUIFullSched.png)
 ![Supervisor GUI Job List](Images/supervisorGUIJobList.png)
 
