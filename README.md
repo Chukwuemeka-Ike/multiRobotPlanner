@@ -37,3 +37,9 @@ This version of the scheduler was eventually chosen to be part of the high-level
 1. [ARM Institute Announcement](https://arminstitute.org/news/new-tech-projects-2023/)
 2. [RPI News](https://news.rpi.edu/content/2023/02/09/rpi-awarded-two-technology-projects-advanced-robotic-manufacturing-arm-address)
 3. [LinkedIn Completion Post](https://www.linkedin.com/posts/john-wen-6999794_we-have-successfully-completed-the-final-ugcPost-7123380065786081280-mOiE?utm_source=share&utm_medium=member_desktop)
+
+
+|Team Photo after the Final Demo|
+|:-:|
+|![Team Photo after the Final Demo](finalDemoPhoto.jpg)|
+
