@@ -1,21 +1,21 @@
 # Multi-Robot Task Scheduling and Assignment
 
-This repository holds the high-level components developed in fulfillment of the **[ARM-TEC-22-01-F-30]()** project titled "Multi-Robot Task Planning in Large Structure Manufacturing" and funded by the [ARM Institute](https://arminstitute.org/). The high-level components are responsible for the generation of optimal task schedules and robot assignments to support a manufacturing process, and for providing user interfaces for working on those tasks with the assigned robots.
+This repository holds the high-level components developed in fulfillment of the **ARM-TEC-22-01-F-30** project titled "Multi-Robot Task Planning in Large Structure Manufacturing" and funded by the [Advanced Robotics for Manufacturing Institute](https://arminstitute.org/). The high-level components are responsible for the generation of optimal task schedules and robot assignments to support a manufacturing process, and for providing user interfaces for working on those tasks with the assigned robots.
 
 These components are designed to tie into the lower-level control components designed by [Burak Aksoy](https://github.com/burakaksoy) to complete the entire project. Where appropriate, the complementary repositories are described and linked.
 
 ## Project Status
-![Project Status - Work in Progress](https://img.shields.io/badge/status-Work%20in%20Progress-yellow)
+![Project Status - Work in Progress](https://img.shields.io/badge/status-Complete-g)
 
-This project is currently under active development.
+This project is in its final state.
 
 ## Folder Descriptions
-Each major folder in this repo represents a specific iteration of the task scheduler and path planner that were developed for the project. Detailed descriptions are available in the folder README's.
+Each major folder in this repo represents a specific iteration of the task scheduler and path planner that were developed for the project. Detailed descriptions are available in each folder's README.
 
 **NOTE: workspace is the only folder intended for use. Other folders are included here because they represent the entirety of the design process for this project.**
 
 ### Workspace
-*workspace* contains the final version of the entire high-level system, including the Operations scheduler. The workspace contains all the packages necessary for running the version of this project intended for use and distribution. Those interested in using this project can skip the remainder of this README. More details and documentation can be found [here](workspace).
+*workspace* contains the final version of the entire high-level system, and it uses the Operations version of the scheduler. The workspace contains all the packages necessary for running the version of this project intended for use and distribution. Those interested in using this project can skip the remainder of this README. More details and documentation can be found [here](workspace).
 
 ### Finegrained
 The finegrained planner was the first iteration for robot planning. It used an optimization tool and a constraint solver to generate feasible paths for mobile robots in a 2D plane.
@@ -29,10 +29,11 @@ The metric planner was designed to generate task schedules and paths for multipl
 The topological planner was designed to overcome the Metric planner's computational inefficiency, and it provided a 60% speedup on average on the same tasks. The robot's physical capabilities were ignored, and the entire workspace was converted to a graph representation. It was eventually understood that the modularity this approach provided did not completely fit the intended use, and thus the planning time became a disadvantage. More details and documentation can be found [here](Topological).
 
 ### Operations
-This version of scheduler was eventually chosen to be part of the high-level system. In this iteration, we separated the task scheduling, robot assignment, and path planning into three distinct parts unlike in its predecessors where they were combined. Doing so sped up the entire scheduling and planning system and fit the company's use case significantly better. More details and documentation can be found [here](Operations).
+This version of the scheduler was eventually chosen to be part of the high-level system. In this iteration, we separated the task scheduling, robot assignment, and path planning into three distinct parts unlike in its predecessors where they were combined. Doing so sped up the entire scheduling and planning system and fit the company's use case significantly better. More details and documentation can be found [here](Operations).
 
 
 ## Links
 ### Project in The News
 1. [ARM Institute Announcement](https://arminstitute.org/news/new-tech-projects-2023/)
 2. [RPI News](https://news.rpi.edu/content/2023/02/09/rpi-awarded-two-technology-projects-advanced-robotic-manufacturing-arm-address)
+3. [LinkedIn Completion Post](https://www.linkedin.com/posts/john-wen-6999794_we-have-successfully-completed-the-final-ugcPost-7123380065786081280-mOiE?utm_source=share&utm_medium=member_desktop)
