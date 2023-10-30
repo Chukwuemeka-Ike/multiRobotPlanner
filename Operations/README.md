@@ -11,11 +11,20 @@ On this level, we consider jobs in a less modular fashion than the Metric/ and T
 ## Approach
 We formulate the scheduling-assignment problem in two layers. First, we tackle the scheduling problem by casting it as a flexible job shop scheduling problem (FJSSP), which is an extension of the job shop scheduling problem (JSSP) that allows for route flexibility in the scheduling plan.
 
+The basic FJSSP is structured as follows: Given *n* jobs with *p<sub>i</sub>* sub-tasks and *m* machines/stations, where each job's sub-tasks need to be performed in a specific order, and sub-tasks must run on specified machines for specified durations, generate a minimum time schedule for all the jobs.
 
- for sticky jobs - machines are tied to jobs instead of their more granular subtasks.
+We implemented a mixed integer linear programming (MILP) algorithm<sup>[1]</sup> to solve the problem with constraints for:
+* Machine types and durations of tasks
+* Order of tasks within a job
+* No overlap between tasks on the same machine
 
- ## 
- # Install Google OR-Tools
- ```bash
-pip3 install ortools
- ```
+We then use [Google OR-Tools CP-SAT Solver](https://developers.google.com/optimization/cp/cp_solver) to solve the optimization problem and generate a schedule that meets our requirements.
+
+The figures below show the job set that was input to the scheduler and the schedule that was subsequently generated.
+|![Input Job Set](Images/inputData.png)|![Output Schedule](Images/schedule.png)|
+|-|-|
+|<center>Input Job Set</center>|<center>Output Schedule</center>|
+
+
+## References
+[1] - Mathematical models for job-shop scheduling problems with routing and process plan flexibility – Özgüven (2010)
