@@ -2,6 +2,13 @@
 
 This folder contains the high-level components in a readily-usable form. The README holds instructions for installing, building, and using the high-level portion of the project.
 
+## Table of Contents
+1. [Status](#status)
+2. [Description](#description)
+3. [Installation Guide](#installation-guide)
+4. [Usage](#usage)
+5. [Data Descriptions](#data-descriptions)
+
 
 
 
@@ -40,7 +47,7 @@ The figures below show a sample schedule generated for 7 jobs/products and the c
 
 
 
-## Installation
+## Installation Guide
 The following instructions assume you're running an Ubuntu 20.04 system with ROS Noetic Desktop-Full. If that is not the case, these instructions may not work exactly as intended.
 1. [Ubuntu Install Instructions](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview)
 2. [ROS Noetic Install Instructions](https://wiki.ros.org/noetic/Installation/Ubuntu)
