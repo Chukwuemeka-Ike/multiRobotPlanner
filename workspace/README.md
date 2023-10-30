@@ -3,8 +3,37 @@
 This folder contains the high-level components in a readily-usable form. The README holds instructions for installing, building, and using the high-level portion of the project.
 
 
+
+
+
 ## Status
-![Status - Work in Progress](https://img.shields.io/badge/status-Work%20in%20Progress-yellow)
+![Status - Complete](https://img.shields.io/badge/status-Complete-gb)
+
+
+
+
+
+## Description
+"High-level" refers to the components of this project that are responsible for planning jobs and tasks, assigning robots to those jobs, and ensuring that the robots head to the correct destinations at the right time. The ticket manager also maintains the states of jobs and tasks in the system.
+
+The ROS packages in this workspace cover those functionalities:
+1. User interfacing - Supervisor and Operator GUIs
+2. Ticket management - Ticket Manager
+3. Task scheduling - Task Scheduler
+4. Robot assignment - Robot Assigner
+5. Machine management - Machine Manager
+
+The packages are listed below:
+1. arm_gui
+2. arm_msgs
+3. arm_utils
+4. machine_manager
+5. robot_assigner
+6. task_scheduler
+7. ticket_manager
+
+
+
 
 
 ## Installation
@@ -61,6 +90,10 @@ source devel/setup.bash
 ```
 If this runs correctly, the project's components should be ready to use.
 
+
+
+
+
 ## Usage
 ### High-Level System
 The high-level planning system is made up of the following components.
@@ -109,7 +142,7 @@ The OG can be used to work on tickets, which involves starting the tickets, cont
 
 
 
-## High-Level Descriptions
+## Data Descriptions
 In this section, we describe different implementation pieces of the high-level system - ROS messages, services, nodes, etc.
 
 ### Machines
